@@ -1,44 +1,40 @@
-import Link from "next/link";
+"use client";
 
-const menu = [
-  { title: "Dashboard", href: "/dashboard" },
-  { title: "Inbox Automation", href: "/inbox" },
-  { title: "CRM", href: "/crm" },
-  { title: "Lead Generation", href: "/leads" },
-  { title: "Analytics", href: "/analytics" },
-  { title: "Settings", href: "/settings" },
+import { LayoutDashboard, Layers, Settings, LogOut } from "lucide-react";
+
+const NAV_ITEMS = [
+  { label: "Overview", icon: LayoutDashboard, href: "/dashboard" },
+  { label: "Services", icon: Layers, href: "/dashboard/services" },
+  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ];
 
-export default function Sidebar() {
+export function Sidebar() {
   return (
-    <aside className="flex w-64 flex-col border-r border-slate-800 bg-slate-950 px-6 py-8 text-white">
+    <aside className="hidden md:flex w-60 shrink-0 flex-col justify-between border-r border-[#2c3140] bg-[#10131a] px-4 py-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">JNS</h1>
-
-        <p className="mt-2 text-sm text-slate-400">
-          Kaizen Platform
-        </p>
+        <div className="px-2 pb-8">
+          <span className="font-semibold text-[#edeae3] tracking-tight text-lg">
+            JN<span className="text-[#d9a253]">System</span>
+          </span>
+        </div>
+        <nav className="flex flex-col gap-1">
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[#a8a6a0] hover:bg-[#1b1f29] hover:text-[#edeae3] transition-colors"
+            >
+              <item.icon size={17} strokeWidth={1.75} />
+              {item.label}
+            </a>
+          ))}
+        </nav>
       </div>
 
-      <nav className="mt-10 flex flex-col gap-2">
-        {menu.map((item) => (
-          <Link
-            key={item.title}
-            href={item.href}
-            className="rounded-xl px-4 py-3 text-slate-300 transition hover:bg-slate-900 hover:text-white"
-          >
-            {item.title}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="mt-auto rounded-xl border border-slate-800 bg-slate-900 p-4">
-        <p className="text-xs uppercase tracking-widest text-slate-500">
-          Version
-        </p>
-
-        <p className="mt-2 font-semibold">JNS v0.1.0</p>
-      </div>
+      <button className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[#a8a6a0] hover:bg-[#1b1f29] hover:text-[#edeae3] transition-colors">
+        <LogOut size={17} strokeWidth={1.75} />
+        Log out
+      </button>
     </aside>
   );
 }

@@ -1,27 +1,19 @@
-type StatCardProps = {
-  title: string;
+interface StatCardProps {
+  label: string;
   value: string;
-  subtitle: string;
-};
+  hint?: string;
+}
 
-export default function StatCard({
-  title,
-  value,
-  subtitle,
-}: StatCardProps) {
+export function StatCard({ label, value, hint }: StatCardProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
-      <p className="text-sm font-medium text-slate-500">
-        {title}
+    <div className="rounded-xl border border-[#2c3140] bg-[#1b1f29] p-5">
+      <p className="text-xs uppercase tracking-wide text-[#a8a6a0] font-mono mb-2">
+        {label}
       </p>
-
-      <h3 className="mt-3 text-4xl font-bold tracking-tight">
+      <p className="text-2xl font-semibold text-[#edeae3] tracking-tight">
         {value}
-      </h3>
-
-      <p className="mt-2 text-sm text-slate-400">
-        {subtitle}
       </p>
+      {hint && <p className="text-xs text-[#a8a6a0] mt-1">{hint}</p>}
     </div>
   );
 }
