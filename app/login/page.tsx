@@ -1,111 +1,113 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [checkEmail, setCheckEmail] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
 
-  const router = useRouter();
-  const supabase = createClient();
-
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { business_name: businessName },
-        },
-      });
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-
-      // If Supabase didn't return a session, email confirmation is
-      // required before the account can log in.
-      if (!data.session) {
-        setCheckEmail(true);
-        setLoading(false);
-        return;
-      }
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-    }
-
-    router.push("/dashboard");
-    router.refresh();
-  }
-
-  async function handleGoogleSignIn() {
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) setError(error.message);
-  }
-
-  if (checkEmail) {
-    return (
-      <div className="min-h-screen bg-[#10131a] flex items-center justify-center px-6">
-        <div className="w-full max-w-sm text-center">
-          <span className="font-semibold text-xl tracking-tight text-[#edeae3]">
-            JN<span className="text-[#d9a253]">System</span>
-          </span>
-          <div className="rounded-xl border border-[#2c3140] bg-[#1b1f29] p-8 mt-8">
-            <div className="w-12 h-12 rounded-full bg-[#d9a253]/10 text-[#d9a253] flex items-center justify-center mx-auto mb-5 text-xl">
-              ✉
-            </div>
-            <h1 className="text-lg font-semibold text-[#edeae3] mb-2">
-              Registration complete
-            </h1>
-            <p className="text-sm text-[#a8a6a0]">
-              Check <span className="text-[#edeae3]">{email}</span> for a
-              confirmation link. Once confirmed, log in with the email and
-              password you just used to finish setting up your account.
-            </p>
-            <button
-              onClick={() => {
-                setCheckEmail(false);
-                setMode("login");
-              }}
-              className="mt-6 w-full rounded-md border border-[#2c3140] py-2.5 text-sm text-[#edeae3] hover:border-[#3a4155] transition-colors"
-            >
-              Back to login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    // Placeholder — Supabase auth wiring lands in Step 2.
+    console.log(`${mode} submitted (not yet wired to Supabase)`);
   }
 
   return (
-    <div className="min-h-screen bg-[#10131a] flex items-center justify-center px-6">
+    <div className="flex min-h-full items-center justify-center bg-[#F6F5F1] px-6 py-16">
       <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <Link
+            href="/"
+            className="font-mono text-sm tracking-tight text-[#1B1D1F]"
+          >
+            JNSystem
+          </Link>
+        </div>
+
+        <div className="rounded-lg border border-[#E1DFD6] bg-white p-8">
+          <div className="mb-6 flex rounded-md border border-[#E1DFD6] bg-[#F6F5F1] p-1">
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className={`flex-1 rounded-sm py-1.5 text-sm transition-colors ${
+                mode === "signin"
+                  ? "bg-white text-[#1B1D1F] shadow-sm"
+                  : "text-[#6B7069]"
+              }`}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className={`flex-1 rounded-sm py-1.5 text-sm transition-colors ${
+                mode === "signup"
+                  ? "bg-white text-[#1B1D1F] shadow-sm"
+                  : "text-[#6B7069]"
+              }`}
+            >
+              Create account
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === "signup" && (
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="business"
+                  className="text-sm text-[#1B1D1F]"
+                >
+                  Business name
+                </label>
+                <input
+                  id="business"
+                  type="text"
+                  placeholder="ilovemypilates"
+                  className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="email" className="text-sm text-[#1B1D1F]">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="you@studio.com"
+                className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="password" className="text-sm text-[#1B1D1F]">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="mt-2 rounded-md bg-[#1F4D42] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#163B33]"
+            >
+              {mode === "signin" ? "Sign in" : "Create account"}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-[#8A8F87]">
+          Not wired to real accounts yet — Step 2 connects this to Supabase.
+        </p>
+      </div>
+    </div>
+  );
+}
         <div className="text-center mb-8">
           <span className="font-semibold text-xl tracking-tight text-[#edeae3]">
             JN<span className="text-[#d9a253]">System</span>
