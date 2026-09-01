@@ -5,31 +5,16 @@ import { redirect } from "next/navigation";
 
 export async function createOrganization(businessName: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("Not authenticated");
   if (!businessName.trim()) throw new Error("Business name is required");
 
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
-    .insert({ name: businessName.trim() })
-    .select("id")
-    .single();
+  const { data: orgId, error } = await supabase.rpc(
+    "create_organization_with_ceo",
+    { business_name: businessName.trim() },
+  );
 
-  if (orgError || !org) {
-    throw new Error(orgError?.message ?? "Could not create organization");
-  }
-
-  const { error: memberError } = await supabase.from("org_members").insert({
-    organization_id: org.id,
-    user_id: user.id,
-    role: "ceo",
-  });
-
-  if (memberError) {
-    throw new Error(memberError.message);
+  if (error || !orgId) {
+    throw new Error(error?.message ?? "Could not create organization");
   }
 
   redirect("/dashboard");
