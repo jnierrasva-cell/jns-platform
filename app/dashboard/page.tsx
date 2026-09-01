@@ -16,14 +16,26 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.status !== "approved") {
-    redirect("/pending-approval");
-  }
+  if (profile?.status !== "approved") redirect("/pending-approval");
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("role, organizations(name)")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership) redirect("/onboarding/setup-business");
+
+  const orgName = Array.isArray(membership.organizations)
+    ? membership.organizations[0]?.name
+    : (membership.organizations as { name: string } | null)?.name;
 
   return (
     <DashboardClient
       userEmail={user.email ?? ""}
       isAdmin={profile?.role === "admin"}
+      isOrgCeo={membership.role === "ceo"}
+      orgName={orgName ?? "Your workspace"}
     />
   );
 }

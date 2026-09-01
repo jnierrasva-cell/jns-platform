@@ -10,9 +10,13 @@ import { createClient } from "@/lib/supabase/client";
 export function DashboardClient({
   userEmail,
   isAdmin,
+  isOrgCeo,
+  orgName,
 }: {
   userEmail: string;
   isAdmin: boolean;
+  isOrgCeo: boolean;
+  orgName: string;
 }) {
   const [activeIds, setActiveIds] = useState<Set<string>>(
     () =>
@@ -65,6 +69,14 @@ export function DashboardClient({
             JNSystem
           </Link>
           <div className="flex items-center gap-4">
+            {isOrgCeo && (
+              <Link
+                href="/dashboard/team"
+                className="text-sm text-[#1F4D42] underline underline-offset-2"
+              >
+                Team
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 href="/admin"
@@ -88,7 +100,7 @@ export function DashboardClient({
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8 flex flex-col gap-1">
           <span className="font-mono text-xs uppercase tracking-wide text-[#8A8F87]">
-            Service catalog
+            {orgName}
           </span>
           <h1 className="text-2xl font-medium text-[#1B1D1F]">
             Your systems

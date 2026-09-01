@@ -32,30 +32,29 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isAdminRoute = pathname.startsWith("/admin");
+  const isOnboardingRoute = pathname.startsWith("/onboarding");
+  const isProtectedRoute = isDashboardRoute || isAdminRoute || isOnboardingRoute;
 
-  // Not logged in at all — bounce to login.
-  if ((isDashboardRoute || isAdminRoute) && !user) {
+  if (isProtectedRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && (isDashboardRoute || isAdminRoute)) {
+  if (user && isProtectedRoute) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, status")
       .eq("id", user.id)
       .single();
 
-    // Non-admins trying to reach /admin get sent back to their dashboard.
     if (isAdminRoute && profile?.role !== "admin") {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Logged in but not yet approved — hold at the pending-approval page.
-    if (isDashboardRoute && profile?.status !== "approved") {
+    if ((isDashboardRoute || isOnboardingRoute) && profile?.status !== "approved") {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/pending-approval";
       return NextResponse.redirect(redirectUrl);
@@ -66,5 +65,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/onboarding/:path*"],
 };
