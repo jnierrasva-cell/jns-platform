@@ -7,7 +7,13 @@ import { mockServices } from "@/lib/mock-services";
 import { ServiceCard } from "@/components/service-card";
 import { createClient } from "@/lib/supabase/client";
 
-export function DashboardClient({ userEmail }: { userEmail: string }) {
+export function DashboardClient({
+  userEmail,
+  isAdmin,
+}: {
+  userEmail: string;
+  isAdmin: boolean;
+}) {
   const [activeIds, setActiveIds] = useState<Set<string>>(
     () =>
       new Set(
@@ -59,6 +65,14 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
             JNSystem
           </Link>
           <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-md border border-[#1F4D42] px-3 py-1 text-xs font-medium text-[#1F4D42] hover:bg-[#1F4D42] hover:text-white"
+              >
+                Admin panel
+              </Link>
+            )}
             <span className="text-sm text-[#6B7069]">{userEmail}</span>
             <button
               type="button"

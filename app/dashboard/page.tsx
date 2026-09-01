@@ -8,11 +8,22 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Middleware already guards this route, but double-checking here keeps
-  // this page safe even if it's ever reached another way.
-  if (!user) {
-    redirect("/login");
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, status")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.status !== "approved") {
+    redirect("/pending-approval");
   }
 
-  return <DashboardClient userEmail={user.email ?? ""} />;
+  return (
+    <DashboardClient
+      userEmail={user.email ?? ""}
+      isAdmin={profile?.role === "admin"}
+    />
+  );
 }
