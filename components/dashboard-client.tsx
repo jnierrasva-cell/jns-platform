@@ -94,12 +94,20 @@ export function DashboardClient({
           </Link>
           <div className="flex items-center gap-4">
             {isOrgCeo && (
-              <Link
-                href="/dashboard/team"
-                className="text-sm text-[#1F4D42] underline underline-offset-2"
-              >
-                Team
-              </Link>
+              <>
+                <Link
+                  href="/dashboard/templates"
+                  className="text-sm text-[#1F4D42] underline underline-offset-2"
+                >
+                  Reply template
+                </Link>
+                <Link
+                  href="/dashboard/team"
+                  className="text-sm text-[#1F4D42] underline underline-offset-2"
+                >
+                  Team
+                </Link>
+              </>
             )}
             {isAdmin && (
               <Link
