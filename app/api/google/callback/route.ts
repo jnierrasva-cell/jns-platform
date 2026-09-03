@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const redirectUri = `${request.nextUrl.origin}/api/google/callback`;
 
   function redirectWithParam(key: string, value: string) {
-    const url = new URL("/dashboard", request.url);
+    const url = new URL("/dashboard/integrations", request.url);
     url.searchParams.set(key, value);
     const res = NextResponse.redirect(url);
     res.cookies.delete("google_oauth_state");
