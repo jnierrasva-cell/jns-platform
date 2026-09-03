@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const CATEGORIES = [
   {
@@ -25,14 +26,17 @@ export default function LandingPage() {
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0B132B]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-2">
-            <span className="font-[family-name:var(--font-poppins)] text-lg font-semibold tracking-tight text-white">
-              JNS
-            </span>
-            <span className="hidden text-sm text-[#64748B] sm:inline">
-              Platform
-            </span>
-          </div>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/jns-logo.png"
+              alt="JNS Platform"
+              width={120}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
+          </Link>
+
           <Link
             href="/login"
             className="rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/10 px-4 py-1.5 text-sm font-medium text-[#93C5FD] transition-all hover:bg-[#2563EB]/20 hover:border-[#2563EB]/60"

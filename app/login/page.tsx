@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -51,13 +52,16 @@ export default function LoginPage() {
     <div className="flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-poppins)] text-lg font-semibold tracking-tight text-white"
-          >
-            JNS
+          <Link href="/" className="inline-block">
+            <Image
+              src="/jns-logo.png"
+              alt="JNS Platform"
+              width={120}
+              height={40}
+              className="mx-auto h-9 w-auto"
+              priority
+            />
           </Link>
-          <p className="mt-1 text-sm text-[#64748B]">Platform</p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 shadow-xl shadow-black/20 backdrop-blur-sm">
