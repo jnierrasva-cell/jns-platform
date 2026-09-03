@@ -21,15 +21,21 @@ const CATEGORIES = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-full bg-[#F6F5F1]">
-      <header className="border-b border-[#E1DFD6]">
+    <div className="min-h-full bg-[#0B132B] text-[#F1F5F9]">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-[#0B132B]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <span className="font-mono text-sm tracking-tight text-[#1B1D1F]">
-            JNSystem
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-[family-name:var(--font-poppins)] text-lg font-semibold tracking-tight text-white">
+              JNS
+            </span>
+            <span className="hidden text-sm text-[#64748B] sm:inline">
+              Platform
+            </span>
+          </div>
           <Link
             href="/login"
-            className="rounded-md border border-[#1F4D42] px-4 py-1.5 text-sm text-[#1F4D42] transition-colors hover:bg-[#1F4D42] hover:text-white"
+            className="rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/10 px-4 py-1.5 text-sm font-medium text-[#93C5FD] transition-all hover:bg-[#2563EB]/20 hover:border-[#2563EB]/60"
           >
             Sign in
           </Link>
@@ -38,37 +44,59 @@ export default function LandingPage() {
 
       <main className="mx-auto max-w-6xl px-6">
         {/* Hero */}
-        <section className="flex flex-col items-start gap-6 py-24">
-          <span className="font-mono text-xs uppercase tracking-wide text-[#8A8F87]">
+        <section className="relative flex flex-col items-start gap-6 py-24 sm:py-32">
+          {/* Subtle network glow */}
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute -right-20 top-10 h-96 w-96 rounded-full bg-[#2563EB]/10 blur-3xl" />
+            <div className="absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-[#06B6D4]/10 blur-3xl" />
+          </div>
+
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#06B6D4]">
             For service businesses running lean
           </span>
-          <h1 className="max-w-2xl text-4xl font-medium leading-tight text-[#1B1D1F] sm:text-5xl">
+
+          <h1 className="max-w-3xl font-[family-name:var(--font-poppins)] text-4xl font-semibold leading-[1.15] tracking-tight text-white sm:text-5xl lg:text-6xl">
             Turn on the systems that run your business behind the scenes.
           </h1>
-          <p className="max-w-xl text-base leading-relaxed text-[#6B7069]">
+
+          <p className="max-w-xl text-base leading-relaxed text-[#94A3B8] sm:text-lg">
             Email replies, lead sorting, booking sync — pick what you need,
             switch it on, and keep working with your VA the same way you
             always have.
           </p>
+
           <Link
             href="/login"
-            className="rounded-md bg-[#1F4D42] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#163B33]"
+            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition-all hover:bg-[#1D4ED8] hover:shadow-[#2563EB]/40"
           >
             Go to your dashboard
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+              />
+            </svg>
           </Link>
         </section>
 
         {/* Category overview */}
-        <section className="grid grid-cols-1 gap-4 border-t border-[#E1DFD6] py-16 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-4 border-t border-white/10 py-16 sm:grid-cols-2 lg:grid-cols-4">
           {CATEGORIES.map((category) => (
             <div
               key={category.name}
-              className="rounded-lg border border-[#E1DFD6] bg-white p-5"
+              className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
             >
-              <h3 className="text-sm font-medium text-[#1B1D1F]">
+              <h3 className="font-[family-name:var(--font-poppins)] text-sm font-semibold text-white">
                 {category.name}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#6B7069]">
+              <p className="mt-2 text-sm leading-relaxed text-[#94A3B8]">
                 {category.detail}
               </p>
             </div>
@@ -76,9 +104,10 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-[#E1DFD6] px-6 py-8">
-        <p className="mx-auto max-w-6xl text-xs text-[#8A8F87]">
-          JNSystem — built and operated by your VA.
+      {/* Footer */}
+      <footer className="border-t border-white/10 px-6 py-8">
+        <p className="mx-auto max-w-6xl text-xs text-[#64748B]">
+          JNS Platform — built and operated by your VA.
         </p>
       </footer>
     </div>
