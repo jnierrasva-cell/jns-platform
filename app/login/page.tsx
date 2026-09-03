@@ -56,9 +56,9 @@ export default function LoginPage() {
             <Image
               src="/jns-logo.png"
               alt="JNS Platform"
-              width={160}
-              height={60}
-              className="mx-auto h-12 w-auto"
+              width={200}
+              height={100}
+              className="mx-auto h-16 w-auto"
               priority
             />
           </Link>
