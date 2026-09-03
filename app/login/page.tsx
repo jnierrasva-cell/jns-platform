@@ -48,24 +48,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-[#F6F5F1] px-6 py-16">
+    <div className="flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
+        <div className="mb-10 text-center">
           <Link
             href="/"
-            className="font-mono text-sm tracking-tight text-[#1B1D1F]"
+            className="font-[family-name:var(--font-poppins)] text-lg font-semibold tracking-tight text-white"
           >
-            JNSystem
+            JNS
           </Link>
+          <p className="mt-1 text-sm text-[#64748B]">Platform</p>
         </div>
 
-        <div className="rounded-lg border border-[#E1DFD6] bg-white p-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 shadow-xl shadow-black/20 backdrop-blur-sm">
           {confirmSent ? (
             <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <p className="text-sm text-[#1B1D1F]">
+              <p className="text-sm text-white">
                 Check your email to confirm your account.
               </p>
-              <p className="text-sm text-[#6B7069]">
+              <p className="text-sm text-[#94A3B8]">
                 Once confirmed, come back and sign in.
               </p>
               <button
@@ -74,24 +75,24 @@ export default function LoginPage() {
                   setConfirmSent(false);
                   setMode("signin");
                 }}
-                className="mt-2 text-sm text-[#1F4D42] underline"
+                className="mt-2 text-sm text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
               >
                 Back to sign in
               </button>
             </div>
           ) : (
             <>
-              <div className="mb-6 flex rounded-md border border-[#E1DFD6] bg-[#F6F5F1] p-1">
+              <div className="mb-6 flex rounded-lg border border-white/10 bg-white/[0.04] p-1">
                 <button
                   type="button"
                   onClick={() => {
                     setMode("signin");
                     setError(null);
                   }}
-                  className={`flex-1 rounded-sm py-1.5 text-sm transition-colors ${
+                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
                     mode === "signin"
-                      ? "bg-white text-[#1B1D1F] shadow-sm"
-                      : "text-[#6B7069]"
+                      ? "bg-[#2563EB] text-white shadow-sm"
+                      : "text-[#94A3B8] hover:text-white"
                   }`}
                 >
                   Sign in
@@ -102,19 +103,19 @@ export default function LoginPage() {
                     setMode("signup");
                     setError(null);
                   }}
-                  className={`flex-1 rounded-sm py-1.5 text-sm transition-colors ${
+                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
                     mode === "signup"
-                      ? "bg-white text-[#1B1D1F] shadow-sm"
-                      : "text-[#6B7069]"
+                      ? "bg-[#2563EB] text-white shadow-sm"
+                      : "text-[#94A3B8] hover:text-white"
                   }`}
                 >
                   Create account
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="email" className="text-sm text-[#1B1D1F]">
+                  <label htmlFor="email" className="text-sm text-[#E2E8F0]">
                     Email
                   </label>
                   <input
@@ -124,15 +125,12 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@studio.com"
-                    className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
+                    className="rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="password"
-                    className="text-sm text-[#1B1D1F]"
-                  >
+                  <label htmlFor="password" className="text-sm text-[#E2E8F0]">
                     Password
                   </label>
                   <input
@@ -143,18 +141,18 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
+                    className="rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </div>
 
                 {error && (
-                  <p className="text-sm text-[#B3432B]">{error}</p>
+                  <p className="text-sm text-red-400">{error}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 rounded-md bg-[#1F4D42] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#163B33] disabled:opacity-60"
+                  className="mt-1 rounded-lg bg-[#2563EB] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition-all hover:bg-[#1D4ED8] hover:shadow-[#2563EB]/40 disabled:opacity-60"
                 >
                   {loading
                     ? "Please wait…"

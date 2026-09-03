@@ -57,17 +57,17 @@ export function DashboardShell({
   }
 
   return (
-    <div className="flex min-h-full bg-[#F6F5F1]">
+    <div className="flex min-h-full bg-[#0B132B] text-[#F1F5F9]">
       {/* Sidebar */}
-      <aside className="flex w-60 shrink-0 flex-col border-r border-[#E1DFD6] bg-white">
-        <div className="border-b border-[#E1DFD6] px-5 py-4">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-white/10 bg-[#0B132B]">
+        <div className="border-b border-white/10 px-5 py-5">
           <Link
             href="/"
-            className="font-mono text-sm tracking-tight text-[#1B1D1F]"
+            className="font-[family-name:var(--font-poppins)] text-base font-semibold tracking-tight text-white"
           >
-            JNSystem
+            JNS
           </Link>
-          <p className="mt-1 truncate text-xs text-[#8A8F87]">{orgName}</p>
+          <p className="mt-1 truncate text-xs text-[#64748B]">{orgName}</p>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -78,10 +78,10 @@ export function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-all ${
                   active
-                    ? "bg-[#EAF1EE] font-medium text-[#1F4D42]"
-                    : "text-[#6B7069] hover:bg-[#F6F5F1]"
+                    ? "bg-[#2563EB]/15 font-medium text-[#93C5FD]"
+                    : "text-[#94A3B8] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
                 <Icon size={16} />
@@ -92,13 +92,13 @@ export function DashboardShell({
 
           {isAdmin && (
             <>
-              <div className="my-2 border-t border-[#E1DFD6]" />
+              <div className="my-2 border-t border-white/10" />
               <Link
                 href="/admin"
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-all ${
                   pathname.startsWith("/admin")
-                    ? "bg-[#EAF1EE] font-medium text-[#1F4D42]"
-                    : "text-[#6B7069] hover:bg-[#F6F5F1]"
+                    ? "bg-[#2563EB]/15 font-medium text-[#93C5FD]"
+                    : "text-[#94A3B8] hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
                 <Shield size={16} />
@@ -108,11 +108,11 @@ export function DashboardShell({
           )}
         </nav>
 
-        <div className="border-t border-[#E1DFD6] p-3">
-          <p className="truncate px-3 text-xs text-[#8A8F87]">{userEmail}</p>
+        <div className="border-t border-white/10 p-3">
+          <p className="truncate px-3 text-xs text-[#64748B]">{userEmail}</p>
           <button
             onClick={handleSignOut}
-            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-[#6B7069] hover:bg-[#F6F5F1]"
+            className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-[#94A3B8] transition-all hover:bg-white/[0.04] hover:text-white"
           >
             <LogOut size={16} />
             Sign out

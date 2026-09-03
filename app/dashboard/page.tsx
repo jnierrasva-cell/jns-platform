@@ -34,34 +34,34 @@ export default async function OverviewPage() {
 
   return (
     <div>
-      <span className="font-mono text-xs uppercase tracking-wide text-[#8A8F87]">
+      <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
         Overview
       </span>
-      <h1 className="text-2xl font-medium text-[#1B1D1F]">
+      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
         Welcome back
       </h1>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
           href="/dashboard/automation"
-          className="rounded-lg border border-[#E1DFD6] bg-white p-5 transition-colors hover:border-[#B9C4BF]"
+          className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
         >
-          <p className="text-2xl font-medium text-[#1B1D1F]">
+          <p className="font-[family-name:var(--font-poppins)] text-3xl font-semibold text-white">
             {activeAutomations}
           </p>
-          <p className="mt-1 text-sm text-[#6B7069]">
+          <p className="mt-1.5 text-sm text-[#94A3B8]">
             of {mockServices.length} automations active
           </p>
         </Link>
 
         <Link
           href="/dashboard/integrations"
-          className="rounded-lg border border-[#E1DFD6] bg-white p-5 transition-colors hover:border-[#B9C4BF]"
+          className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
         >
-          <p className="text-2xl font-medium text-[#1B1D1F]">
+          <p className="font-[family-name:var(--font-poppins)] text-3xl font-semibold text-white">
             {googleConnection ? "1" : "0"}
           </p>
-          <p className="mt-1 text-sm text-[#6B7069]">
+          <p className="mt-1.5 text-sm text-[#94A3B8]">
             {googleConnection
               ? `Google connected (${googleConnection.connected_email})`
               : "integrations connected"}
@@ -70,12 +70,12 @@ export default async function OverviewPage() {
 
         <Link
           href="/dashboard/team"
-          className="rounded-lg border border-[#E1DFD6] bg-white p-5 transition-colors hover:border-[#B9C4BF]"
+          className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
         >
-          <p className="text-2xl font-medium text-[#1B1D1F]">
+          <p className="font-[family-name:var(--font-poppins)] text-3xl font-semibold text-white">
             {teamCount ?? 1}
           </p>
-          <p className="mt-1 text-sm text-[#6B7069]">team members</p>
+          <p className="mt-1.5 text-sm text-[#94A3B8]">team members</p>
         </Link>
       </div>
     </div>
