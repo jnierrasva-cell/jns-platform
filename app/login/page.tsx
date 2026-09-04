@@ -49,15 +49,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
+    <div className="relative flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
       {/* Soft ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#2563EB]/10 blur-[120px]" />
+        <div className="absolute left-1/2 top-[40%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2563EB]/12 blur-[130px]" />
       </div>
 
-      <div className="relative w-full max-w-sm">
-        {/* Logo */}
-        <div className="mb-10 text-center">
+      <div className="relative w-full max-w-[380px]">
+        {/* Logo + context */}
+        <div className="mb-8 text-center">
           <Link href="/" className="inline-block">
             <Image
               src="/jns-logo.png"
@@ -68,10 +68,15 @@ export default function LoginPage() {
               priority
             />
           </Link>
+          <p className="mt-4 text-sm text-[#94A3B8]">
+            {mode === "signin"
+              ? "Sign in to your workspace"
+              : "Create your workspace account"}
+          </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-8 shadow-2xl shadow-black/30 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 shadow-2xl shadow-black/40 backdrop-blur-sm">
           {confirmSent ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
               <p className="text-sm font-medium text-white">
@@ -141,17 +146,31 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@studio.com"
-                    className="rounded-lg border border-white/12 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                    className="rounded-lg border border-white/15 bg-[#0B132B]/70 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/35"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="password"
-                    className="text-sm font-medium text-[#E2E8F0]"
-                  >
-                    Password
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="password"
+                      className="text-sm font-medium text-[#E2E8F0]"
+                    >
+                      Password
+                    </label>
+                    {mode === "signin" && (
+                      <button
+                        type="button"
+                        className="text-xs text-[#60A5FA] transition hover:text-[#93C5FD]"
+                        onClick={() => {
+                          // Placeholder – wire up later if needed
+                          alert("Password reset coming soon");
+                        }}
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
                   <input
                     id="password"
                     type="password"
@@ -160,13 +179,11 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="rounded-lg border border-white/12 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                    className="rounded-lg border border-white/15 bg-[#0B132B]/70 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/35"
                   />
                 </div>
 
-                {error && (
-                  <p className="text-sm text-red-400">{error}</p>
-                )}
+                {error && <p className="text-sm text-red-400">{error}</p>}
 
                 <button
                   type="submit"
@@ -183,6 +200,11 @@ export default function LoginPage() {
             </>
           )}
         </div>
+
+        {/* Small trust line */}
+        <p className="mt-6 text-center text-xs text-[#64748B]">
+          Secure access to your business systems
+        </p>
       </div>
     </div>
   );
