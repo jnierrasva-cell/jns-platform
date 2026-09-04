@@ -2,7 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { saveEmailTemplate } from "@/app/dashboard/templates/actions";
+import {
+  saveEmailTemplate,
+  sendTestAutoAck,
+} from "@/app/dashboard/templates/actions";
 
 export function TemplateClient({
   orgId,
@@ -15,20 +18,38 @@ export function TemplateClient({
 }) {
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
+  const [testEmail, setTestEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isTesting, startTest] = useTransition();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSaved(false);
+    setTestResult(null);
     startTransition(async () => {
       try {
         await saveEmailTemplate(orgId, subject, body);
         setSaved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save");
+      }
+    });
+  }
+
+  function handleTestSend(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setTestResult(null);
+    startTest(async () => {
+      try {
+        const result = await sendTestAutoAck(orgId, testEmail);
+        setTestResult(`Sent. Gmail message id: ${result.messageId}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Test send failed");
       }
     });
   }
@@ -103,9 +124,8 @@ export function TemplateClient({
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
-          {saved && (
-            <p className="text-sm text-[#67E8F9]">Template saved.</p>
-          )}
+          {saved && <p className="text-sm text-[#67E8F9]">Template saved.</p>}
+          {testResult && <p className="text-sm text-[#67E8F9]">{testResult}</p>}
 
           <button
             type="submit"
@@ -116,21 +136,51 @@ export function TemplateClient({
           </button>
         </form>
 
-        {/* Preview */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-          <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
-            Preview
-          </span>
-          <div className="mt-4 rounded-lg border border-white/10 bg-[#0B132B]/50 p-4">
-            <p className="text-xs text-[#64748B]">Subject</p>
-            <p className="mb-4 text-sm font-medium text-white">
-              {previewSubject}
-            </p>
-            <p className="text-xs text-[#64748B]">Body</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#E2E8F0]">
-              {previewBody}
-            </p>
+        {/* Preview + test send */}
+        <div className="flex flex-col gap-6">
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
+            <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+              Preview
+            </span>
+            <div className="mt-4 rounded-lg border border-white/10 bg-[#0B132B]/50 p-4">
+              <p className="text-xs text-[#64748B]">Subject</p>
+              <p className="mb-4 text-sm font-medium text-white">
+                {previewSubject}
+              </p>
+              <p className="text-xs text-[#64748B]">Body</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#E2E8F0]">
+                {previewBody}
+              </p>
+            </div>
           </div>
+
+          <form
+            onSubmit={handleTestSend}
+            className="rounded-xl border border-white/10 bg-white/[0.03] p-6"
+          >
+            <h2 className="text-sm font-medium text-white">Send test reply</h2>
+            <p className="mt-1 text-xs text-[#94A3B8]">
+              Uses your saved template and connected Gmail. Turn on
+              Auto-Acknowledgment in Automation first.
+            </p>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                type="email"
+                required
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="you@email.com"
+                className="flex-1 rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              />
+              <button
+                type="submit"
+                disabled={isTesting}
+                className="rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/15 px-4 py-2.5 text-sm font-medium text-[#93C5FD] transition hover:bg-[#2563EB]/25 disabled:opacity-60"
+              >
+                {isTesting ? "Sending…" : "Send test"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
