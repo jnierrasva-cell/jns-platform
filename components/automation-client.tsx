@@ -1,41 +1,67 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { mockServices } from "@/lib/mock-services";
+import type { Service } from "@/lib/mock-services";
 import { ServiceCard } from "@/components/service-card";
+import { setAutomationEnabled } from "@/app/dashboard/automation/actions";
 
-export function AutomationClient() {
-  const [activeIds, setActiveIds] = useState<Set<string>>(
-    () =>
-      new Set(
-        mockServices.filter((s) => s.status === "active").map((s) => s.id),
-      ),
+export function AutomationClient({
+  organizationId,
+  services,
+  initialEnabledKeys,
+}: {
+  organizationId: string;
+  services: Service[];
+  initialEnabledKeys: string[];
+}) {
+  const [enabledKeys, setEnabledKeys] = useState<Set<string>>(
+    () => new Set(initialEnabledKeys),
   );
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  function toggleService(id: string) {
-    setActiveIds((prev) => {
+  function toggleService(service: Service) {
+    if (service.status === "coming_soon") return;
+
+    const nextEnabled = !enabledKeys.has(service.id);
+    setError(null);
+
+    // Optimistic UI
+    setEnabledKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (nextEnabled) next.add(service.id);
+      else next.delete(service.id);
       return next;
+    });
+
+    startTransition(async () => {
+      try {
+        await setAutomationEnabled(organizationId, service.id, nextEnabled);
+      } catch (err) {
+        // Revert on failure
+        setEnabledKeys((prev) => {
+          const next = new Set(prev);
+          if (nextEnabled) next.delete(service.id);
+          else next.add(service.id);
+          return next;
+        });
+        setError(err instanceof Error ? err.message : "Could not update");
+      }
     });
   }
 
   const categories = useMemo(() => {
-    const map = new Map<string, typeof mockServices>();
-    for (const service of mockServices) {
+    const map = new Map<string, Service[]>();
+    for (const service of services) {
       const list = map.get(service.category) ?? [];
       list.push(service);
       map.set(service.category, list);
     }
     return Array.from(map.entries());
-  }, []);
+  }, [services]);
 
-  const activeCount = activeIds.size;
+  const activeCount = enabledKeys.size;
 
   return (
     <div>
@@ -46,22 +72,25 @@ export function AutomationClient() {
         Your systems
       </h1>
       <p className="mt-1 text-sm text-[#94A3B8]">
-        {activeCount} of {mockServices.length} systems switched on.
+        {activeCount} of {services.length} systems switched on.
+        {isPending ? " Saving…" : ""}
       </p>
 
+      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+
       <div className="mt-8 flex flex-col gap-10">
-        {categories.map(([category, services]) => (
+        {categories.map(([category, categoryServices]) => (
           <section key={category}>
             <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
               {category}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {services.map((service) => (
+              {categoryServices.map((service) => (
                 <div key={service.id} className="flex flex-col gap-2">
                   <ServiceCard
                     service={service}
-                    isOn={activeIds.has(service.id)}
-                    onToggle={() => toggleService(service.id)}
+                    isOn={enabledKeys.has(service.id)}
+                    onToggle={() => toggleService(service)}
                   />
                   {service.id === "email-auto-ack" && (
                     <Link
