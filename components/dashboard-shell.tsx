@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -61,13 +62,17 @@ export function DashboardShell({
       {/* Sidebar */}
       <aside className="flex w-60 shrink-0 flex-col border-r border-white/10 bg-[#0B132B]">
         <div className="border-b border-white/10 px-5 py-5">
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-poppins)] text-base font-semibold tracking-tight text-white"
-          >
-            JNS
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/jns-logo.png"
+              alt="JNS Platform"
+              width={120}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
           </Link>
-          <p className="mt-1 truncate text-xs text-[#64748B]">{orgName}</p>
+          <p className="mt-2 truncate text-xs text-[#64748B]">{orgName}</p>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 p-3">
