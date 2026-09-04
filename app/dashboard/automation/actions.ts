@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { startGmailWatch, stopGmailWatch } from "@/lib/google/watch";
 
 export async function setAutomationEnabled(
   organizationId: string,
@@ -35,6 +36,24 @@ export async function setAutomationEnabled(
   );
 
   if (error) throw new Error(error.message);
+
+  // Gmail auto-ack: start/stop watch with the toggle
+  if (serviceKey === "email-auto-ack") {
+    try {
+      if (isEnabled) {
+        await startGmailWatch(organizationId);
+      } else {
+        await stopGmailWatch(organizationId);
+      }
+    } catch (watchErr) {
+      // Surface watch errors so user knows Push is not active
+      throw new Error(
+        watchErr instanceof Error
+          ? watchErr.message
+          : "Failed to update Gmail watch",
+      );
+    }
+  }
 
   revalidatePath("/dashboard/automation");
   revalidatePath("/dashboard");
