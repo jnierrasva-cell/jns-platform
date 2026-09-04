@@ -21,21 +21,21 @@ export function BreakerSwitch({
       aria-label={label}
       disabled={disabled}
       onClick={onChange}
-      className={`relative h-8 w-14 shrink-0 rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F4D42] focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+      className={`relative h-8 w-14 shrink-0 rounded-md border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B132B] ${
         disabled
-          ? "cursor-not-allowed border-[#E1DFD6] bg-[#F1F0EB]"
+          ? "cursor-not-allowed border-white/10 bg-white/[0.04]"
           : checked
-            ? "border-[#1F4D42] bg-[#1F4D42]"
-            : "border-[#DEDCD3] bg-[#FBFAF7] hover:border-[#B9C4BF]"
+            ? "border-[#2563EB] bg-[#2563EB]"
+            : "border-white/15 bg-white/[0.06] hover:border-white/25"
       }`}
     >
       <span
         className={`absolute top-1 h-6 w-6 rounded-sm shadow-sm transition-all duration-150 ${
           disabled
-            ? "left-1 bg-[#D8D6CC]"
+            ? "left-1 bg-white/20"
             : checked
-              ? "left-7 bg-[#C98A2C]"
-              : "left-1 bg-white"
+              ? "left-7 bg-white"
+              : "left-1 bg-white/80"
         }`}
       />
     </button>
