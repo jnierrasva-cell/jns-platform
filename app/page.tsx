@@ -25,14 +25,14 @@ export default function LandingPage() {
     <div className="min-h-full bg-[#0B132B] text-[#F1F5F9]">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#0B132B]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center">
             <Image
               src="/jns-logo.png"
               alt="JNS Platform"
-              width={180}
-              height={80}
-              className="h-14 w-auto"
+              width={160}
+              height={60}
+              className="h-11 w-auto"
               priority
             />
           </Link>
@@ -48,18 +48,18 @@ export default function LandingPage() {
 
       <main className="mx-auto max-w-6xl px-6">
         {/* Hero */}
-        <section className="relative flex flex-col items-start gap-6 py-24 sm:py-32">
-          {/* Subtle network glow */}
+        <section className="relative flex flex-col items-start gap-6 py-24 sm:py-28">
+          {/* Soft ambient glows */}
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute -right-20 top-10 h-96 w-96 rounded-full bg-[#2563EB]/10 blur-3xl" />
-            <div className="absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-[#06B6D4]/10 blur-3xl" />
+            <div className="absolute -right-32 top-0 h-[420px] w-[420px] rounded-full bg-[#2563EB]/12 blur-[100px]" />
+            <div className="absolute -left-32 bottom-10 h-[320px] w-[320px] rounded-full bg-[#06B6D4]/10 blur-[90px]" />
           </div>
 
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#06B6D4]">
             For service businesses running lean
           </span>
 
-          <h1 className="max-w-3xl font-[family-name:var(--font-poppins)] text-4xl font-semibold leading-[1.15] tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="max-w-3xl font-[family-name:var(--font-poppins)] text-4xl font-semibold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-[3.4rem]">
             Turn on the systems that run your business behind the scenes.
           </h1>
 
@@ -91,16 +91,16 @@ export default function LandingPage() {
         </section>
 
         {/* Category overview */}
-        <section className="grid grid-cols-1 gap-4 border-t border-white/10 py-16 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-5 border-t border-white/10 py-16 sm:grid-cols-2 lg:grid-cols-4">
           {CATEGORIES.map((category) => (
             <div
               key={category.name}
-              className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
+              className="group rounded-xl border border-white/[0.08] bg-white/[0.03] p-6 transition-all duration-200 hover:border-[#2563EB]/35 hover:bg-white/[0.055]"
             >
-              <h3 className="font-[family-name:var(--font-poppins)] text-sm font-semibold text-white">
+              <h3 className="font-[family-name:var(--font-poppins)] text-[15px] font-semibold text-white">
                 {category.name}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#94A3B8]">
+              <p className="mt-2.5 text-sm leading-relaxed text-[#94A3B8]">
                 {category.detail}
               </p>
             </div>
