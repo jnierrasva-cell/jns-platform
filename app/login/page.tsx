@@ -50,24 +50,31 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
-      <div className="w-full max-w-sm">
+      {/* Soft ambient glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#2563EB]/10 blur-[120px]" />
+      </div>
+
+      <div className="relative w-full max-w-sm">
+        {/* Logo */}
         <div className="mb-10 text-center">
           <Link href="/" className="inline-block">
             <Image
               src="/jns-logo.png"
               alt="JNS Platform"
-              width={200}
-              height={100}
-              className="mx-auto h-16 w-auto"
+              width={160}
+              height={60}
+              className="mx-auto h-12 w-auto"
               priority
             />
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 shadow-xl shadow-black/20 backdrop-blur-sm">
+        {/* Card */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-8 shadow-2xl shadow-black/30 backdrop-blur-sm">
           {confirmSent ? (
-            <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <p className="text-sm text-white">
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <p className="text-sm font-medium text-white">
                 Check your email to confirm your account.
               </p>
               <p className="text-sm text-[#94A3B8]">
@@ -79,23 +86,24 @@ export default function LoginPage() {
                   setConfirmSent(false);
                   setMode("signin");
                 }}
-                className="mt-2 text-sm text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                className="mt-3 text-sm text-[#60A5FA] underline underline-offset-2 transition hover:text-[#93C5FD]"
               >
                 Back to sign in
               </button>
             </div>
           ) : (
             <>
-              <div className="mb-6 flex rounded-lg border border-white/10 bg-white/[0.04] p-1">
+              {/* Mode toggle */}
+              <div className="mb-7 flex rounded-xl border border-white/10 bg-white/[0.04] p-1">
                 <button
                   type="button"
                   onClick={() => {
                     setMode("signin");
                     setError(null);
                   }}
-                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
+                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
                     mode === "signin"
-                      ? "bg-[#2563EB] text-white shadow-sm"
+                      ? "bg-[#2563EB] text-white shadow-md shadow-[#2563EB]/25"
                       : "text-[#94A3B8] hover:text-white"
                   }`}
                 >
@@ -107,9 +115,9 @@ export default function LoginPage() {
                     setMode("signup");
                     setError(null);
                   }}
-                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
+                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
                     mode === "signup"
-                      ? "bg-[#2563EB] text-white shadow-sm"
+                      ? "bg-[#2563EB] text-white shadow-md shadow-[#2563EB]/25"
                       : "text-[#94A3B8] hover:text-white"
                   }`}
                 >
@@ -117,9 +125,13 @@ export default function LoginPage() {
                 </button>
               </div>
 
+              {/* Form */}
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="email" className="text-sm text-[#E2E8F0]">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-[#E2E8F0]"
+                  >
                     Email
                   </label>
                   <input
@@ -129,12 +141,15 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@studio.com"
-                    className="rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
+                    className="rounded-lg border border-white/12 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="password" className="text-sm text-[#E2E8F0]">
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-[#E2E8F0]"
+                  >
                     Password
                   </label>
                   <input
@@ -145,7 +160,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
+                    className="rounded-lg border border-white/12 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
                   />
                 </div>
 
