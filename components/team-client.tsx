@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { createInvite, revokeInvite } from "@/app/dashboard/team/actions";
 
 type Member = {
   user_id: string;
   role: string;
-  profiles: { email: string | null; business_name: string | null } | { email: string | null; business_name: string | null }[] | null;
+  profiles:
+    | { email: string | null; business_name: string | null }
+    | { email: string | null; business_name: string | null }[]
+    | null;
 };
 
 type Invite = {
@@ -35,9 +37,7 @@ export function TeamClient({
   invites: Invite[];
 }) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "assistant" | "member">(
-    "member",
-  );
+  const [role, setRole] = useState<"admin" | "assistant" | "member">("member");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -57,141 +57,121 @@ export function TeamClient({
   }
 
   return (
-    <div className="min-h-full bg-[#F6F5F1]">
-      <header className="border-b border-[#E1DFD6] bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="font-mono text-sm tracking-tight text-[#1B1D1F]"
-          >
-            JNSystem
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-sm text-[#1F4D42] underline underline-offset-2"
-          >
-            Back to dashboard
-          </Link>
-        </div>
-      </header>
+    <div>
+      <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+        {orgName}
+      </span>
+      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+        Team
+      </h1>
 
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <span className="font-mono text-xs uppercase tracking-wide text-[#8A8F87]">
-          {orgName}
-        </span>
-        <h1 className="text-2xl font-medium text-[#1B1D1F]">Team</h1>
-
-        <section className="mt-8 rounded-lg border border-[#E1DFD6] bg-white p-6">
-          <h2 className="mb-4 text-sm font-medium text-[#1B1D1F]">
-            Invite someone
-          </h2>
-          <form
-            onSubmit={handleInvite}
-            className="flex flex-col gap-3 sm:flex-row sm:items-end"
-          >
-            <div className="flex flex-1 flex-col gap-1.5">
-              <label htmlFor="inviteEmail" className="text-sm text-[#1B1D1F]">
-                Email
-              </label>
-              <input
-                id="inviteEmail"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="teammate@email.com"
-                className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="inviteRole" className="text-sm text-[#1B1D1F]">
-                Role
-              </label>
-              <select
-                id="inviteRole"
-                value={role}
-                onChange={(e) => setRole(e.target.value as typeof role)}
-                className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
-              >
-                <option value="member">Member</option>
-                <option value="assistant">Assistant</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-md bg-[#1F4D42] px-4 py-2 text-sm font-medium text-white hover:bg-[#163B33] disabled:opacity-60"
+      {/* Invite form */}
+      <section className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] p-6">
+        <h2 className="mb-4 text-sm font-medium text-white">Invite someone</h2>
+        <form
+          onSubmit={handleInvite}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <div className="flex flex-1 flex-col gap-1.5">
+            <label htmlFor="inviteEmail" className="text-sm text-[#E2E8F0]">
+              Email
+            </label>
+            <input
+              id="inviteEmail"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="teammate@email.com"
+              className="rounded-lg border border-white/12 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="inviteRole" className="text-sm text-[#E2E8F0]">
+              Role
+            </label>
+            <select
+              id="inviteRole"
+              value={role}
+              onChange={(e) => setRole(e.target.value as typeof role)}
+              className="rounded-lg border border-white/12 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
             >
-              {isPending ? "Sending…" : "Send invite"}
-            </button>
-          </form>
-          {error && <p className="mt-2 text-sm text-[#B3432B]">{error}</p>}
-        </section>
+              <option value="member">Member</option>
+              <option value="assistant">Assistant</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+          >
+            {isPending ? "Sending…" : "Send invite"}
+          </button>
+        </form>
+        {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      </section>
 
-        {pendingInvites.length > 0 && (
-          <section className="mt-8">
-            <h2 className="mb-3 font-mono text-xs uppercase tracking-wide text-[#8A8F87]">
-              Pending invites
-            </h2>
-            <div className="flex flex-col gap-3">
-              {pendingInvites.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="flex items-center justify-between rounded-lg border border-[#E9CFA0] bg-[#F6E9D3] p-4"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-[#1B1D1F]">
-                      {invite.email}
-                    </p>
-                    <p className="text-xs text-[#6B7069]">{invite.role}</p>
-                  </div>
-                  <button
-                    disabled={isPending}
-                    onClick={() =>
-                      startTransition(() => {
-                        revokeInvite(invite.id);
-                      })
-                    }
-                    className="rounded-md border border-[#DEDCD3] bg-white px-3 py-1.5 text-xs font-medium text-[#6B7069] hover:border-[#B9C4BF]"
-                  >
-                    Revoke
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="mt-10">
-          <h2 className="mb-3 font-mono text-xs uppercase tracking-wide text-[#8A8F87]">
-            Current team ({members.length})
+      {/* Pending invites */}
+      {pendingInvites.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+            Pending invites
           </h2>
-          <div className="overflow-hidden rounded-lg border border-[#E1DFD6] bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-[#E1DFD6] bg-[#FBFAF7] text-xs uppercase tracking-wide text-[#8A8F87]">
-                <tr>
-                  <th className="px-4 py-3">Person</th>
-                  <th className="px-4 py-3">Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((m) => (
-                  <tr
-                    key={m.user_id}
-                    className="border-b border-[#E1DFD6] last:border-0"
-                  >
-                    <td className="px-4 py-3 text-[#1B1D1F]">
-                      {memberEmail(m)}
-                    </td>
-                    <td className="px-4 py-3 text-[#6B7069]">{m.role}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-3">
+            {pendingInvites.map((invite) => (
+              <div
+                key={invite.id}
+                className="flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/10 p-4"
+              >
+                <div>
+                  <p className="text-sm font-medium text-white">{invite.email}</p>
+                  <p className="text-xs text-[#94A3B8]">{invite.role}</p>
+                </div>
+                <button
+                  disabled={isPending}
+                  onClick={() =>
+                    startTransition(() => {
+                      revokeInvite(invite.id);
+                    })
+                  }
+                  className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#94A3B8] transition hover:border-white/25 hover:text-white"
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
           </div>
         </section>
-      </div>
+      )}
+
+      {/* Current team */}
+      <section className="mt-10">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+          Current team ({members.length})
+        </h2>
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-[#64748B]">
+              <tr>
+                <th className="px-4 py-3">Person</th>
+                <th className="px-4 py-3">Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr
+                  key={m.user_id}
+                  className="border-b border-white/5 last:border-0"
+                >
+                  <td className="px-4 py-3 text-white">{memberEmail(m)}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">{m.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

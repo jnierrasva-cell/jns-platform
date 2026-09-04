@@ -1,9 +1,9 @@
 import type { ServiceStatus } from "@/lib/mock-services";
 
 const STYLES: Record<ServiceStatus, string> = {
-  active: "border-[#E9CFA0] bg-[#F6E9D3] text-[#8A5A16]",
-  available: "border-[#CFE0D9] bg-[#EAF1EE] text-[#1F4D42]",
-  coming_soon: "border-[#E1DFD6] bg-[#F1F0EB] text-[#6B7069]",
+  active: "border-[#2563EB]/40 bg-[#2563EB]/15 text-[#93C5FD]",
+  available: "border-[#06B6D4]/30 bg-[#06B6D4]/10 text-[#67E8F9]",
+  coming_soon: "border-white/10 bg-white/[0.04] text-[#64748B]",
 };
 
 const LABELS: Record<ServiceStatus, string> = {
@@ -21,4 +21,3 @@ export function StatusBadge({ status }: { status: ServiceStatus }) {
     </span>
   );
 }
-
