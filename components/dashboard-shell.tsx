@@ -11,6 +11,7 @@ import {
   Users,
   Shield,
   LogOut,
+  Filter,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -47,6 +48,7 @@ export function DashboardShell({
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
     { label: "Automation", href: "/dashboard/automation", icon: Zap },
+    { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
   ];
 
@@ -61,7 +63,6 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-full bg-[#0B132B] text-[#F1F5F9]">
-      {/* Sidebar */}
       <aside className="flex w-60 shrink-0 flex-col border-r border-white/10 bg-[#0B132B]">
         <div className="border-b border-white/10 px-5 py-5">
           <Link href="/" className="flex items-center">
@@ -127,7 +128,6 @@ export function DashboardShell({
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl px-8 py-10">{children}</div>
       </main>
