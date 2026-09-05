@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  Contact,
   Zap,
   Plug,
   Users,
@@ -44,6 +45,7 @@ export function DashboardShell({
 
   const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
     { label: "Automation", href: "/dashboard/automation", icon: Zap },
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
   ];
