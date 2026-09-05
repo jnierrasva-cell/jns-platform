@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { sendAutoAck } from "@/lib/google/send-auto-ack";
+import { upsertContactByEmail } from "@/lib/contacts/upsert";
 
 type PubSubEmailNotification = {
   emailAddress: string;
@@ -160,8 +161,20 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
     if (existing) continue;
 
+    const firstName =
+      fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
+
+    // Create / update CRM contact
+    const contactId = await upsertContactByEmail({
+      organizationId,
+      email: fromEmail,
+      firstName: firstName !== "there" ? firstName : undefined,
+      source: "email",
+    });
+
     await supabase.from("email_activity").insert({
       organization_id: organizationId,
+      contact_id: contactId,
       service_key: "email-auto-ack",
       direction: "inbound",
       gmail_message_id: messageId,
@@ -172,16 +185,22 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       status: "received",
     });
 
-    const firstName =
-      fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
-
-    await sendAutoAck({
+    const sendResult = await sendAutoAck({
       organizationId,
       toEmail: fromEmail,
       threadId: msg.threadId,
       inReplyToMessageId: messageIdHeader,
       firstName,
     });
+
+    // Attach outbound activity to same contact when possible
+    if (!sendResult.skipped && sendResult.messageId) {
+      await supabase
+        .from("email_activity")
+        .update({ contact_id: contactId })
+        .eq("organization_id", organizationId)
+        .eq("gmail_message_id", sendResult.messageId);
+    }
 
     sentCount += 1;
   }
