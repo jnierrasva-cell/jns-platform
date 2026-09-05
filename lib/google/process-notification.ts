@@ -2,6 +2,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { sendAutoAck } from "@/lib/google/send-auto-ack";
 import { upsertContactByEmail } from "@/lib/contacts/upsert";
+import {
+  applyTagToContact,
+  findMatchingRule,
+} from "@/lib/email/rules";
 
 type PubSubEmailNotification = {
   emailAddress: string;
@@ -54,6 +58,7 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     .eq("service_key", "email-auto-ack")
     .maybeSingle();
 
+  // Master switch still required for any auto behavior
   if (!automation?.is_enabled) {
     console.log("[gmail-webhook] automation_off", organizationId);
     return { ok: true, skipped: true, reason: "automation_off" as const };
@@ -152,19 +157,28 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       continue;
     }
 
-    const { data: existing } = await supabase
+    const { data: existingActivity } = await supabase
       .from("email_activity")
       .select("id")
       .eq("organization_id", organizationId)
       .eq("gmail_message_id", messageId)
       .maybeSingle();
 
-    if (existing) continue;
+    if (existingActivity) continue;
 
     const firstName =
       fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
 
-    // Create / update CRM contact
+    // Was this email already a contact?
+    const { data: existingContact } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .ilike("email", fromEmail)
+      .maybeSingle();
+
+    const isNewContact = !existingContact;
+
     const contactId = await upsertContactByEmail({
       organizationId,
       email: fromEmail,
@@ -172,9 +186,29 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       source: "email",
     });
 
+    // Match custom rule (if any)
+    const matchedRule = await findMatchingRule({
+      organizationId,
+      fromEmail,
+      subject,
+      isNewContact,
+    });
+
+    console.log("[gmail-webhook] rule", {
+      fromEmail,
+      subject,
+      matched: matchedRule?.name ?? "DEFAULT_AUTO_ACK",
+      action: matchedRule?.action ?? "auto_ack",
+    });
+
+    if (matchedRule?.tag) {
+      await applyTagToContact(contactId, matchedRule.tag);
+    }
+
     await supabase.from("email_activity").insert({
       organization_id: organizationId,
       contact_id: contactId,
+      rule_id: matchedRule?.id ?? null,
       service_key: "email-auto-ack",
       direction: "inbound",
       gmail_message_id: messageId,
@@ -185,6 +219,17 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       status: "received",
     });
 
+    const action = matchedRule?.action ?? "auto_ack";
+
+    if (action === "skip") {
+      continue;
+    }
+
+    if (action === "tag_only") {
+      continue;
+    }
+
+    // action === auto_ack (rule or default)
     const sendResult = await sendAutoAck({
       organizationId,
       toEmail: fromEmail,
@@ -193,11 +238,13 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       firstName,
     });
 
-    // Attach outbound activity to same contact when possible
     if (!sendResult.skipped && sendResult.messageId) {
       await supabase
         .from("email_activity")
-        .update({ contact_id: contactId })
+        .update({
+          contact_id: contactId,
+          rule_id: matchedRule?.id ?? null,
+        })
         .eq("organization_id", organizationId)
         .eq("gmail_message_id", sendResult.messageId);
     }
