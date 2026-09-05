@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type GoogleConnection = {
   organization_id: string;
@@ -15,7 +15,7 @@ type GoogleConnection = {
 export async function getValidGoogleAccessToken(
   organizationId: string,
 ): Promise<{ accessToken: string; connectedEmail: string | null }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: connection, error } = await supabase
     .from("connections")

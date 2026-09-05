@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { sendAutoAck } from "@/lib/google/send-auto-ack";
 
@@ -12,34 +12,40 @@ function decodePubSubData(data: string): PubSubEmailNotification {
   return JSON.parse(json) as PubSubEmailNotification;
 }
 
-/**
- * Handles one Pub/Sub Gmail notification:
- * find org by connected email → fetch new history → auto-ack new inbox messages.
- */
 export async function processGmailNotification(pubsubDataBase64: string) {
   const notification = decodePubSubData(pubsubDataBase64);
   const emailAddress = notification.emailAddress?.toLowerCase();
+
+  console.log("[gmail-webhook] notification", {
+    emailAddress,
+    historyId: notification.historyId,
+  });
 
   if (!emailAddress) {
     return { ok: false, reason: "missing_email" as const };
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
-  const { data: connection } = await supabase
+  const { data: connection, error: connError } = await supabase
     .from("connections")
     .select("organization_id, history_id, connected_email")
     .eq("provider", "google")
     .ilike("connected_email", emailAddress)
     .maybeSingle();
 
+  if (connError) {
+    console.error("[gmail-webhook] connection lookup error", connError);
+    return { ok: false, reason: "connection_error" as const };
+  }
+
   if (!connection) {
+    console.log("[gmail-webhook] unknown_account", emailAddress);
     return { ok: false, reason: "unknown_account" as const };
   }
 
   const organizationId = connection.organization_id as string;
 
-  // Only proceed if automation is on
   const { data: automation } = await supabase
     .from("org_automations")
     .select("is_enabled")
@@ -48,12 +54,12 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     .maybeSingle();
 
   if (!automation?.is_enabled) {
+    console.log("[gmail-webhook] automation_off", organizationId);
     return { ok: true, skipped: true, reason: "automation_off" as const };
   }
 
   const startHistoryId = connection.history_id;
   if (!startHistoryId) {
-    // No baseline yet — store current and exit
     await supabase
       .from("connections")
       .update({
@@ -81,7 +87,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
   if (!historyRes.ok) {
     const err = await historyRes.text();
-    // historyId too old → reset baseline
     if (historyRes.status === 404) {
       await supabase
         .from("connections")
@@ -106,6 +111,8 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     }
   }
 
+  console.log("[gmail-webhook] new message ids", [...messageIds]);
+
   let sentCount = 0;
 
   for (const messageId of messageIds) {
@@ -117,7 +124,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     if (!msgRes.ok) continue;
     const msg = await msgRes.json();
 
-    // Skip messages we sent ourselves
     const labelIds: string[] = msg.labelIds ?? [];
     if (labelIds.includes("SENT")) continue;
 
@@ -145,18 +151,15 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       continue;
     }
 
-    // Avoid duplicate sends for same gmail message
     const { data: existing } = await supabase
       .from("email_activity")
       .select("id")
       .eq("organization_id", organizationId)
       .eq("gmail_message_id", messageId)
-      .eq("direction", "outbound")
       .maybeSingle();
 
     if (existing) continue;
 
-    // Log inbound
     await supabase.from("email_activity").insert({
       organization_id: organizationId,
       service_key: "email-auto-ack",
@@ -169,7 +172,8 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       status: "received",
     });
 
-    const firstName = fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
+    const firstName =
+      fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
 
     await sendAutoAck({
       organizationId,
@@ -182,7 +186,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     sentCount += 1;
   }
 
-  // Advance history cursor
   await supabase
     .from("connections")
     .update({
@@ -192,5 +195,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     .eq("organization_id", organizationId)
     .eq("provider", "google");
 
+  console.log("[gmail-webhook] done", { sentCount });
   return { ok: true, sentCount };
 }

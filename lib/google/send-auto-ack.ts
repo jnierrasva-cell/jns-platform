@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 
 type SendAutoAckInput = {
@@ -32,7 +32,7 @@ function toBase64Url(str: string) {
  * Logs the result into email_activity.
  */
 export async function sendAutoAck(input: SendAutoAckInput) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // 1. Confirm automation is enabled
   const { data: automation } = await supabase
