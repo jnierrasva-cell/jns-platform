@@ -25,6 +25,37 @@ export async function setAutomationEnabled(
 
   if (!membership) throw new Error("Not a member of this organization");
 
+  // SMS requires Twilio
+  if (serviceKey === "sms-reminders" && isEnabled) {
+    const { data: twilio } = await supabase
+      .from("twilio_connections")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    if (!twilio) {
+      throw new Error(
+        "Connect Twilio in Integrations before enabling SMS Reminders.",
+      );
+    }
+  }
+
+  // Email auto-ack requires Google (watch will also fail without it)
+  if (serviceKey === "email-auto-ack" && isEnabled) {
+    const { data: google } = await supabase
+      .from("connections")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("provider", "google")
+      .maybeSingle();
+
+    if (!google) {
+      throw new Error(
+        "Connect Google in Integrations before enabling Auto-Acknowledgment.",
+      );
+    }
+  }
+
   const { error } = await supabase.from("org_automations").upsert(
     {
       organization_id: organizationId,
@@ -37,7 +68,6 @@ export async function setAutomationEnabled(
 
   if (error) throw new Error(error.message);
 
-  // Gmail auto-ack: start/stop watch with the toggle
   if (serviceKey === "email-auto-ack") {
     try {
       if (isEnabled) {
@@ -46,7 +76,6 @@ export async function setAutomationEnabled(
         await stopGmailWatch(organizationId);
       }
     } catch (watchErr) {
-      // Surface watch errors so user knows Push is not active
       throw new Error(
         watchErr instanceof Error
           ? watchErr.message

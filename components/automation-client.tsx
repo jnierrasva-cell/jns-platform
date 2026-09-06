@@ -27,7 +27,6 @@ export function AutomationClient({
     const nextEnabled = !enabledKeys.has(service.id);
     setError(null);
 
-    // Optimistic UI
     setEnabledKeys((prev) => {
       const next = new Set(prev);
       if (nextEnabled) next.add(service.id);
@@ -39,7 +38,6 @@ export function AutomationClient({
       try {
         await setAutomationEnabled(organizationId, service.id, nextEnabled);
       } catch (err) {
-        // Revert on failure
         setEnabledKeys((prev) => {
           const next = new Set(prev);
           if (nextEnabled) next.delete(service.id);
@@ -107,6 +105,14 @@ export function AutomationClient({
                         Email rules
                       </Link>
                     </div>
+                  )}
+                  {service.id === "sms-reminders" && (
+                    <Link
+                      href="/dashboard/integrations"
+                      className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                    >
+                      Twilio settings / test SMS
+                    </Link>
                   )}
                 </div>
               ))}

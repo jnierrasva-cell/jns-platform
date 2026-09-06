@@ -8,8 +8,6 @@ export type Service = {
   status: ServiceStatus;
 };
 
-// Placeholder catalog. Real data will come from Supabase once auth (Step 2)
-// and per-client activation records are wired up.
 export const mockServices: Service[] = [
   {
     id: "email-auto-ack",
@@ -17,7 +15,7 @@ export const mockServices: Service[] = [
     description:
       "Replies to new inquiries the moment they land, so no lead waits more than a few minutes for a response.",
     category: "Email",
-    status: "active",
+    status: "available",
   },
   {
     id: "email-follow-up",
@@ -25,6 +23,14 @@ export const mockServices: Service[] = [
     description:
       "Queues polite check-ins on leads that go quiet, timed so nothing falls through the cracks.",
     category: "Email",
+    status: "available",
+  },
+  {
+    id: "sms-reminders",
+    name: "SMS Reminders",
+    description:
+      "Sends text reminders for appointments and classes using your connected Twilio account.",
+    category: "SMS",
     status: "available",
   },
   {
