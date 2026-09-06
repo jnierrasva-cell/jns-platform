@@ -93,12 +93,20 @@ export function AutomationClient({
                     onToggle={() => toggleService(service)}
                   />
                   {service.id === "email-auto-ack" && (
-                    <Link
-                      href="/dashboard/templates"
-                      className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
-                    >
-                      Edit reply template
-                    </Link>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        href="/dashboard/templates"
+                        className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                      >
+                        Edit reply template
+                      </Link>
+                      <Link
+                        href="/dashboard/email-rules"
+                        className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                      >
+                        Email rules
+                      </Link>
+                    </div>
                   )}
                 </div>
               ))}

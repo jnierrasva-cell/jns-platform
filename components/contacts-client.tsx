@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 type Contact = {
   id: string;
   email: string | null;
@@ -8,6 +10,7 @@ type Contact = {
   phone: string | null;
   status: string;
   source: string | null;
+  tags?: string[] | null;
   last_contacted_at: string | null;
   created_at: string;
 };
@@ -42,7 +45,7 @@ export function ContactsClient({ contacts }: { contacts: Contact[] }) {
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Source</th>
+              <th className="px-4 py-3">Tags</th>
               <th className="px-4 py-3">Last contacted</th>
             </tr>
           </thead>
@@ -63,8 +66,13 @@ export function ContactsClient({ contacts }: { contacts: Contact[] }) {
                   key={c.id}
                   className="border-b border-white/5 last:border-0"
                 >
-                  <td className="px-4 py-3 font-medium text-white">
-                    {displayName(c)}
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/dashboard/contacts/${c.id}`}
+                      className="font-medium text-white hover:text-[#93C5FD]"
+                    >
+                      {displayName(c)}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-[#94A3B8]">{c.email ?? "—"}</td>
                   <td className="px-4 py-3">
@@ -72,7 +80,22 @@ export function ContactsClient({ contacts }: { contacts: Contact[] }) {
                       {c.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{c.source ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {(c.tags ?? []).length === 0 ? (
+                        <span className="text-[#64748B]">—</span>
+                      ) : (
+                        (c.tags ?? []).map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-2 py-0.5 text-xs text-[#93C5FD]"
+                          >
+                            {tag}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-[#94A3B8]">
                     {formatDate(c.last_contacted_at)}
                   </td>
