@@ -23,14 +23,25 @@ export default async function OverviewPage() {
     .eq("provider", "google")
     .maybeSingle();
 
+  const { data: twilioConnection } = await supabase
+    .from("twilio_connections")
+    .select("id")
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
   const { count: teamCount } = await supabase
     .from("org_members")
     .select("*", { count: "exact", head: true })
     .eq("organization_id", orgId);
 
-  const activeAutomations = mockServices.filter(
-    (s) => s.status === "active",
-  ).length;
+  const { count: enabledAutomations } = await supabase
+    .from("org_automations")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", orgId)
+    .eq("is_enabled", true);
+
+  const integrationsCount =
+    (googleConnection ? 1 : 0) + (twilioConnection ? 1 : 0);
 
   return (
     <div>
@@ -47,7 +58,7 @@ export default async function OverviewPage() {
           className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
         >
           <p className="font-[family-name:var(--font-poppins)] text-3xl font-semibold text-white">
-            {activeAutomations}
+            {enabledAutomations ?? 0}
           </p>
           <p className="mt-1.5 text-sm text-[#94A3B8]">
             of {mockServices.length} automations active
@@ -59,12 +70,14 @@ export default async function OverviewPage() {
           className="group rounded-xl border border-white/10 bg-white/[0.03] p-6 transition-all hover:border-[#2563EB]/40 hover:bg-white/[0.05]"
         >
           <p className="font-[family-name:var(--font-poppins)] text-3xl font-semibold text-white">
-            {googleConnection ? "1" : "0"}
+            {integrationsCount}
           </p>
           <p className="mt-1.5 text-sm text-[#94A3B8]">
-            {googleConnection
-              ? `Google connected (${googleConnection.connected_email})`
-              : "integrations connected"}
+            {integrationsCount === 0
+              ? "integrations connected"
+              : googleConnection
+                ? `connected (incl. ${googleConnection.connected_email})`
+                : "integrations connected"}
           </p>
         </Link>
 
