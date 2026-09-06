@@ -5,6 +5,7 @@ import {
   disconnectTwilio,
   saveTwilioConnection,
 } from "@/app/dashboard/integrations/twilio-actions";
+import { sendTestSms } from "@/app/dashboard/integrations/sms-actions";
 
 export function TwilioConnectCard({
   organizationId,
@@ -20,12 +21,15 @@ export function TwilioConnectCard({
   const [accountSid, setAccountSid] = useState("");
   const [authToken, setAuthToken] = useState("");
   const [from, setFrom] = useState("");
+  const [testPhone, setTestPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleConnect(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     startTransition(async () => {
       try {
         await saveTwilioConnection({
@@ -37,6 +41,7 @@ export function TwilioConnectCard({
         setAccountSid("");
         setAuthToken("");
         setFrom("");
+        setSuccess("Twilio connected.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save");
       }
@@ -45,11 +50,26 @@ export function TwilioConnectCard({
 
   function handleDisconnect() {
     setError(null);
+    setSuccess(null);
     startTransition(async () => {
       try {
         await disconnectTwilio(organizationId);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not disconnect");
+      }
+    });
+  }
+
+  function handleTestSend(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      try {
+        const result = await sendTestSms(organizationId, testPhone);
+        setSuccess(`SMS sent (${result.sid})`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Test send failed");
       }
     });
   }
@@ -77,20 +97,45 @@ export function TwilioConnectCard({
       </div>
 
       {connected ? (
-        <div className="mt-5">
+        <div className="mt-5 space-y-5">
           <p className="text-sm text-[#E2E8F0]">
             From number:{" "}
             <span className="font-medium text-white">{fromNumber}</span>
           </p>
+
           {canManage && (
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={handleDisconnect}
-              className="mt-4 rounded-lg border border-white/15 px-3 py-2 text-xs text-[#94A3B8] transition hover:border-white/25 hover:text-white disabled:opacity-60"
-            >
-              {isPending ? "Working…" : "Disconnect Twilio"}
-            </button>
+            <>
+              <form onSubmit={handleTestSend} className="flex flex-col gap-3">
+                <label className="text-sm font-medium text-[#E2E8F0]">
+                  Send test SMS
+                </label>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    required
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    placeholder="+1 your mobile"
+                    className="flex-1 rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/15 px-4 py-2.5 text-sm font-medium text-[#93C5FD] transition hover:bg-[#2563EB]/25 disabled:opacity-60"
+                  >
+                    {isPending ? "Sending…" : "Send test"}
+                  </button>
+                </div>
+              </form>
+
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleDisconnect}
+                className="rounded-lg border border-white/15 px-3 py-2 text-xs text-[#94A3B8] transition hover:border-white/25 hover:text-white disabled:opacity-60"
+              >
+                Disconnect Twilio
+              </button>
+            </>
           )}
         </div>
       ) : canManage ? (
@@ -132,6 +177,7 @@ export function TwilioConnectCard({
       )}
 
       {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {success && <p className="mt-3 text-sm text-[#67E8F9]">{success}</p>}
     </div>
   );
 }
