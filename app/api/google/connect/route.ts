@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/calendar.events",
   "openid",
   "email",
 ].join(" ");
@@ -25,7 +26,6 @@ export async function GET(request: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Only the CEO can initiate connecting an integration for the org.
   if (!membership || membership.role !== "ceo") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("scope", GOOGLE_SCOPES);
   authUrl.searchParams.set("access_type", "offline");
-  // Forces Google to always return a refresh_token, even on reconnect.
   authUrl.searchParams.set("prompt", "consent");
   authUrl.searchParams.set("state", state);
 

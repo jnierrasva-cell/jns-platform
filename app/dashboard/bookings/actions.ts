@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/sms/send";
+import {
+  createGoogleCalendarEvent,
+  saveBookingGoogleEventId,
+} from "@/lib/google/calendar";
 
 async function requireOrgMember(organizationId: string) {
   const supabase = await createClient();
@@ -48,18 +52,48 @@ export async function createBooking(input: {
     endsAt = end.toISOString();
   }
 
-  const { error } = await supabase.from("bookings").insert({
-    organization_id: input.organizationId,
-    contact_id: input.contactId || null,
+  let attendeeEmail: string | null = null;
+  if (input.contactId) {
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("email")
+      .eq("id", input.contactId)
+      .maybeSingle();
+    attendeeEmail = contact?.email ?? null;
+  }
+
+  const { data: booking, error } = await supabase
+    .from("bookings")
+    .insert({
+      organization_id: input.organizationId,
+      contact_id: input.contactId || null,
+      title: input.title.trim(),
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt,
+      notes: input.notes?.trim() || null,
+      status: "scheduled",
+      source: "manual",
+    })
+    .select("id")
+    .single();
+
+  if (error || !booking) {
+    throw new Error(error?.message ?? "Could not create booking");
+  }
+
+  // Best-effort Google Calendar sync (does not fail the booking)
+  const googleEventId = await createGoogleCalendarEvent({
+    organizationId: input.organizationId,
     title: input.title.trim(),
-    starts_at: startsAt.toISOString(),
-    ends_at: endsAt,
-    notes: input.notes?.trim() || null,
-    status: "scheduled",
-    source: "manual",
+    startsAt: startsAt.toISOString(),
+    endsAt,
+    description: input.notes?.trim() || null,
+    attendeeEmail,
   });
 
-  if (error) throw new Error(error.message);
+  if (googleEventId) {
+    await saveBookingGoogleEventId(booking.id, googleEventId);
+  }
 
   revalidatePath("/dashboard/bookings");
   revalidatePath("/dashboard");
@@ -97,13 +131,6 @@ export async function updateBookingStatus(
   revalidatePath("/dashboard/bookings");
 }
 
-/**
- * Sends SMS reminders for scheduled bookings starting within the next 24 hours
- * that have not been reminded yet. Requires:
- * - sms-reminders automation ON
- * - Twilio connected
- * - contact with phone number
- */
 export async function sendBookingRemindersNow(organizationId: string) {
   await requireOrgMember(organizationId);
 
