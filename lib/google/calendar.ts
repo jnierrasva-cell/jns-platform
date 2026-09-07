@@ -4,19 +4,15 @@ import { getValidGoogleAccessToken } from "@/lib/google/token";
 type CreateCalendarEventInput = {
   organizationId: string;
   title: string;
-  startsAt: string; // ISO
+  startsAt: string;
   endsAt?: string | null;
   description?: string | null;
   attendeeEmail?: string | null;
 };
 
-/**
- * Creates a Google Calendar event on the primary calendar.
- * Returns Google event id, or null if skipped/failed softly.
- */
 export async function createGoogleCalendarEvent(
   input: CreateCalendarEventInput,
-) {
+): Promise<{ eventId: string | null; error?: string }> {
   try {
     const { accessToken } = await getValidGoogleAccessToken(
       input.organizationId,
@@ -24,7 +20,7 @@ export async function createGoogleCalendarEvent(
 
     const start = new Date(input.startsAt);
     if (Number.isNaN(start.getTime())) {
-      throw new Error("Invalid start time for calendar event");
+      return { eventId: null, error: "Invalid start time" };
     }
 
     const end = input.endsAt
@@ -32,17 +28,20 @@ export async function createGoogleCalendarEvent(
       : new Date(start.getTime() + 60 * 60 * 1000);
 
     if (Number.isNaN(end.getTime())) {
-      throw new Error("Invalid end time for calendar event");
+      return { eventId: null, error: "Invalid end time" };
     }
 
+    // Use explicit offset ISO strings (Google is picky with some accounts)
     const body: Record<string, unknown> = {
       summary: input.title,
       description: input.description ?? undefined,
       start: {
         dateTime: start.toISOString(),
+        timeZone: "UTC",
       },
       end: {
         dateTime: end.toISOString(),
+        timeZone: "UTC",
       },
     };
 
@@ -62,17 +61,21 @@ export async function createGoogleCalendarEvent(
       },
     );
 
+    const text = await res.text();
     if (!res.ok) {
-      const err = await res.text();
-      console.error("[google-calendar] create failed", err);
-      return null;
+      console.error("[google-calendar] create failed", res.status, text);
+      return {
+        eventId: null,
+        error: `Google Calendar ${res.status}: ${text.slice(0, 300)}`,
+      };
     }
 
-    const event = await res.json();
-    return (event.id as string) ?? null;
+    const event = JSON.parse(text);
+    return { eventId: (event.id as string) ?? null };
   } catch (err) {
-    console.error("[google-calendar] error", err);
-    return null;
+    const message = err instanceof Error ? err.message : "unknown error";
+    console.error("[google-calendar] error", message);
+    return { eventId: null, error: message };
   }
 }
 

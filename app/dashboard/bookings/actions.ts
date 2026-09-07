@@ -81,8 +81,7 @@ export async function createBooking(input: {
     throw new Error(error?.message ?? "Could not create booking");
   }
 
-  // Best-effort Google Calendar sync (does not fail the booking)
-  const googleEventId = await createGoogleCalendarEvent({
+  const cal = await createGoogleCalendarEvent({
     organizationId: input.organizationId,
     title: input.title.trim(),
     startsAt: startsAt.toISOString(),
@@ -91,8 +90,13 @@ export async function createBooking(input: {
     attendeeEmail,
   });
 
-  if (googleEventId) {
-    await saveBookingGoogleEventId(booking.id, googleEventId);
+  if (cal.eventId) {
+    await saveBookingGoogleEventId(booking.id, cal.eventId);
+  } else if (cal.error) {
+    console.error("[createBooking] calendar sync:", cal.error);
+    throw new Error(
+      `Booking saved, but Google Calendar sync failed: ${cal.error}`,
+    );
   }
 
   revalidatePath("/dashboard/bookings");
