@@ -23,14 +23,14 @@ export default async function BookingsPage() {
   const { data: bookings } = await supabase
     .from("bookings")
     .select(
-      "id, title, starts_at, ends_at, status, source, notes, contact_id, contacts(id, email, first_name, last_name)",
+      "id, title, starts_at, ends_at, status, source, notes, contact_id, reminder_sms_sent_at, contacts(id, email, first_name, last_name, phone)",
     )
     .eq("organization_id", orgId)
     .order("starts_at", { ascending: true });
 
   const { data: contacts } = await supabase
     .from("contacts")
-    .select("id, email, first_name, last_name")
+    .select("id, email, first_name, last_name, phone")
     .eq("organization_id", orgId)
     .order("first_name", { ascending: true });
 
