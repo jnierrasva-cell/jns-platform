@@ -39,7 +39,6 @@ function getContact(b: Booking): Contact | null {
   return Array.isArray(b.contacts) ? b.contacts[0] ?? null : b.contacts;
 }
 
-/** Combine date (YYYY-MM-DD) + time (HH:MM) into a local ISO-like value for the server */
 function combineDateAndTime(date: string, time: string) {
   if (!date || !time) return "";
   return `${date}T${time}`;
@@ -69,6 +68,7 @@ export function BookingsClient({
     () => combineDateAndTime(startDate, startTime),
     [startDate, startTime],
   );
+
   const endsAt = useMemo(() => {
     const d = endDate || startDate;
     return combineDateAndTime(d, endTime);
@@ -128,7 +128,7 @@ export function BookingsClient({
             Bookings
           </h1>
           <p className="mt-1 text-sm text-[#94A3B8]">
-            Create appointments with date & time. Send SMS reminders for
+            Create appointments with date and time. Send SMS reminders for
             upcoming bookings when SMS Reminders is on.
           </p>
         </div>
@@ -147,6 +147,7 @@ export function BookingsClient({
         className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] p-6"
       >
         <h2 className="text-sm font-medium text-white">New booking</h2>
+
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5 md:col-span-2">
             <label className="text-sm text-[#E2E8F0]">Title</label>
@@ -175,7 +176,6 @@ export function BookingsClient({
             </select>
           </div>
 
-          {/* Start */}
           <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748B]">
               Starts
@@ -207,7 +207,6 @@ export function BookingsClient({
             </div>
           </div>
 
-          {/* End */}
           <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748B]">
               Ends
@@ -268,3 +267,74 @@ export function BookingsClient({
               <th className="px-4 py-3">SMS</th>
               <th className="px-4 py-3"></th>
             </tr>
+          </thead>
+          <tbody>
+            {bookings.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-10 text-center text-[#94A3B8]"
+                >
+                  No bookings yet. Create one above.
+                </td>
+              </tr>
+            ) : (
+              bookings.map((b) => (
+                <tr key={b.id} className="border-b border-white/5 last:border-0">
+                  <td className="px-4 py-3 text-[#E2E8F0]">
+                    <div>{new Date(b.starts_at).toLocaleString()}</div>
+                    {b.ends_at && (
+                      <div className="text-xs text-[#64748B]">
+                        → {new Date(b.ends_at).toLocaleString()}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-white">{b.title}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">
+                    {contactLabel(getContact(b))}
+                  </td>
+                  <td className="px-4 py-3 capitalize text-[#94A3B8]">
+                    {b.status}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-[#94A3B8]">
+                    {b.reminder_sms_sent_at
+                      ? `Sent ${new Date(b.reminder_sms_sent_at).toLocaleString()}`
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {b.status === "scheduled" && (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          className="text-xs text-[#60A5FA] underline underline-offset-2"
+                          onClick={() =>
+                            startTransition(async () => {
+                              await updateBookingStatus(b.id, "completed");
+                            })
+                          }
+                        >
+                          Complete
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs text-red-400 underline underline-offset-2"
+                          onClick={() =>
+                            startTransition(async () => {
+                              await updateBookingStatus(b.id, "cancelled");
+                            })
+                          }
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
