@@ -12,6 +12,7 @@ import {
   Shield,
   LogOut,
   Filter,
+  CalendarDays,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -47,6 +48,7 @@ export function DashboardShell({
   const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
+    { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
     { label: "Automation", href: "/dashboard/automation", icon: Zap },
     { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
