@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { updateContact } from "@/app/dashboard/contacts/actions";
+import { CountryPhoneInput } from "@/components/country-phone-input";
 
 type Contact = {
   id: string;
@@ -128,15 +129,6 @@ export function ContactDetailClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Phone</label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1..."
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
             <label className="text-sm text-[#E2E8F0]">Status</label>
             <select
               value={status}
@@ -148,6 +140,14 @@ export function ContactDetailClient({
               <option value="customer">Customer</option>
               <option value="inactive">Inactive</option>
             </select>
+          </div>
+          <div className="flex flex-col gap-1.5 md:col-span-2">
+            <label className="text-sm text-[#E2E8F0]">Phone</label>
+            <CountryPhoneInput value={phone} onChange={setPhone} />
+            <p className="text-xs text-[#64748B]">
+              Country defaults from your browser timezone. Enter the local
+              number only — country code is on the left.
+            </p>
           </div>
         </div>
 

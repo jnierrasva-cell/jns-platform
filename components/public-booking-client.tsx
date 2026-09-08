@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { submitPublicBooking } from "@/app/book/[orgSlug]/actions";
+import { CountryPhoneInput } from "@/components/country-phone-input";
 
 function toIsoFromLocal(date: string, time: string) {
   if (!date || !time) return "";
@@ -105,12 +106,7 @@ export function PublicBookingClient({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-[#E2E8F0]">Phone (optional)</label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1..."
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
-            />
+            <CountryPhoneInput value={phone} onChange={setPhone} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
