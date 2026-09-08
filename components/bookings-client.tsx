@@ -39,7 +39,6 @@ function getContact(b: Booking): Contact | null {
   return Array.isArray(b.contacts) ? b.contacts[0] ?? null : b.contacts;
 }
 
-/** date (YYYY-MM-DD) + time (HH:MM) as THIS browser's local time → UTC ISO */
 function toIsoFromLocal(date: string, time: string) {
   if (!date || !time) return "";
   const local = new Date(`${date}T${time}:00`);
@@ -58,10 +57,16 @@ export function BookingsClient({
   organizationId,
   bookings,
   contacts,
+  smsRemindersEnabled,
+  twilioConnected,
+  publicBookingPath,
 }: {
   organizationId: string;
   bookings: Booking[];
   contacts: Contact[];
+  smsRemindersEnabled: boolean;
+  twilioConnected: boolean;
+  publicBookingPath?: string;
 }) {
   const [title, setTitle] = useState("Appointment");
   const [startDate, setStartDate] = useState("");
@@ -83,6 +88,12 @@ export function BookingsClient({
     const d = endDate || startDate;
     return toIsoFromLocal(d, endTime);
   }, [endDate, startDate, endTime]);
+
+  const selectedContact = contacts.find((c) => c.id === contactId) ?? null;
+  const missingPhone =
+    smsRemindersEnabled &&
+    Boolean(contactId) &&
+    !selectedContact?.phone?.trim();
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -146,6 +157,19 @@ export function BookingsClient({
           <p className="mt-1 text-sm text-[#94A3B8]">
             Times use your browser timezone automatically.
           </p>
+          {publicBookingPath && (
+            <p className="mt-2 text-xs text-[#64748B]">
+              Public booking link:{" "}
+              <a
+                href={publicBookingPath}
+                className="text-[#60A5FA] underline underline-offset-2"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {publicBookingPath}
+              </a>
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -156,6 +180,13 @@ export function BookingsClient({
           {isPending ? "Working…" : "Send due SMS reminders"}
         </button>
       </div>
+
+      {smsRemindersEnabled && !twilioConnected && (
+        <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          SMS Reminders is on, but Twilio is not connected. Connect Twilio in
+          Integrations to send texts.
+        </p>
+      )}
 
       <form
         onSubmit={handleCreate}
@@ -185,10 +216,16 @@ export function BookingsClient({
               {contacts.map((c) => (
                 <option key={c.id} value={c.id}>
                   {contactLabel(c)}
-                  {c.phone ? ` · ${c.phone}` : ""}
+                  {c.phone ? ` · ${c.phone}` : " · no phone"}
                 </option>
               ))}
             </select>
+            {missingPhone && (
+              <p className="text-xs text-amber-300">
+                SMS Reminders is on, but this contact has no phone. Add a phone
+                on the contact page or reminders will skip them.
+              </p>
+            )}
           </div>
 
           <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
@@ -286,8 +323,12 @@ export function BookingsClient({
           <tbody>
             {bookings.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-[#94A3B8]">
-                  No bookings yet. Create one above.
+                <td
+                  colSpan={6}
+                  className="px-4 py-10 text-center text-[#94A3B8]"
+                >
+                  No bookings yet. Create one above or share your public booking
+                  link.
                 </td>
               </tr>
             ) : (

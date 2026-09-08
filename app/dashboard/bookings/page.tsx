@@ -34,11 +34,27 @@ export default async function BookingsPage() {
     .eq("organization_id", orgId)
     .order("first_name", { ascending: true });
 
+  const { data: smsAutomation } = await supabase
+    .from("org_automations")
+    .select("is_enabled")
+    .eq("organization_id", orgId)
+    .eq("service_key", "sms-reminders")
+    .maybeSingle();
+
+  const { data: twilio } = await supabase
+    .from("twilio_connections")
+    .select("id")
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
   return (
     <BookingsClient
       organizationId={orgId}
       bookings={bookings ?? []}
       contacts={contacts ?? []}
+      smsRemindersEnabled={Boolean(smsAutomation?.is_enabled)}
+      twilioConnected={Boolean(twilio)}
+      publicBookingPath={`/book/jns-demo`}
     />
   );
 }
