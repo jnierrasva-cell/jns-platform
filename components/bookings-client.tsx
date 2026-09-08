@@ -39,9 +39,19 @@ function getContact(b: Booking): Contact | null {
   return Array.isArray(b.contacts) ? b.contacts[0] ?? null : b.contacts;
 }
 
-function combineDateAndTime(date: string, time: string) {
+/** date (YYYY-MM-DD) + time (HH:MM) as THIS browser's local time → UTC ISO */
+function toIsoFromLocal(date: string, time: string) {
   if (!date || !time) return "";
-  return `${date}T${time}`;
+  const local = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(local.getTime())) return "";
+  return local.toISOString();
+}
+
+function formatLocal(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 }
 
 export function BookingsClient({
@@ -65,26 +75,32 @@ export function BookingsClient({
   const [isPending, startTransition] = useTransition();
 
   const startsAt = useMemo(
-    () => combineDateAndTime(startDate, startTime),
+    () => toIsoFromLocal(startDate, startTime),
     [startDate, startTime],
   );
 
   const endsAt = useMemo(() => {
     const d = endDate || startDate;
-    return combineDateAndTime(d, endTime);
+    return toIsoFromLocal(d, endTime);
   }, [endDate, startDate, endTime]);
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (!startsAt) {
+      setError("Please pick a valid start date and time.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         await createBooking({
           organizationId,
           title,
           startsAt,
-          endsAt: endTime ? endsAt : undefined,
+          endsAt: endsAt || undefined,
           contactId: contactId || undefined,
           notes: notes || undefined,
         });
@@ -128,8 +144,7 @@ export function BookingsClient({
             Bookings
           </h1>
           <p className="mt-1 text-sm text-[#94A3B8]">
-            Create appointments with date and time. Send SMS reminders for
-            upcoming bookings when SMS Reminders is on.
+            Times use your browser timezone automatically.
           </p>
         </div>
         <button
@@ -271,10 +286,7 @@ export function BookingsClient({
           <tbody>
             {bookings.length === 0 ? (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-10 text-center text-[#94A3B8]"
-                >
+                <td colSpan={6} className="px-4 py-10 text-center text-[#94A3B8]">
                   No bookings yet. Create one above.
                 </td>
               </tr>
@@ -282,10 +294,10 @@ export function BookingsClient({
               bookings.map((b) => (
                 <tr key={b.id} className="border-b border-white/5 last:border-0">
                   <td className="px-4 py-3 text-[#E2E8F0]">
-                    <div>{new Date(b.starts_at).toLocaleString()}</div>
+                    <div>{formatLocal(b.starts_at)}</div>
                     {b.ends_at && (
                       <div className="text-xs text-[#64748B]">
-                        → {new Date(b.ends_at).toLocaleString()}
+                        → {formatLocal(b.ends_at)}
                       </div>
                     )}
                   </td>
@@ -298,7 +310,7 @@ export function BookingsClient({
                   </td>
                   <td className="px-4 py-3 text-xs text-[#94A3B8]">
                     {b.reminder_sms_sent_at
-                      ? `Sent ${new Date(b.reminder_sms_sent_at).toLocaleString()}`
+                      ? `Sent ${formatLocal(b.reminder_sms_sent_at)}`
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
