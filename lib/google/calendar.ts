@@ -10,6 +10,10 @@ type CreateCalendarEventInput = {
   attendeeEmail?: string | null;
 };
 
+/**
+ * Creates a Google Calendar event on the primary calendar.
+ * If attendeeEmail is set, Google sends them a calendar invite email.
+ */
 export async function createGoogleCalendarEvent(
   input: CreateCalendarEventInput,
 ): Promise<{ eventId: string | null; error?: string }> {
@@ -31,7 +35,6 @@ export async function createGoogleCalendarEvent(
       return { eventId: null, error: "Invalid end time" };
     }
 
-    // Use explicit offset ISO strings (Google is picky with some accounts)
     const body: Record<string, unknown> = {
       summary: input.title,
       description: input.description ?? undefined,
@@ -46,20 +49,30 @@ export async function createGoogleCalendarEvent(
     };
 
     if (input.attendeeEmail) {
-      body.attendees = [{ email: input.attendeeEmail }];
+      body.attendees = [
+        {
+          email: input.attendeeEmail,
+          responseStatus: "needsAction",
+        },
+      ];
     }
 
-    const res = await fetch(
+    // sendUpdates=all → Google emails invite to attendees
+    const url = new URL(
       "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      },
     );
+    if (input.attendeeEmail) {
+      url.searchParams.set("sendUpdates", "all");
+    }
+
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
     const text = await res.text();
     if (!res.ok) {
