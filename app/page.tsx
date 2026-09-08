@@ -1,119 +1,37 @@
-import Link from "next/link";
+import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Blocks, CalendarDays, Check, Compass, Mail, Network, ShieldCheck, Sparkles, Users, Workflow, Zap } from "lucide-react";
 
-const CATEGORIES = [
-  {
-    name: "Email",
-    detail: "Instant acknowledgments, timed follow-ups.",
-  },
-  {
-    name: "Lead management",
-    detail: "New inquiries sorted and routed automatically.",
-  },
-  {
-    name: "Calendar",
-    detail: "Bookings and staff schedules kept in sync.",
-  },
-  {
-    name: "Social media",
-    detail: "Posts queued, common questions answered.",
-  },
+const platformBenefits = [
+  { icon: Network, title: "Your tools, one workspace", description: "Bring the systems your business relies on into one clear, connected place." },
+  { icon: Users, title: "A CRM built around your work", description: "Keep contacts, bookings, your team, and the next important action aligned." },
+  { icon: Workflow, title: "Operations that keep moving", description: "Create practical workflows that route, respond, and follow through without busywork." },
 ];
 
+const marketplaceCategories = [
+  { icon: Mail, title: "Email response", description: "Acknowledge inquiries and keep follow-ups from slipping through.", label: "Email" },
+  { icon: Compass, title: "Lead routing", description: "Direct new opportunities to the right person and next step.", label: "CRM" },
+  { icon: CalendarDays, title: "Scheduling sync", description: "Keep bookings and calendars coordinated across your workflow.", label: "Calendar" },
+  { icon: Blocks, title: "Connected workflows", description: "Activate repeatable processes that work across your business tools.", label: "Automation" },
+];
+
+function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return <div className="max-w-2xl"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">{eyebrow}</p><h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h2><p className="mt-5 text-base leading-7 text-slate-300 sm:text-lg">{description}</p></div>;
+}
+
+function PreviewStat({ label, value, trend }: { label: string; value: string; trend: string }) {
+  return <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3"><p className="text-[11px] text-slate-400">{label}</p><p className="mt-1 text-xl font-semibold text-white">{value}</p><p className="mt-1 text-[11px] text-cyan-300">{trend}</p></div>;
+}
+
+function DashboardPreview() {
+  return <div className="relative mx-auto w-full max-w-xl rounded-2xl border border-white/15 bg-[#101b3c]/90 p-3 shadow-2xl shadow-blue-950/60 backdrop-blur-sm sm:p-4"><div className="rounded-xl border border-white/10 bg-[#0B132B] p-4 sm:p-5"><div className="flex items-center justify-between border-b border-white/10 pb-4"><div><p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Workspace</p><p className="mt-1 font-semibold text-white">Business overview</p></div><span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Systems online</span></div><div className="mt-4 grid grid-cols-2 gap-3"><PreviewStat label="New contacts" value="24" trend="This week" /><PreviewStat label="Active workflows" value="08" trend="Running now" /></div><div className="mt-3 rounded-lg border border-blue-400/20 bg-blue-500/[0.08] p-3.5"><div className="flex items-center gap-2 text-sm font-medium text-blue-100"><Zap className="h-4 w-4 text-cyan-300" aria-hidden="true" /> Automation Marketplace</div><div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-white/10 bg-[#0d1733] px-3 py-2.5 text-xs text-slate-300"><span className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" /> New lead acknowledgement</span><span className="font-medium text-emerald-300">Active</span></div></div></div></div>;
+}
+
+function IconFrame({ children }: { children: ReactNode }) {
+  return <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-400/25 bg-blue-400/10 text-cyan-200">{children}</span>;
+}
+
 export default function LandingPage() {
-  return (
-    <div className="min-h-full bg-[#0B132B] text-[#F1F5F9]">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[#0B132B]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/jns-logo.png"
-              alt="JNS Platform"
-              width={160}
-              height={60}
-              className="h-11 w-auto"
-              priority
-            />
-          </Link>
-
-          <Link
-            href="/login"
-            className="rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/10 px-4 py-1.5 text-sm font-medium text-[#93C5FD] transition-all hover:bg-[#2563EB]/20 hover:border-[#2563EB]/60"
-          >
-            Sign in
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6">
-        {/* Hero */}
-        <section className="relative flex flex-col items-start gap-6 py-24 sm:py-28">
-          {/* Soft ambient glows */}
-          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute -right-32 top-0 h-[420px] w-[420px] rounded-full bg-[#2563EB]/12 blur-[100px]" />
-            <div className="absolute -left-32 bottom-10 h-[320px] w-[320px] rounded-full bg-[#06B6D4]/10 blur-[90px]" />
-          </div>
-
-          <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#06B6D4]">
-            For service businesses running lean
-          </span>
-
-          <h1 className="max-w-3xl font-[family-name:var(--font-poppins)] text-4xl font-semibold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-[3.4rem]">
-            Turn on the systems that run your business behind the scenes.
-          </h1>
-
-          <p className="max-w-xl text-base leading-relaxed text-[#94A3B8] sm:text-lg">
-            Email replies, lead sorting, booking sync — pick what you need,
-            switch it on, and keep working with your VA the same way you
-            always have.
-          </p>
-
-          <Link
-            href="/login"
-            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition-all hover:bg-[#1D4ED8] hover:shadow-[#2563EB]/40"
-          >
-            Go to your dashboard
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-              />
-            </svg>
-          </Link>
-        </section>
-
-        {/* Category overview */}
-        <section className="grid grid-cols-1 gap-5 border-t border-white/10 py-16 sm:grid-cols-2 lg:grid-cols-4">
-          {CATEGORIES.map((category) => (
-            <div
-              key={category.name}
-              className="group rounded-xl border border-white/[0.08] bg-white/[0.03] p-6 transition-all duration-200 hover:border-[#2563EB]/35 hover:bg-white/[0.055]"
-            >
-              <h3 className="font-[family-name:var(--font-poppins)] text-[15px] font-semibold text-white">
-                {category.name}
-              </h3>
-              <p className="mt-2.5 text-sm leading-relaxed text-[#94A3B8]">
-                {category.detail}
-              </p>
-            </div>
-          ))}
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 px-6 py-8">
-        <p className="mx-auto max-w-6xl text-xs text-[#64748B]">
-          JNS Platform — built and operated by your VA.
-        </p>
-      </footer>
-    </div>
-  );
+  return <div className="min-h-full overflow-hidden bg-[#0B132B] text-slate-100"><header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B132B]/80 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-6"><Link href="/" className="flex items-center" aria-label="JNS home"><Image src="/jns-logo.png" alt="JNS Platform" width={160} height={60} className="h-10 w-auto" priority /></Link><nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex" aria-label="Main navigation"><a href="#platform" className="transition hover:text-white">Platform</a><a href="#marketplace" className="transition hover:text-white">Marketplace</a><a href="#how-it-works" className="transition hover:text-white">How it works</a></nav><Link href="/login" className="rounded-lg border border-blue-400/35 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-100 transition hover:border-blue-300/60 hover:bg-blue-500/20">Sign in</Link></div></header><main><section className="relative isolate"><div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"><div className="absolute -right-44 -top-48 h-[42rem] w-[42rem] rounded-full bg-blue-600/20 blur-3xl" /><div className="absolute -bottom-36 -left-44 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" /></div><div className="mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-20 sm:px-6 sm:pb-28 sm:pt-28 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-16"><div><p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-cyan-200"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Journey Network Systems</p><h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl lg:leading-[1.06]">Your business tools. <span className="text-blue-300">Working as one.</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">JNS brings your CRM, customer operations, connected tools, and ready-to-use automations into one focused workspace—so your business can move with clarity.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/login" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/50 transition hover:bg-blue-500">Access your workspace <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link><a href="#marketplace" className="inline-flex items-center justify-center rounded-lg border border-white/15 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/[0.05]">Explore automations</a></div><div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">{["CRM & contacts", "Connected tools", "Self-serve automation"].map((item) => <span key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-300" aria-hidden="true" />{item}</span>)}</div></div><DashboardPreview /></div></section><section id="platform" className="border-y border-white/10 bg-[#101a37]/55"><div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><SectionHeading eyebrow="One connected platform" title="Less switching. More momentum." description="JNS gives your team a clear home for the core work that keeps your business moving—without turning your day into a stack of disconnected tabs." /><div className="mt-12 grid gap-4 md:grid-cols-3">{platformBenefits.map((benefit) => { const Icon = benefit.icon; return <article key={benefit.title} className="rounded-xl border border-white/10 bg-white/[0.035] p-6 transition duration-200 hover:-translate-y-1 hover:border-blue-400/30 hover:bg-white/[0.06]"><IconFrame><Icon className="h-5 w-5" aria-hidden="true" /></IconFrame><h3 className="mt-5 text-lg font-semibold text-white">{benefit.title}</h3><p className="mt-3 text-sm leading-6 text-slate-300">{benefit.description}</p></article>; })}</div></div></section><section id="marketplace" className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><SectionHeading eyebrow="Automation Marketplace" title="Activate the work that should not need chasing." description="Discover practical automations for the moments that repeat in your business. Choose what fits your workflow, activate it, and keep ownership in your hands." /><div className="grid gap-3 sm:grid-cols-2">{marketplaceCategories.map((category) => { const Icon = category.icon; return <article key={category.title} className="group rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-5 transition duration-200 hover:border-cyan-300/30"><div className="flex items-start justify-between gap-4"><IconFrame><Icon className="h-5 w-5" aria-hidden="true" /></IconFrame><span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-medium text-slate-400">{category.label}</span></div><h3 className="mt-5 font-semibold text-white">{category.title}</h3><p className="mt-2 text-sm leading-6 text-slate-300">{category.description}</p></article>; })}</div></div></section><section id="how-it-works" className="border-t border-white/10 bg-[#0d1731]"><div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><SectionHeading eyebrow="Built to simplify" title="A clearer way to run your operations." description="Start with the systems you use today, then add structure and automation as your business grows." /><ol className="mt-12 grid gap-5 md:grid-cols-3">{[["01", "Connect your workspace", "Bring the tools and essential business information you rely on into a single operating view."], ["02", "Manage the day-to-day", "Keep customer relationships, bookings, team activity, and follow-through organized in JNS."], ["03", "Activate what helps", "Choose available automations that fit your process, then let the routine work stay in motion."]].map(([number, title, description]) => <li key={number} className="relative border-t border-blue-400/30 pt-5"><span className="text-sm font-semibold text-cyan-300">{number}</span><h3 className="mt-4 text-lg font-semibold text-white">{title}</h3><p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">{description}</p></li>)}</ol></div></section><section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><div className="relative overflow-hidden rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-600/25 via-[#152655] to-[#0d1731] px-6 py-12 text-center sm:px-12 sm:py-16"><div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" /><ShieldCheck className="relative mx-auto h-7 w-7 text-cyan-200" aria-hidden="true" /><h2 className="relative mx-auto mt-5 max-w-2xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">A stronger system for the work ahead.</h2><p className="relative mx-auto mt-5 max-w-xl text-slate-300">Sign in to your JNS workspace to manage your business tools, customer operations, and active automations.</p><Link href="/login" className="relative mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#0B132B] transition hover:bg-cyan-50">Go to your workspace <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></div></section></main><footer className="border-t border-white/10 px-5 py-8 sm:px-6"><div className="mx-auto flex max-w-7xl flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between"><p>© {new Date().getFullYear()} Journey Network Systems</p><p>One platform for your tools, workflows, and growth.</p></div></footer></div>;
 }

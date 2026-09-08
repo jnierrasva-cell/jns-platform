@@ -14,9 +14,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "JNS Platform | Connect. Automate. Grow.",
+  title: "JNS Platform | Your Business, Connected",
   description:
-    "Turn on the systems that run your business behind the scenes. Email, leads, calendar, and social — built for service businesses running lean.",
+    "JNS is the connected business platform for managing customer operations, essential tools, and ready-to-activate automations in one workspace.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
