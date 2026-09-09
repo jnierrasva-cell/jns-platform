@@ -51,6 +51,13 @@ export default async function ContactDetailPage({
     .order("starts_at", { ascending: false })
     .limit(20);
 
+  const { data: notes } = await supabase
+    .from("contact_notes")
+    .select("id, body, created_at, created_by")
+    .eq("contact_id", contact.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
   return (
     <div>
       <Link
@@ -65,6 +72,7 @@ export default async function ContactDetailPage({
         contact={contact}
         activity={activity ?? []}
         bookings={bookings ?? []}
+        notes={notes ?? []}
       />
     </div>
   );

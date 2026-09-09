@@ -49,7 +49,11 @@ export async function updateContact(input: {
     updates.email = email || null;
   }
   if (input.phone !== undefined) {
-    updates.phone = input.phone.trim() || null;
+    const phone = input.phone.trim();
+    if (phone && phone.replace(/[\s\-()]/g, "").length < 8) {
+      throw new Error("Enter a valid phone including country code");
+    }
+    updates.phone = phone || null;
   }
   if (input.status !== undefined) {
     updates.status = input.status;
@@ -64,5 +68,27 @@ export async function updateContact(input: {
   if (error) throw new Error(error.message);
 
   revalidatePath("/dashboard/contacts");
+  revalidatePath(`/dashboard/contacts/${input.contactId}`);
+}
+
+export async function addContactNote(input: {
+  organizationId: string;
+  contactId: string;
+  body: string;
+}) {
+  const { supabase, user } = await requireOrgMember(input.organizationId);
+
+  const body = input.body.trim();
+  if (!body) throw new Error("Note cannot be empty");
+
+  const { error } = await supabase.from("contact_notes").insert({
+    organization_id: input.organizationId,
+    contact_id: input.contactId,
+    body,
+    created_by: user.id,
+  });
+
+  if (error) throw new Error(error.message);
+
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
 }

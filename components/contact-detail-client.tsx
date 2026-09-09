@@ -2,7 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { updateContact } from "@/app/dashboard/contacts/actions";
+import {
+  updateContact,
+  addContactNote,
+} from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 
 type Contact = {
@@ -35,24 +38,35 @@ type Booking = {
   status: string;
 };
 
+type Note = {
+  id: string;
+  body: string;
+  created_at: string;
+  created_by: string | null;
+};
+
 export function ContactDetailClient({
   organizationId,
   contact,
   activity,
   bookings,
+  notes,
 }: {
   organizationId: string;
   contact: Contact;
   activity: Activity[];
   bookings: Booking[];
+  notes: Note[];
 }) {
   const [firstName, setFirstName] = useState(contact.first_name ?? "");
   const [lastName, setLastName] = useState(contact.last_name ?? "");
   const [email, setEmail] = useState(contact.email ?? "");
   const [phone, setPhone] = useState(contact.phone ?? "");
   const [status, setStatus] = useState(contact.status);
+  const [noteBody, setNoteBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSave(e: React.FormEvent) {
@@ -73,6 +87,23 @@ export function ContactDetailClient({
         setSaved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save");
+      }
+    });
+  }
+
+  function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    setNoteError(null);
+    startTransition(async () => {
+      try {
+        await addContactNote({
+          organizationId,
+          contactId: contact.id,
+          body: noteBody,
+        });
+        setNoteBody("");
+      } catch (err) {
+        setNoteError(err instanceof Error ? err.message : "Could not add note");
       }
     });
   }
@@ -163,6 +194,57 @@ export function ContactDetailClient({
         </button>
       </form>
 
+      {/* Notes */}
+      <div className="mt-8">
+        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+          Notes
+        </h2>
+        <form
+          onSubmit={handleAddNote}
+          className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4"
+        >
+          <textarea
+            value={noteBody}
+            onChange={(e) => setNoteBody(e.target.value)}
+            rows={3}
+            placeholder="Log a call, follow-up, or internal note…"
+            className="w-full rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+          />
+          {noteError && (
+            <p className="mt-2 text-sm text-red-400">{noteError}</p>
+          )}
+          <button
+            type="submit"
+            disabled={isPending}
+            className="mt-3 rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/15 px-4 py-2 text-sm font-medium text-[#93C5FD] transition hover:bg-[#2563EB]/25 disabled:opacity-60"
+          >
+            {isPending ? "Adding…" : "Add note"}
+          </button>
+        </form>
+
+        <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+          {notes.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-[#94A3B8]">
+              No notes yet. Add the first one above.
+            </p>
+          ) : (
+            <ul className="divide-y divide-white/5">
+              {notes.map((n) => (
+                <li key={n.id} className="px-4 py-3">
+                  <p className="text-sm whitespace-pre-wrap text-[#E2E8F0]">
+                    {n.body}
+                  </p>
+                  <p className="mt-1 text-xs text-[#64748B]">
+                    {new Date(n.created_at).toLocaleString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Bookings */}
       <div className="mt-8">
         <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
           Bookings
@@ -198,6 +280,7 @@ export function ContactDetailClient({
         </div>
       </div>
 
+      {/* Email activity */}
       <div className="mt-8">
         <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
           Email activity
