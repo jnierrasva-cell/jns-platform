@@ -18,13 +18,20 @@ export default async function ContactsPage() {
 
   if (!membership) redirect("/onboarding/setup-business");
 
+  const orgId = membership.organization_id;
+
   const { data: contacts } = await supabase
     .from("contacts")
     .select(
-      "id, email, first_name, last_name, phone, status, source, last_contacted_at, created_at",
+      "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at",
     )
-    .eq("organization_id", membership.organization_id)
-    .order("last_contacted_at", { ascending: false, nullsFirst: false });
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
 
-  return <ContactsClient contacts={contacts ?? []} />;
+  return (
+    <ContactsClient
+      organizationId={orgId}
+      contacts={contacts ?? []}
+    />
+  );
 }
