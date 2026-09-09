@@ -13,6 +13,7 @@ import {
   LogOut,
   Filter,
   CalendarDays,
+  FileInput,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -49,6 +50,7 @@ export function DashboardShell({
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
     { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
+    { label: "Forms", href: "/dashboard/forms", icon: FileInput },
     { label: "Automation", href: "/dashboard/automation", icon: Zap },
     { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
