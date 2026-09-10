@@ -245,3 +245,105 @@ export async function sendContactSms(input: {
   revalidatePath(`/dashboard/contacts/${contact.id}`);
   revalidatePath("/dashboard/contacts");
 }
+
+type ImportRow = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+};
+
+function normalizeStatus(
+  value?: string,
+): "lead" | "booked" | "customer" | "inactive" {
+  const v = (value ?? "lead").trim().toLowerCase();
+  if (v === "booked" || v === "customer" || v === "inactive" || v === "lead") {
+    return v;
+  }
+  return "lead";
+}
+
+export async function importContactsCsv(input: {
+  organizationId: string;
+  rows: ImportRow[];
+}) {
+  const { supabase } = await requireOrgMember(input.organizationId);
+
+  if (!input.rows.length) {
+    throw new Error("CSV has no data rows");
+  }
+  if (input.rows.length > 500) {
+    throw new Error("Import limit is 500 rows at a time");
+  }
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const row of input.rows) {
+    const email = row.email?.trim().toLowerCase() || null;
+    const phone = row.phone?.trim() || null;
+    const firstName = row.firstName?.trim() || null;
+    const lastName = row.lastName?.trim() || null;
+    const status = normalizeStatus(row.status);
+
+    if (!email && !phone) {
+      skipped += 1;
+      continue;
+    }
+    if (email && !email.includes("@")) {
+      skipped += 1;
+      continue;
+    }
+
+    if (email) {
+      const { data: existing } = await supabase
+        .from("contacts")
+        .select("id, tags")
+        .eq("organization_id", input.organizationId)
+        .ilike("email", email)
+        .maybeSingle();
+
+      if (existing) {
+        const tags = Array.isArray(existing.tags) ? existing.tags : [];
+        const nextTags = Array.from(new Set([...tags, "imported"]));
+        await supabase
+          .from("contacts")
+          .update({
+            first_name: firstName,
+            last_name: lastName,
+            phone: phone ?? undefined,
+            status,
+            tags: nextTags,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        updated += 1;
+        continue;
+      }
+    }
+
+    const { error } = await supabase.from("contacts").insert({
+      organization_id: input.organizationId,
+      email,
+      phone,
+      first_name: firstName,
+      last_name: lastName,
+      status,
+      source: "csv_import",
+      tags: ["imported"],
+      last_contacted_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      skipped += 1;
+      continue;
+    }
+    created += 1;
+  }
+
+  revalidatePath("/dashboard/contacts");
+  revalidatePath("/dashboard");
+  return { created, updated, skipped };
+}

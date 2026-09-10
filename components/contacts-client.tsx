@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MoreVertical, Plus, X } from "lucide-react";
+import { Download, MoreVertical, Plus, Upload, X } from "lucide-react";
 import {
   createContact,
   updateContact,
   sendContactEmail,
   sendContactSms,
+  importContactsCsv,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 
@@ -53,6 +54,69 @@ function stageColor(status: string) {
   }
 }
 
+function csvEscape(value: string) {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        cell += '"';
+        i += 1;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        cell += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (ch === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else if (ch === "\r") {
+      // skip
+    } else {
+      cell += ch;
+    }
+  }
+
+  if (cell.length || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+
+  return rows.filter((r) => r.some((c) => c.trim().length > 0));
+}
+
+function headerIndex(headers: string[], names: string[]) {
+  const normalized = headers.map((h) => h.trim().toLowerCase());
+  for (const name of names) {
+    const idx = normalized.indexOf(name);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
 export function ContactsClient({
   organizationId,
   contacts,
@@ -65,9 +129,11 @@ export function ContactsClient({
   twilioConnected: boolean;
 }) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [stage, setStage] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const [showAdd, setShowAdd] = useState(false);
@@ -180,6 +246,89 @@ export function ContactsClient({
     });
   }
 
+  function exportCsv() {
+    const header = [
+      "first_name",
+      "last_name",
+      "email",
+      "phone",
+      "status",
+      "source",
+      "created_at",
+    ];
+    const lines = [header.join(",")];
+    for (const c of filtered) {
+      lines.push(
+        [
+          csvEscape(c.first_name ?? ""),
+          csvEscape(c.last_name ?? ""),
+          csvEscape(c.email ?? ""),
+          csvEscape(c.phone ?? ""),
+          csvEscape(c.status ?? ""),
+          csvEscape(c.source ?? ""),
+          csvEscape(c.created_at ?? ""),
+        ].join(","),
+      );
+    }
+    const blob = new Blob([lines.join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `jns-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportFile(file: File) {
+    setError(null);
+    setInfo(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? "");
+        const matrix = parseCsv(text);
+        if (matrix.length < 2) {
+          setError("CSV needs a header row and at least one data row");
+          return;
+        }
+        const headers = matrix[0];
+        const iFirst = headerIndex(headers, ["first_name", "firstname", "first"]);
+        const iLast = headerIndex(headers, ["last_name", "lastname", "last"]);
+        const iEmail = headerIndex(headers, ["email", "e-mail"]);
+        const iPhone = headerIndex(headers, ["phone", "mobile", "phone_number"]);
+        const iStatus = headerIndex(headers, ["status", "stage"]);
+
+        const rows = matrix.slice(1).map((r) => ({
+          firstName: iFirst >= 0 ? r[iFirst] : "",
+          lastName: iLast >= 0 ? r[iLast] : "",
+          email: iEmail >= 0 ? r[iEmail] : "",
+          phone: iPhone >= 0 ? r[iPhone] : "",
+          status: iStatus >= 0 ? r[iStatus] : "lead",
+        }));
+
+        startTransition(async () => {
+          try {
+            const result = await importContactsCsv({
+              organizationId,
+              rows,
+            });
+            setInfo(
+              `Import done: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`,
+            );
+            router.refresh();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Import failed");
+          }
+        });
+      } catch {
+        setError("Could not read that CSV file");
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function openEmail(c: Contact) {
     setMenuId(null);
     setError(null);
@@ -258,21 +407,50 @@ export function ContactsClient({
             Contacts
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-            Pipeline, manual leads, and reach-out from your connected Google and
-            Twilio accounts.
+            Import from another CRM, export anytime, and work leads from one
+            place.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setShowAdd(true);
-            setFormError(null);
-          }}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Add contact
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 transition hover:border-white/25 hover:text-white"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 transition hover:border-white/25 hover:text-white"
+          >
+            <Upload className="h-4 w-4" />
+            Import CSV
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImportFile(file);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowAdd(true);
+              setFormError(null);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500"
+          >
+            <Plus className="h-4 w-4" />
+            Add contact
+          </button>
+        </div>
       </div>
 
       <div className="mt-8 flex flex-wrap gap-2">
@@ -306,11 +484,19 @@ export function ContactsClient({
       </div>
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+      {info && <p className="mt-3 text-sm text-emerald-300">{info}</p>}
+      {isPending && (
+        <p className="mt-2 text-xs text-slate-500">Working…</p>
+      )}
+
+      <p className="mt-3 text-xs text-slate-500">
+        CSV headers supported: first_name, last_name, email, phone, status
+      </p>
 
       <div className="mt-6 overflow-visible rounded-xl border border-white/10 bg-white/[0.035]">
         {filtered.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
-            No contacts in this stage. Use Add contact or share a form.
+            No contacts in this stage. Import a CSV or add a contact.
           </p>
         ) : (
           <table className="w-full text-left text-sm">
@@ -334,18 +520,6 @@ export function ContactsClient({
                     >
                       {displayName(c)}
                     </Link>
-                    {(c.tags ?? []).length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {(c.tags ?? []).slice(0, 3).map((t) => (
-                          <span
-                            key={t}
-                            className="rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-400"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </td>
                   <td className="px-4 py-3 text-slate-300">{c.email ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-400">{c.phone ?? "—"}</td>
@@ -434,7 +608,6 @@ export function ContactsClient({
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
@@ -454,23 +627,19 @@ export function ContactsClient({
                   />
                 </div>
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-slate-200">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Optional if phone is set"
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
                 />
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-slate-200">Phone</label>
                 <CountryPhoneInput value={phone} onChange={setPhone} />
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-slate-200">Stage</label>
                 <select
@@ -492,11 +661,8 @@ export function ContactsClient({
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">
-                  First note (optional)
-                </label>
+                <label className="text-sm text-slate-200">Note (optional)</label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
@@ -504,10 +670,8 @@ export function ContactsClient({
                   className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
                 />
               </div>
-
               {formError && <p className="text-sm text-red-300">{formError}</p>}
-
-              <div className="mt-2 flex justify-end gap-2">
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -521,7 +685,7 @@ export function ContactsClient({
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   {isPending ? "Saving…" : "Save contact"}
                 </button>
@@ -556,7 +720,6 @@ export function ContactsClient({
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form
               onSubmit={handleComposeSubmit}
               className="mt-6 flex flex-col gap-4"
@@ -582,14 +745,12 @@ export function ContactsClient({
                   className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
                 />
               </div>
-
               {composeError && (
                 <p className="text-sm text-red-300">{composeError}</p>
               )}
               {composeSuccess && (
                 <p className="text-sm text-emerald-300">{composeSuccess}</p>
               )}
-
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
@@ -601,7 +762,7 @@ export function ContactsClient({
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   {isPending ? "Sending…" : "Send"}
                 </button>
