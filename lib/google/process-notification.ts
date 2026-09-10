@@ -2,10 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 import { sendAutoAck } from "@/lib/google/send-auto-ack";
 import { upsertContactByEmail } from "@/lib/contacts/upsert";
-import {
-  applyTagToContact,
-  findMatchingRule,
-} from "@/lib/email/rules";
+import { applyTagToContact, findMatchingRule } from "@/lib/email/rules";
 
 type PubSubEmailNotification = {
   emailAddress: string;
@@ -58,7 +55,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     .eq("service_key", "email-auto-ack")
     .maybeSingle();
 
-  // Master switch still required for any auto behavior
   if (!automation?.is_enabled) {
     console.log("[gmail-webhook] automation_off", organizationId);
     return { ok: true, skipped: true, reason: "automation_off" as const };
@@ -120,6 +116,8 @@ export async function processGmailNotification(pubsubDataBase64: string) {
   console.log("[gmail-webhook] new message ids", [...messageIds]);
 
   let sentCount = 0;
+  let unmatchedCount = 0;
+  let linkedCount = 0;
 
   for (const messageId of messageIds) {
     const msgRes = await fetch(
@@ -136,8 +134,7 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     const headers = msg.payload?.headers ?? [];
     const fromHeader =
       headers.find(
-        (h: { name: string; value: string }) =>
-          h.name.toLowerCase() === "from",
+        (h: { name: string; value: string }) => h.name.toLowerCase() === "from",
       )?.value ?? "";
     const subject =
       headers.find(
@@ -152,6 +149,8 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
     const fromMatch = fromHeader.match(/<([^>]+)>/);
     const fromEmail = (fromMatch?.[1] ?? fromHeader).trim().toLowerCase();
+    const fromName =
+      fromHeader.replace(/<[^>]+>/, "").replace(/"/g, "").trim() || null;
 
     if (!fromEmail || fromEmail === connection.connected_email?.toLowerCase()) {
       continue;
@@ -167,9 +166,10 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     if (existingActivity) continue;
 
     const firstName =
-      fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "there";
+      fromName?.split(" ")[0]?.replace(/[^a-zA-Z\-']/g, "") ||
+      fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") ||
+      "there";
 
-    // Was this email already a contact?
     const { data: existingContact } = await supabase
       .from("contacts")
       .select("id")
@@ -179,14 +179,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
     const isNewContact = !existingContact;
 
-    const contactId = await upsertContactByEmail({
-      organizationId,
-      email: fromEmail,
-      firstName: firstName !== "there" ? firstName : undefined,
-      source: "email",
-    });
-
-    // Match custom rule (if any)
     const matchedRule = await findMatchingRule({
       organizationId,
       fromEmail,
@@ -194,12 +186,56 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       isNewContact,
     });
 
-    console.log("[gmail-webhook] rule", {
+    console.log("[gmail-webhook] decision", {
       fromEmail,
       subject,
-      matched: matchedRule?.name ?? "DEFAULT_AUTO_ACK",
-      action: matchedRule?.action ?? "auto_ack",
+      isNewContact,
+      matched: matchedRule?.name ?? null,
+      action: matchedRule?.action ?? null,
     });
+
+    // --- Unknown sender, no rule → unmatched inbox (NOT a contact) ---
+    if (isNewContact && !matchedRule) {
+      await supabase.from("unmatched_emails").upsert(
+        {
+          organization_id: organizationId,
+          gmail_message_id: messageId,
+          gmail_thread_id: msg.threadId ?? null,
+          from_email: fromEmail,
+          from_name: fromName,
+          subject,
+          status: "pending",
+        },
+        { onConflict: "organization_id,gmail_message_id" },
+      );
+      unmatchedCount += 1;
+      continue;
+    }
+
+    // --- Unknown sender + skip rule → ignore ---
+    if (isNewContact && matchedRule?.action === "skip") {
+      continue;
+    }
+
+    // --- Known contact, or rule says create (auto_ack / tag_only) ---
+    let contactId = existingContact?.id as string | undefined;
+
+    if (!contactId) {
+      contactId = await upsertContactByEmail({
+        organizationId,
+        email: fromEmail,
+        firstName: firstName !== "there" ? firstName : undefined,
+        source: "email_rule",
+      });
+    } else {
+      await supabase
+        .from("contacts")
+        .update({
+          last_contacted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", contactId);
+    }
 
     if (matchedRule?.tag) {
       await applyTagToContact(contactId, matchedRule.tag);
@@ -219,17 +255,20 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       status: "received",
     });
 
-    const action = matchedRule?.action ?? "auto_ack";
+    linkedCount += 1;
 
-    if (action === "skip") {
+    const action = matchedRule?.action ?? "skip";
+
+    // Known contact with no rule: log only, do not auto-ack
+    if (!matchedRule) {
       continue;
     }
 
-    if (action === "tag_only") {
+    if (action === "skip" || action === "tag_only") {
       continue;
     }
 
-    // action === auto_ack (rule or default)
+    // action === auto_ack
     const sendResult = await sendAutoAck({
       organizationId,
       toEmail: fromEmail,
@@ -243,7 +282,7 @@ export async function processGmailNotification(pubsubDataBase64: string) {
         .from("email_activity")
         .update({
           contact_id: contactId,
-          rule_id: matchedRule?.id ?? null,
+          rule_id: matchedRule.id,
         })
         .eq("organization_id", organizationId)
         .eq("gmail_message_id", sendResult.messageId);
@@ -261,6 +300,11 @@ export async function processGmailNotification(pubsubDataBase64: string) {
     .eq("organization_id", organizationId)
     .eq("provider", "google");
 
-  console.log("[gmail-webhook] done", { sentCount });
-  return { ok: true, sentCount };
+  console.log("[gmail-webhook] done", {
+    sentCount,
+    unmatchedCount,
+    linkedCount,
+  });
+
+  return { ok: true, sentCount, unmatchedCount, linkedCount };
 }
