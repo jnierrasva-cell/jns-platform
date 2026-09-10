@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { MoreVertical, Plus, X } from "lucide-react";
 import {
   createContact,
   updateContact,
+  sendContactEmail,
+  sendContactSms,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 
@@ -54,9 +56,13 @@ function stageColor(status: string) {
 export function ContactsClient({
   organizationId,
   contacts,
+  googleConnected,
+  twilioConnected,
 }: {
   organizationId: string;
   contacts: Contact[];
+  googleConnected: boolean;
+  twilioConnected: boolean;
 }) {
   const router = useRouter();
   const [stage, setStage] = useState<string>("all");
@@ -69,9 +75,34 @@ export function ContactsClient({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState<"lead" | "booked" | "customer" | "inactive">("lead");
+  const [status, setStatus] = useState<
+    "lead" | "booked" | "customer" | "inactive"
+  >("lead");
   const [note, setNote] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const [compose, setCompose] = useState<null | {
+    type: "email" | "sms";
+    contact: Contact;
+  }>(null);
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [composeError, setComposeError] = useState<string | null>(null);
+  const [composeSuccess, setComposeSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target as Node)) {
+        setMenuId(null);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {
@@ -149,6 +180,70 @@ export function ContactsClient({
     });
   }
 
+  function openEmail(c: Contact) {
+    setMenuId(null);
+    if (!googleConnected) {
+      setError("Connect Google in Integrations to send email from JNS.");
+      return;
+    }
+    if (!c.email) {
+      setError("This contact has no email.");
+      return;
+    }
+    setComposeSubject("");
+    setComposeBody("");
+    setComposeError(null);
+    setComposeSuccess(null);
+    setCompose({ type: "email", contact: c });
+  }
+
+  function openSms(c: Contact) {
+    setMenuId(null);
+    if (!twilioConnected) {
+      setError("Connect Twilio in Integrations to send SMS from JNS.");
+      return;
+    }
+    if (!c.phone) {
+      setError("This contact has no phone number.");
+      return;
+    }
+    setComposeSubject("");
+    setComposeBody("");
+    setComposeError(null);
+    setComposeSuccess(null);
+    setCompose({ type: "sms", contact: c });
+  }
+
+  function handleComposeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!compose) return;
+    setComposeError(null);
+    setComposeSuccess(null);
+    startTransition(async () => {
+      try {
+        if (compose.type === "email") {
+          await sendContactEmail({
+            organizationId,
+            contactId: compose.contact.id,
+            subject: composeSubject,
+            body: composeBody,
+          });
+          setComposeSuccess("Email sent.");
+        } else {
+          await sendContactSms({
+            organizationId,
+            contactId: compose.contact.id,
+            body: composeBody,
+          });
+          setComposeSuccess("SMS sent.");
+        }
+        setTimeout(() => setCompose(null), 900);
+      } catch (err) {
+        setComposeError(err instanceof Error ? err.message : "Send failed");
+      }
+    });
+  }
+
   return (
     <div className="pb-4">
       <div className="flex flex-col gap-4 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
@@ -160,8 +255,8 @@ export function ContactsClient({
             Contacts
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-            Move people through your pipeline. Add leads manually when they
-            did not come from a form or rule.
+            Pipeline, manual leads, and reach-out from your connected Google and
+            Twilio accounts.
           </p>
         </div>
         <button
@@ -177,7 +272,6 @@ export function ContactsClient({
         </button>
       </div>
 
-      {/* Stage filters */}
       <div className="mt-8 flex flex-wrap gap-2">
         {STAGES.map((s) => {
           const active = stage === s.id;
@@ -209,9 +303,6 @@ export function ContactsClient({
       </div>
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-      {isPending && !showAdd && (
-        <p className="mt-2 text-xs text-slate-500">Updating…</p>
-      )}
 
       <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
         {filtered.length === 0 ? (
@@ -227,6 +318,7 @@ export function ContactsClient({
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Stage</th>
                 <th className="px-4 py-3">Source</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -268,6 +360,46 @@ export function ContactsClient({
                   </td>
                   <td className="px-4 py-3 text-xs capitalize text-slate-500">
                     {(c.source ?? "—").replace(/_/g, " ")}
+                  </td>
+                  <td className="relative px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMenuId((id) => (id === c.id ? null : c.id))
+                      }
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white"
+                      aria-label="Actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    {menuId === c.id && (
+                      <div
+                        ref={menuRef}
+                        className="absolute right-4 z-20 mt-1 w-44 rounded-lg border border-white/10 bg-[#0f1a35] py-1 shadow-xl"
+                      >
+                        <button
+                          type="button"
+                          className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                          onClick={() => openEmail(c)}
+                        >
+                          Send email
+                        </button>
+                        <button
+                          type="button"
+                          className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                          onClick={() => openSms(c)}
+                        >
+                          Send SMS
+                        </button>
+                        <Link
+                          href={`/dashboard/contacts/${c.id}`}
+                          className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                          onClick={() => setMenuId(null)}
+                        >
+                          Open contact
+                        </Link>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -367,14 +499,11 @@ export function ContactsClient({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  placeholder="How you met them, what they asked for…"
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
                 />
               </div>
 
-              {formError && (
-                <p className="text-sm text-red-300">{formError}</p>
-              )}
+              {formError && <p className="text-sm text-red-300">{formError}</p>}
 
               <div className="mt-2 flex justify-end gap-2">
                 <button
@@ -393,6 +522,87 @@ export function ContactsClient({
                   className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
                 >
                   {isPending ? "Saving…" : "Save contact"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Compose email / SMS */}
+      {compose && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                  {compose.type === "email" ? "Send email" : "Send SMS"}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  {displayName(compose.contact)}
+                </h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  {compose.type === "email"
+                    ? compose.contact.email
+                    : compose.contact.phone}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCompose(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleComposeSubmit}
+              className="mt-6 flex flex-col gap-4"
+            >
+              {compose.type === "email" && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm text-slate-200">Subject</label>
+                  <input
+                    required
+                    value={composeSubject}
+                    onChange={(e) => setComposeSubject(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  />
+                </div>
+              )}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-slate-200">Message</label>
+                <textarea
+                  required
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  rows={5}
+                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                />
+              </div>
+
+              {composeError && (
+                <p className="text-sm text-red-300">{composeError}</p>
+              )}
+              {composeSuccess && (
+                <p className="text-sm text-emerald-300">{composeSuccess}</p>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCompose(null)}
+                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                >
+                  {isPending ? "Sending…" : "Send"}
                 </button>
               </div>
             </form>

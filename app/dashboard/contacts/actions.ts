@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sendSms } from "@/lib/sms/send";
+import { sendGmailMessage } from "@/lib/google/send-email";
 
 async function requireOrgMember(organizationId: string) {
   const supabase = await createClient();
@@ -166,4 +168,80 @@ export async function addContactNote(input: {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
+}
+
+export async function sendContactEmail(input: {
+  organizationId: string;
+  contactId: string;
+  subject: string;
+  body: string;
+}) {
+  const { supabase } = await requireOrgMember(input.organizationId);
+
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("id, email, first_name")
+    .eq("id", input.contactId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  if (!contact?.email) {
+    throw new Error("This contact has no email address");
+  }
+
+  await sendGmailMessage({
+    organizationId: input.organizationId,
+    toEmail: contact.email,
+    subject: input.subject,
+    body: input.body,
+    contactId: contact.id,
+  });
+
+  await supabase
+    .from("contacts")
+    .update({
+      last_contacted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", contact.id);
+
+  revalidatePath(`/dashboard/contacts/${contact.id}`);
+  revalidatePath("/dashboard/contacts");
+}
+
+export async function sendContactSms(input: {
+  organizationId: string;
+  contactId: string;
+  body: string;
+}) {
+  const { supabase } = await requireOrgMember(input.organizationId);
+
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("id, phone, first_name")
+    .eq("id", input.contactId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  if (!contact?.phone) {
+    throw new Error("This contact has no phone number");
+  }
+
+  await sendSms({
+    organizationId: input.organizationId,
+    toPhone: contact.phone,
+    body: input.body,
+    contactId: contact.id,
+  });
+
+  await supabase
+    .from("contacts")
+    .update({
+      last_contacted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", contact.id);
+
+  revalidatePath(`/dashboard/contacts/${contact.id}`);
+  revalidatePath("/dashboard/contacts");
 }

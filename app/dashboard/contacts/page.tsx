@@ -28,10 +28,25 @@ export default async function ContactsPage() {
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
+  const { data: google } = await supabase
+    .from("connections")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("provider", "google")
+    .maybeSingle();
+
+  const { data: twilio } = await supabase
+    .from("twilio_connections")
+    .select("id")
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
   return (
     <ContactsClient
       organizationId={orgId}
       contacts={contacts ?? []}
+      googleConnected={Boolean(google)}
+      twilioConnected={Boolean(twilio)}
     />
   );
 }
