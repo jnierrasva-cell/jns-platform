@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   updateContact,
   addContactNote,
+  setContactPipelineStage,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 
@@ -19,6 +20,16 @@ type Contact = {
   tags?: string[] | null;
   last_contacted_at: string | null;
   created_at: string;
+  pipeline_stage_id?: string | null;
+};
+
+type Stage = {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+  is_won: boolean;
+  is_lost: boolean;
 };
 
 type Activity = {
@@ -48,12 +59,14 @@ type Note = {
 export function ContactDetailClient({
   organizationId,
   contact,
+  stages,
   activity,
   bookings,
   notes,
 }: {
   organizationId: string;
   contact: Contact;
+  stages: Stage[];
   activity: Activity[];
   bookings: Booking[];
   notes: Note[];
@@ -63,6 +76,9 @@ export function ContactDetailClient({
   const [email, setEmail] = useState(contact.email ?? "");
   const [phone, setPhone] = useState(contact.phone ?? "");
   const [status, setStatus] = useState(contact.status);
+  const [pipelineStageId, setPipelineStageId] = useState(
+    contact.pipeline_stage_id ?? "",
+  );
   const [noteBody, setNoteBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -83,6 +99,11 @@ export function ContactDetailClient({
           email,
           phone,
           status: status as "lead" | "booked" | "customer" | "inactive",
+        });
+        await setContactPipelineStage({
+          organizationId,
+          contactId: contact.id,
+          stageId: pipelineStageId || null,
         });
         setSaved(true);
       } catch (err) {
@@ -160,7 +181,32 @@ export function ContactDetailClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Status</label>
+            <label className="text-sm text-[#E2E8F0]">Pipeline stage</label>
+            <select
+              value={pipelineStageId}
+              onChange={(e) => setPipelineStageId(e.target.value)}
+              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+            >
+              <option value="">Unassigned</option>
+              {stages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-[#64748B]">
+              Managed in{" "}
+              <Link
+                href="/dashboard/pipeline"
+                className="text-cyan-200 underline underline-offset-2"
+              >
+                Pipeline
+              </Link>
+              .
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-[#E2E8F0]">Legacy status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -194,7 +240,6 @@ export function ContactDetailClient({
         </button>
       </form>
 
-      {/* Notes */}
       <div className="mt-8">
         <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
           Notes
@@ -244,7 +289,6 @@ export function ContactDetailClient({
         </div>
       </div>
 
-      {/* Bookings */}
       <div className="mt-8">
         <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
           Bookings
@@ -280,7 +324,6 @@ export function ContactDetailClient({
         </div>
       </div>
 
-      {/* Email activity */}
       <div className="mt-8">
         <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
           Email activity
