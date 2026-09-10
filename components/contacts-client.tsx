@@ -182,6 +182,7 @@ export function ContactsClient({
 
   function openEmail(c: Contact) {
     setMenuId(null);
+    setError(null);
     if (!googleConnected) {
       setError("Connect Google in Integrations to send email from JNS.");
       return;
@@ -199,6 +200,7 @@ export function ContactsClient({
 
   function openSms(c: Contact) {
     setMenuId(null);
+    setError(null);
     if (!twilioConnected) {
       setError("Connect Twilio in Integrations to send SMS from JNS.");
       return;
@@ -219,12 +221,13 @@ export function ContactsClient({
     if (!compose) return;
     setComposeError(null);
     setComposeSuccess(null);
+    const current = compose;
     startTransition(async () => {
       try {
-        if (compose.type === "email") {
+        if (current.type === "email") {
           await sendContactEmail({
             organizationId,
-            contactId: compose.contact.id,
+            contactId: current.contact.id,
             subject: composeSubject,
             body: composeBody,
           });
@@ -232,7 +235,7 @@ export function ContactsClient({
         } else {
           await sendContactSms({
             organizationId,
-            contactId: compose.contact.id,
+            contactId: current.contact.id,
             body: composeBody,
           });
           setComposeSuccess("SMS sent.");
@@ -304,7 +307,7 @@ export function ContactsClient({
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
 
-      <td className="relative z-10 px-4 py-3 text-right">
+      <div className="mt-6 overflow-visible rounded-xl border border-white/10 bg-white/[0.035]">
         {filtered.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
             No contacts in this stage. Use Add contact or share a form.
@@ -408,7 +411,6 @@ export function ContactsClient({
         )}
       </div>
 
-      {/* Add contact modal */}
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
@@ -529,7 +531,6 @@ export function ContactsClient({
         </div>
       )}
 
-      {/* Compose email / SMS */}
       {compose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
