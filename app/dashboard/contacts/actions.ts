@@ -347,3 +347,26 @@ export async function importContactsCsv(input: {
   revalidatePath("/dashboard");
   return { created, updated, skipped };
 }
+
+export async function setContactPipelineStage(input: {
+  organizationId: string;
+  contactId: string;
+  stageId: string | null;
+}) {
+  const { supabase } = await requireOrgMember(input.organizationId);
+
+  const { error } = await supabase
+    .from("contacts")
+    .update({
+      pipeline_stage_id: input.stageId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.contactId)
+    .eq("organization_id", input.organizationId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/contacts");
+  revalidatePath(`/dashboard/contacts/${input.contactId}`);
+  revalidatePath("/dashboard");
+}

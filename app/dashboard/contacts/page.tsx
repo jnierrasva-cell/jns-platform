@@ -23,10 +23,16 @@ export default async function ContactsPage() {
   const { data: contacts } = await supabase
     .from("contacts")
     .select(
-      "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at",
+      "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at, pipeline_stage_id",
     )
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
+
+  const { data: stages } = await supabase
+    .from("pipeline_stages")
+    .select("id, name, slug, position, is_won, is_lost")
+    .eq("organization_id", orgId)
+    .order("position", { ascending: true });
 
   const { data: google } = await supabase
     .from("connections")
@@ -45,6 +51,7 @@ export default async function ContactsPage() {
     <ContactsClient
       organizationId={orgId}
       contacts={contacts ?? []}
+      stages={stages ?? []}
       googleConnected={Boolean(google)}
       twilioConnected={Boolean(twilio)}
     />

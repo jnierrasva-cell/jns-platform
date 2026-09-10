@@ -10,6 +10,7 @@ import {
   sendContactEmail,
   sendContactSms,
   importContactsCsv,
+  setContactPipelineStage,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 
@@ -24,40 +25,25 @@ type Contact = {
   tags?: string[] | null;
   last_contacted_at: string | null;
   created_at: string;
+  pipeline_stage_id?: string | null;
 };
 
-const STAGES = [
-  { id: "all", label: "All" },
-  { id: "lead", label: "Lead" },
-  { id: "booked", label: "Booked" },
-  { id: "customer", label: "Customer" },
-  { id: "inactive", label: "Inactive" },
-] as const;
+type Stage = {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+  is_won: boolean;
+  is_lost: boolean;
+};
 
 function displayName(c: Contact) {
   const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
   return name || c.email || c.phone || "Untitled";
 }
 
-function stageColor(status: string) {
-  switch (status) {
-    case "lead":
-      return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
-    case "booked":
-      return "border-blue-400/30 bg-blue-400/10 text-blue-100";
-    case "customer":
-      return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
-    case "inactive":
-      return "border-white/10 bg-white/[0.04] text-slate-400";
-    default:
-      return "border-white/10 bg-white/[0.04] text-slate-400";
-  }
-}
-
 function csvEscape(value: string) {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
+  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
   return value;
 }
 
@@ -83,9 +69,8 @@ function parseCsv(text: string): string[][] {
       continue;
     }
 
-    if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ",") {
+    if (ch === '"') inQuotes = true;
+    else if (ch === ",") {
       row.push(cell);
       cell = "";
     } else if (ch === "\n") {
@@ -93,9 +78,7 @@ function parseCsv(text: string): string[][] {
       rows.push(row);
       row = [];
       cell = "";
-    } else if (ch === "\r") {
-      // skip
-    } else {
+    } else if (ch !== "\r") {
       cell += ch;
     }
   }
@@ -120,17 +103,19 @@ function headerIndex(headers: string[], names: string[]) {
 export function ContactsClient({
   organizationId,
   contacts,
+  stages,
   googleConnected,
   twilioConnected,
 }: {
   organizationId: string;
   contacts: Contact[];
+  stages: Stage[];
   googleConnected: boolean;
   twilioConnected: boolean;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [stage, setStage] = useState<string>("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -162,32 +147,35 @@ export function ContactsClient({
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target as Node)) {
-        setMenuId(null);
-      }
+      if (!menuRef.current.contains(e.target as Node)) setMenuId(null);
     }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
+  const stageNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of stages) map.set(s.id, s.name);
+    return map;
+  }, [stages]);
+
   const counts = useMemo(() => {
-    const map: Record<string, number> = {
-      all: contacts.length,
-      lead: 0,
-      booked: 0,
-      customer: 0,
-      inactive: 0,
-    };
+    const map: Record<string, number> = { all: contacts.length };
+    for (const s of stages) map[s.id] = 0;
     for (const c of contacts) {
-      if (map[c.status] !== undefined) map[c.status] += 1;
+      if (c.pipeline_stage_id && map[c.pipeline_stage_id] !== undefined) {
+        map[c.pipeline_stage_id] += 1;
+      }
     }
     return map;
-  }, [contacts]);
+  }, [contacts, stages]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return contacts.filter((c) => {
-      if (stage !== "all" && c.status !== stage) return false;
+      if (stageFilter !== "all" && c.pipeline_stage_id !== stageFilter) {
+        return false;
+      }
       if (!q) return true;
       const hay = [c.first_name, c.last_name, c.email, c.phone, c.source]
         .filter(Boolean)
@@ -195,16 +183,16 @@ export function ContactsClient({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [contacts, stage, query]);
+  }, [contacts, stageFilter, query]);
 
-  function changeStage(contactId: string, nextStatus: string) {
+  function changePipelineStage(contactId: string, stageId: string) {
     setError(null);
     startTransition(async () => {
       try {
-        await updateContact({
-          contactId,
+        await setContactPipelineStage({
           organizationId,
-          status: nextStatus as "lead" | "booked" | "customer" | "inactive",
+          contactId,
+          stageId: stageId || null,
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not update stage");
@@ -236,6 +224,14 @@ export function ContactsClient({
           status,
           note,
         });
+        // Put new contacts on first pipeline stage when available
+        if (stages[0]?.id) {
+          await setContactPipelineStage({
+            organizationId,
+            contactId: result.contactId,
+            stageId: stages[0].id,
+          });
+        }
         resetForm();
         setShowAdd(false);
         router.push(`/dashboard/contacts/${result.contactId}`);
@@ -252,6 +248,7 @@ export function ContactsClient({
       "last_name",
       "email",
       "phone",
+      "pipeline_stage",
       "status",
       "source",
       "created_at",
@@ -264,6 +261,11 @@ export function ContactsClient({
           csvEscape(c.last_name ?? ""),
           csvEscape(c.email ?? ""),
           csvEscape(c.phone ?? ""),
+          csvEscape(
+            c.pipeline_stage_id
+              ? stageNameById.get(c.pipeline_stage_id) ?? ""
+              : "",
+          ),
           csvEscape(c.status ?? ""),
           csvEscape(c.source ?? ""),
           csvEscape(c.created_at ?? ""),
@@ -407,15 +409,21 @@ export function ContactsClient({
             Contacts
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-            Import from another CRM, export anytime, and work leads from one
-            place.
+            Filter and move people through{" "}
+            <Link
+              href="/dashboard/pipeline"
+              className="text-cyan-200 underline underline-offset-2"
+            >
+              your custom pipeline
+            </Link>
+            .
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={exportCsv}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 transition hover:border-white/25 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 hover:text-white"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -423,7 +431,7 @@ export function ContactsClient({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 transition hover:border-white/25 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 hover:text-white"
           >
             <Upload className="h-4 w-4" />
             Import CSV
@@ -445,7 +453,7 @@ export function ContactsClient({
               setShowAdd(true);
               setFormError(null);
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
           >
             <Plus className="h-4 w-4" />
             Add contact
@@ -454,24 +462,33 @@ export function ContactsClient({
       </div>
 
       <div className="mt-8 flex flex-wrap gap-2">
-        {STAGES.map((s) => {
-          const active = stage === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setStage(s.id)}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition ${
-                active
-                  ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-                  : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:text-white"
-              }`}
-            >
-              {s.label}
-              <span className="ml-1.5 text-slate-500">{counts[s.id] ?? 0}</span>
-            </button>
-          );
-        })}
+        <button
+          type="button"
+          onClick={() => setStageFilter("all")}
+          className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+            stageFilter === "all"
+              ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
+              : "border-white/10 bg-white/[0.03] text-slate-400"
+          }`}
+        >
+          All
+          <span className="ml-1.5 text-slate-500">{counts.all ?? 0}</span>
+        </button>
+        {stages.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setStageFilter(s.id)}
+            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+              stageFilter === s.id
+                ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
+                : "border-white/10 bg-white/[0.03] text-slate-400"
+            }`}
+          >
+            {s.name}
+            <span className="ml-1.5 text-slate-500">{counts[s.id] ?? 0}</span>
+          </button>
+        ))}
       </div>
 
       <div className="mt-4">
@@ -479,24 +496,17 @@ export function ContactsClient({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, phone…"
-          className="w-full max-w-md rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
+          className="w-full max-w-md rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
         />
       </div>
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
       {info && <p className="mt-3 text-sm text-emerald-300">{info}</p>}
-      {isPending && (
-        <p className="mt-2 text-xs text-slate-500">Working…</p>
-      )}
-
-      <p className="mt-3 text-xs text-slate-500">
-        CSV headers supported: first_name, last_name, email, phone, status
-      </p>
 
       <div className="mt-6 overflow-visible rounded-xl border border-white/10 bg-white/[0.035]">
         {filtered.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
-            No contacts in this stage. Import a CSV or add a contact.
+            No contacts in this stage.
           </p>
         ) : (
           <table className="w-full text-left text-sm">
@@ -505,7 +515,7 @@ export function ContactsClient({
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Phone</th>
-                <th className="px-4 py-3">Stage</th>
+                <th className="px-4 py-3">Pipeline</th>
                 <th className="px-4 py-3">Source</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -525,14 +535,18 @@ export function ContactsClient({
                   <td className="px-4 py-3 text-slate-400">{c.phone ?? "—"}</td>
                   <td className="px-4 py-3">
                     <select
-                      value={c.status}
-                      onChange={(e) => changeStage(c.id, e.target.value)}
-                      className={`rounded-full border px-2.5 py-1 text-xs font-medium outline-none ${stageColor(c.status)}`}
+                      value={c.pipeline_stage_id ?? ""}
+                      onChange={(e) =>
+                        changePipelineStage(c.id, e.target.value)
+                      }
+                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 outline-none"
                     >
-                      <option value="lead">Lead</option>
-                      <option value="booked">Booked</option>
-                      <option value="customer">Customer</option>
-                      <option value="inactive">Inactive</option>
+                      <option value="">Unassigned</option>
+                      {stages.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
                     </select>
                   </td>
                   <td className="px-4 py-3 text-xs capitalize text-slate-500">
@@ -641,7 +655,7 @@ export function ContactsClient({
                 <CountryPhoneInput value={phone} onChange={setPhone} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Stage</label>
+                <label className="text-sm text-slate-200">Legacy status</label>
                 <select
                   value={status}
                   onChange={(e) =>
