@@ -6,6 +6,10 @@ import {
   createGoogleCalendarEvent,
   saveBookingGoogleEventId,
 } from "@/lib/google/calendar";
+import {
+  assignContactPipelineStage,
+  getBookedPipelineStageId,
+} from "@/lib/pipeline/assign";
 
 export async function submitPublicBooking(input: {
   organizationId: string;
@@ -13,7 +17,7 @@ export async function submitPublicBooking(input: {
   email: string;
   phone?: string;
   title?: string;
-  startsAt: string; // ISO from browser local
+  startsAt: string;
   notes?: string;
 }) {
   const supabase = createAdminClient();
@@ -27,12 +31,11 @@ export async function submitPublicBooking(input: {
   const startsAt = new Date(input.startsAt);
   if (Number.isNaN(startsAt.getTime())) throw new Error("Invalid date/time");
 
-  // Block past bookings
   if (startsAt.getTime() < Date.now() - 60_000) {
     throw new Error("Please choose a future time");
   }
 
-  const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000); // default 1h
+  const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000);
 
   const firstName = name.split(" ")[0] ?? name;
   const lastName = name.split(" ").slice(1).join(" ") || null;
@@ -44,15 +47,24 @@ export async function submitPublicBooking(input: {
     source: "public_booking",
   });
 
-  // Store phone / last name if provided
   await supabase
     .from("contacts")
     .update({
       phone: input.phone?.trim() || null,
       last_name: lastName,
+      status: "booked",
       updated_at: new Date().toISOString(),
     })
     .eq("id", contactId);
+
+  // Booking → "booked" stage if it exists, else first stage
+  const bookedStageId = await getBookedPipelineStageId(input.organizationId);
+  await assignContactPipelineStage({
+    contactId,
+    organizationId: input.organizationId,
+    stageId: bookedStageId,
+    onlyIfEmpty: false,
+  });
 
   const title = input.title?.trim() || "Appointment";
 
@@ -75,7 +87,6 @@ export async function submitPublicBooking(input: {
     throw new Error(error?.message ?? "Could not create booking");
   }
 
-  // Calendar + email invite (best effort)
   const cal = await createGoogleCalendarEvent({
     organizationId: input.organizationId,
     title,

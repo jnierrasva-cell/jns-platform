@@ -3,6 +3,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { upsertContactByEmail } from "@/lib/contacts/upsert";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
+import {
+  assignContactPipelineStage,
+  getFirstPipelineStageId,
+} from "@/lib/pipeline/assign";
 
 async function sendIntakeAutoAck(input: {
   organizationId: string;
@@ -114,7 +118,6 @@ export async function submitIntakeForm(input: {
     source: "intake_form",
   });
 
-  // Load existing tags, then merge form tags
   const { data: existing } = await supabase
     .from("contacts")
     .select("tags")
@@ -141,6 +144,15 @@ export async function submitIntakeForm(input: {
     })
     .eq("id", contactId);
 
+  // New leads → first pipeline stage (only if unassigned)
+  const firstStageId = await getFirstPipelineStageId(input.organizationId);
+  await assignContactPipelineStage({
+    contactId,
+    organizationId: input.organizationId,
+    stageId: firstStageId,
+    onlyIfEmpty: true,
+  });
+
   const { error } = await supabase.from("intake_submissions").insert({
     form_id: input.formId,
     organization_id: input.organizationId,
@@ -161,7 +173,6 @@ export async function submitIntakeForm(input: {
 
   if (error) throw new Error(error.message);
 
-  // Best-effort thank-you email (does not fail the submission)
   await sendIntakeAutoAck({
     organizationId: input.organizationId,
     toEmail: email,

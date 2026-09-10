@@ -8,6 +8,10 @@ import {
   createGoogleCalendarEvent,
   saveBookingGoogleEventId,
 } from "@/lib/google/calendar";
+import {
+  assignContactPipelineStage,
+  getBookedPipelineStageId,
+} from "@/lib/pipeline/assign";
 
 async function requireOrgMember(organizationId: string) {
   const supabase = await createClient();
@@ -105,6 +109,14 @@ export async function createBooking(input: {
       })
       .eq("id", input.contactId)
       .eq("organization_id", input.organizationId);
+
+    const bookedStageId = await getBookedPipelineStageId(input.organizationId);
+    await assignContactPipelineStage({
+      contactId: input.contactId,
+      organizationId: input.organizationId,
+      stageId: bookedStageId,
+      onlyIfEmpty: false,
+    });
   }
 
   revalidatePath("/dashboard/bookings");
