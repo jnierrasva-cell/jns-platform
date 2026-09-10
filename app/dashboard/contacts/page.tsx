@@ -39,7 +39,7 @@ export default async function ContactDetailPage({
 
   const { data: stages } = await supabase
     .from("pipeline_stages")
-    .select("id, name, slug, position")
+    .select("id, name, slug, position, is_won, is_lost")
     .eq("organization_id", orgId)
     .order("position", { ascending: true });
 
