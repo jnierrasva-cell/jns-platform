@@ -35,6 +35,12 @@ export default async function ContactDetailPage({
 
   if (!contact) notFound();
 
+  const { data: stages } = await supabase
+    .from("pipeline_stages")
+    .select("id, name, slug, position, is_won, is_lost")
+    .eq("organization_id", membership.organization_id)
+    .order("position", { ascending: true });
+
   const { data: activity } = await supabase
     .from("email_activity")
     .select(
@@ -70,6 +76,7 @@ export default async function ContactDetailPage({
       <ContactDetailClient
         organizationId={membership.organization_id}
         contact={contact}
+        stages={stages ?? []}
         activity={activity ?? []}
         bookings={bookings ?? []}
         notes={notes ?? []}
