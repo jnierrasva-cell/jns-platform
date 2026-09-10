@@ -15,6 +15,7 @@ import {
   CalendarDays,
   FileInput,
   Inbox,
+  Kanban,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -51,6 +52,7 @@ export function DashboardShell({
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
     { label: "Unmatched", href: "/dashboard/unmatched", icon: Inbox },
+    { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
     { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
     { label: "Forms", href: "/dashboard/forms", icon: FileInput },
     { label: "Automation", href: "/dashboard/automation", icon: Zap },
