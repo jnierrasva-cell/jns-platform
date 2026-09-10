@@ -12,7 +12,6 @@ type Stage = {
   name: string;
   slug: string;
   position: number;
-  color: string;
   is_won: boolean;
   is_lost: boolean;
 };

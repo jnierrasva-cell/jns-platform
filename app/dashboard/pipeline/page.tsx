@@ -22,7 +22,7 @@ export default async function PipelinePage() {
 
   const { data: stages } = await supabase
     .from("pipeline_stages")
-    .select("id, name, slug, position, color, is_won, is_lost")
+    .select("id, name, slug, position, is_won, is_lost")
     .eq("organization_id", orgId)
     .order("position", { ascending: true });
 

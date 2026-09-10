@@ -54,7 +54,6 @@ export async function createPipelineStage(input: {
     name,
     slug,
     position,
-    color: "cyan",
   });
 
   if (error) throw new Error(error.message);
