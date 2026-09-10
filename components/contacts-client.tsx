@@ -2,7 +2,13 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { updateContact } from "@/app/dashboard/contacts/actions";
+import { useRouter } from "next/navigation";
+import { Plus, X } from "lucide-react";
+import {
+  createContact,
+  updateContact,
+} from "@/app/dashboard/contacts/actions";
+import { CountryPhoneInput } from "@/components/country-phone-input";
 
 type Contact = {
   id: string;
@@ -27,7 +33,7 @@ const STAGES = [
 
 function displayName(c: Contact) {
   const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
-  return name || c.email || "Untitled";
+  return name || c.email || c.phone || "Untitled";
 }
 
 function stageColor(status: string) {
@@ -52,10 +58,20 @@ export function ContactsClient({
   organizationId: string;
   contacts: Contact[];
 }) {
+  const router = useRouter();
   const [stage, setStage] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [status, setStatus] = useState<"lead" | "booked" | "customer" | "inactive">("lead");
+  const [note, setNote] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {
@@ -84,14 +100,14 @@ export function ContactsClient({
     });
   }, [contacts, stage, query]);
 
-  function changeStage(contactId: string, status: Contact["status"]) {
+  function changeStage(contactId: string, nextStatus: string) {
     setError(null);
     startTransition(async () => {
       try {
         await updateContact({
           contactId,
           organizationId,
-          status: status as "lead" | "booked" | "customer" | "inactive",
+          status: nextStatus as "lead" | "booked" | "customer" | "inactive",
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not update stage");
@@ -99,19 +115,66 @@ export function ContactsClient({
     });
   }
 
+  function resetForm() {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setStatus("lead");
+    setNote("");
+    setFormError(null);
+  }
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    startTransition(async () => {
+      try {
+        const result = await createContact({
+          organizationId,
+          firstName,
+          lastName,
+          email,
+          phone,
+          status,
+          note,
+        });
+        resetForm();
+        setShowAdd(false);
+        router.push(`/dashboard/contacts/${result.contactId}`);
+        router.refresh();
+      } catch (err) {
+        setFormError(err instanceof Error ? err.message : "Could not create");
+      }
+    });
+  }
+
   return (
     <div className="pb-4">
-      <div className="border-b border-white/10 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-          CRM
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-          Contacts
-        </h1>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-          Move people through your pipeline and open any contact for notes,
-          bookings, and email history.
-        </p>
+      <div className="flex flex-col gap-4 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+            CRM
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+            Contacts
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+            Move people through your pipeline. Add leads manually when they
+            did not come from a form or rule.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setShowAdd(true);
+            setFormError(null);
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Add contact
+        </button>
       </div>
 
       {/* Stage filters */}
@@ -146,14 +209,14 @@ export function ContactsClient({
       </div>
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-      {isPending && (
-        <p className="mt-2 text-xs text-slate-500">Updating pipeline…</p>
+      {isPending && !showAdd && (
+        <p className="mt-2 text-xs text-slate-500">Updating…</p>
       )}
 
       <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
         {filtered.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
-            No contacts in this stage.
+            No contacts in this stage. Use Add contact or share a form.
           </p>
         ) : (
           <table className="w-full text-left text-sm">
@@ -168,10 +231,7 @@ export function ContactsClient({
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-b border-white/5 last:border-0"
-                >
+                <tr key={c.id} className="border-b border-white/5 last:border-0">
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
@@ -215,6 +275,130 @@ export function ContactsClient({
           </table>
         )}
       </div>
+
+      {/* Add contact modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                  New contact
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  Add to your CRM
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAdd(false);
+                  resetForm();
+                }}
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm text-slate-200">First name</label>
+                  <input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm text-slate-200">Last name</label>
+                  <input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-slate-200">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Optional if phone is set"
+                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-slate-200">Phone</label>
+                <CountryPhoneInput value={phone} onChange={setPhone} />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-slate-200">Stage</label>
+                <select
+                  value={status}
+                  onChange={(e) =>
+                    setStatus(
+                      e.target.value as
+                        | "lead"
+                        | "booked"
+                        | "customer"
+                        | "inactive",
+                    )
+                  }
+                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                >
+                  <option value="lead">Lead</option>
+                  <option value="booked">Booked</option>
+                  <option value="customer">Customer</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-slate-200">
+                  First note (optional)
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                  placeholder="How you met them, what they asked for…"
+                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                />
+              </div>
+
+              {formError && (
+                <p className="text-sm text-red-300">{formError}</p>
+              )}
+
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAdd(false);
+                    resetForm();
+                  }}
+                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                >
+                  {isPending ? "Saving…" : "Save contact"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

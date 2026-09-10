@@ -21,6 +21,81 @@ async function requireOrgMember(organizationId: string) {
   return { supabase, user };
 }
 
+export async function createContact(input: {
+  organizationId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  status?: "lead" | "booked" | "customer" | "inactive";
+  note?: string;
+}) {
+  const { supabase, user } = await requireOrgMember(input.organizationId);
+
+  const email = input.email?.trim().toLowerCase() || null;
+  const phone = input.phone?.trim() || null;
+  const firstName = input.firstName?.trim() || null;
+  const lastName = input.lastName?.trim() || null;
+  const status = input.status ?? "lead";
+
+  if (!email && !phone) {
+    throw new Error("Add an email or phone number");
+  }
+  if (email && !email.includes("@")) {
+    throw new Error("Invalid email");
+  }
+  if (phone && phone.replace(/[\s\-()]/g, "").length < 8) {
+    throw new Error("Enter a valid phone including country code");
+  }
+
+  if (email) {
+    const { data: existing } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("organization_id", input.organizationId)
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (existing) {
+      throw new Error("A contact with this email already exists");
+    }
+  }
+
+  const { data: contact, error } = await supabase
+    .from("contacts")
+    .insert({
+      organization_id: input.organizationId,
+      email,
+      phone,
+      first_name: firstName,
+      last_name: lastName,
+      status,
+      source: "manual",
+      tags: ["manual"],
+      last_contacted_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (error || !contact) {
+    throw new Error(error?.message ?? "Could not create contact");
+  }
+
+  const note = input.note?.trim();
+  if (note) {
+    await supabase.from("contact_notes").insert({
+      organization_id: input.organizationId,
+      contact_id: contact.id,
+      body: note,
+      created_by: user.id,
+    });
+  }
+
+  revalidatePath("/dashboard/contacts");
+  revalidatePath("/dashboard");
+  return { contactId: contact.id };
+}
+
 export async function updateContact(input: {
   contactId: string;
   organizationId: string;
