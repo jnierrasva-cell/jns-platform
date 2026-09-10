@@ -20,6 +20,12 @@ export default async function BookingsPage() {
 
   const orgId = membership.organization_id;
 
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("slug")
+    .eq("id", orgId)
+    .maybeSingle();
+
   const { data: bookings } = await supabase
     .from("bookings")
     .select(
@@ -47,6 +53,8 @@ export default async function BookingsPage() {
     .eq("organization_id", orgId)
     .maybeSingle();
 
+  const publicBookingPath = `/book/${org?.slug ?? orgId}`;
+
   return (
     <BookingsClient
       organizationId={orgId}
@@ -54,7 +62,7 @@ export default async function BookingsPage() {
       contacts={contacts ?? []}
       smsRemindersEnabled={Boolean(smsAutomation?.is_enabled)}
       twilioConnected={Boolean(twilio)}
-      publicBookingPath={`/book/jns-demo`}
+      publicBookingPath={publicBookingPath}
     />
   );
 }

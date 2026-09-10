@@ -94,12 +94,21 @@ export async function createBooking(input: {
     await saveBookingGoogleEventId(booking.id, cal.eventId);
   } else if (cal.error) {
     console.error("[createBooking] calendar sync:", cal.error);
-    throw new Error(
-      `Booking saved, but Google Calendar sync failed: ${cal.error}`,
-    );
+  }
+
+  if (input.contactId) {
+    await supabase
+      .from("contacts")
+      .update({
+        status: "booked",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", input.contactId)
+      .eq("organization_id", input.organizationId);
   }
 
   revalidatePath("/dashboard/bookings");
+  revalidatePath("/dashboard/contacts");
   revalidatePath("/dashboard");
 }
 
@@ -133,6 +142,7 @@ export async function updateBookingStatus(
   if (error) throw new Error(error.message);
 
   revalidatePath("/dashboard/bookings");
+  revalidatePath("/dashboard");
 }
 
 export async function sendBookingRemindersNow(organizationId: string) {
