@@ -304,7 +304,7 @@ export function ContactsClient({
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
+      <td className="relative z-10 px-4 py-3 text-right">
         {filtered.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
             No contacts in this stage. Use Add contact or share a form.
@@ -361,7 +361,7 @@ export function ContactsClient({
                   <td className="px-4 py-3 text-xs capitalize text-slate-500">
                     {(c.source ?? "—").replace(/_/g, " ")}
                   </td>
-                  <td className="relative px-4 py-3 text-right">
+                  <td className="relative z-10 px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() =>
@@ -375,7 +375,7 @@ export function ContactsClient({
                     {menuId === c.id && (
                       <div
                         ref={menuRef}
-                        className="absolute right-4 z-20 mt-1 w-44 rounded-lg border border-white/10 bg-[#0f1a35] py-1 shadow-xl"
+                        className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-white/10 bg-[#0f1a35] py-1 shadow-xl"
                       >
                         <button
                           type="button"
