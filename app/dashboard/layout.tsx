@@ -16,11 +16,21 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, status")
+    .select("role, status, account_type")
     .eq("id", user.id)
     .single();
 
-  if (profile?.status !== "approved") redirect("/pending-approval");
+  // Soft auto-heal for any leftover pending rows
+  if (profile && profile.status !== "approved") {
+    await supabase
+      .from("profiles")
+      .update({ status: "approved" })
+      .eq("id", user.id);
+  }
+
+  if (!profile?.account_type) {
+    redirect("/onboarding/account-type");
+  }
 
   const { data: membership } = await supabase
     .from("org_members")
@@ -28,7 +38,12 @@ export default async function DashboardLayout({
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!membership) redirect("/onboarding/setup-business");
+  if (!membership) {
+    if (profile.account_type === "business") {
+      redirect("/onboarding/setup-business");
+    }
+    redirect("/onboarding/account-type");
+  }
 
   const orgName = Array.isArray(membership.organizations)
     ? membership.organizations[0]?.name

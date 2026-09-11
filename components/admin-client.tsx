@@ -16,8 +16,8 @@ type Profile = {
 export function AdminClient({ profiles }: { profiles: Profile[] }) {
   const [isPending, startTransition] = useTransition();
 
-  const pendingUsers = profiles.filter((p) => p.status === "pending");
-  const otherUsers = profiles.filter((p) => p.status !== "pending");
+  const activeUsers = profiles.filter((p) => p.status !== "rejected");
+  const rejectedUsers = profiles.filter((p) => p.status === "rejected");
 
   return (
     <div>
@@ -37,56 +37,9 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
         All users
       </h1>
 
-      {pendingUsers.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
-            Awaiting approval ({pendingUsers.length})
-          </h2>
-          <div className="flex flex-col gap-3">
-            {pendingUsers.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/10 p-4"
-              >
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {p.business_name || p.email}
-                  </p>
-                  <p className="text-xs text-[#94A3B8]">{p.email}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    disabled={isPending}
-                    onClick={() =>
-                      startTransition(() => {
-                        approveUser(p.id);
-                      })
-                    }
-                    className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    disabled={isPending}
-                    onClick={() =>
-                      startTransition(() => {
-                        rejectUser(p.id);
-                      })
-                    }
-                    className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#94A3B8] transition hover:border-white/25 hover:text-white"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       <section className="mt-10">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
-          All accounts
+          Active accounts
         </h2>
         <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
           <table className="w-full text-left text-sm">
@@ -99,7 +52,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
               </tr>
             </thead>
             <tbody>
-              {otherUsers.map((p) => (
+              {activeUsers.map((p) => (
                 <tr
                   key={p.id}
                   className="border-b border-white/5 last:border-0"
@@ -111,10 +64,11 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                     <p className="text-xs text-[#94A3B8]">{p.email}</p>
                   </td>
                   <td className="px-4 py-3 text-[#94A3B8]">{p.role}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{p.status}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">active</td>
                   <td className="px-4 py-3 text-right">
                     {p.role !== "admin" && (
-                      <button
+                      <div className="flex justify-end gap-3">
+                        <button
                         disabled={isPending}
                         onClick={() =>
                           startTransition(() => {
@@ -122,9 +76,21 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                           })
                         }
                         className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
-                      >
-                        Make admin
-                      </button>
+                        >
+                          Make admin
+                        </button>
+                        <button
+                          disabled={isPending}
+                          onClick={() =>
+                            startTransition(() => {
+                              rejectUser(p.id);
+                            })
+                          }
+                          className="text-xs text-red-300 underline underline-offset-2 hover:text-red-200"
+                        >
+                          Block
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -133,6 +99,40 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
           </table>
         </div>
       </section>
+
+      {rejectedUsers.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+            Blocked accounts
+          </h2>
+          <div className="flex flex-col gap-3">
+            {rejectedUsers.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between rounded-xl border border-red-400/20 bg-red-400/10 p-4"
+              >
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    {p.business_name || p.email}
+                  </p>
+                  <p className="text-xs text-[#94A3B8]">{p.email}</p>
+                </div>
+                <button
+                  disabled={isPending}
+                  onClick={() =>
+                    startTransition(() => {
+                      approveUser(p.id);
+                    })
+                  }
+                  className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+                >
+                  Restore access
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

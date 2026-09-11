@@ -33,7 +33,8 @@ export async function proxy(request: NextRequest) {
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isAdminRoute = pathname.startsWith("/admin");
   const isOnboardingRoute = pathname.startsWith("/onboarding");
-  const isProtectedRoute = isDashboardRoute || isAdminRoute || isOnboardingRoute;
+  const isProtectedRoute =
+    isDashboardRoute || isAdminRoute || isOnboardingRoute;
 
   if (isProtectedRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
@@ -41,22 +42,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && isProtectedRoute) {
+  if (user && isAdminRoute) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, status")
+      .select("role")
       .eq("id", user.id)
       .single();
 
-    if (isAdminRoute && profile?.role !== "admin") {
+    if (profile?.role !== "admin") {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    if ((isDashboardRoute || isOnboardingRoute) && profile?.status !== "approved") {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/pending-approval";
       return NextResponse.redirect(redirectUrl);
     }
   }

@@ -16,7 +16,7 @@ export default async function SetupBusinessPage() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.status !== "approved") redirect("/pending-approval");
+  if (profile?.status === "rejected") redirect("/pending-approval");
 
   const { data: membership } = await supabase
     .from("org_members")

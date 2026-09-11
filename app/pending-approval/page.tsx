@@ -23,11 +23,11 @@ export default function PendingApprovalPage() {
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-8 shadow-2xl shadow-black/40 backdrop-blur-sm">
           <h1 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-white">
-            Your account is awaiting approval
+            This account is unavailable
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-[#94A3B8]">
-            Someone from JNS will review your account shortly. You’ll be able
-            to sign in once it’s approved.
+            Your account cannot access a JNS workspace. Please contact JNS if
+            you think this is a mistake.
           </p>
         </div>
 
