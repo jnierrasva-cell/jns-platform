@@ -13,13 +13,16 @@ const workspaceBenefits = [
   "Activate workflows built for repeatable work",
 ];
 
+type Mode = "signin" | "signup" | "forgot";
+
 export default function LoginPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -28,6 +31,24 @@ export default function LoginPage() {
     event.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (mode === "forgot") {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo: `${window.location.origin}/auth/reset-password`,
+        },
+      );
+      setLoading(false);
+
+      if (resetError) {
+        setError(resetError.message);
+        return;
+      }
+
+      setResetSent(true);
+      return;
+    }
 
     if (mode === "signin") {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -50,7 +71,7 @@ export default function LoginPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     setLoading(false);
@@ -63,9 +84,11 @@ export default function LoginPage() {
     setConfirmSent(true);
   }
 
-  function chooseMode(nextMode: "signin" | "signup") {
+  function chooseMode(nextMode: Mode) {
     setMode(nextMode);
     setError(null);
+    setConfirmSent(false);
+    setResetSent(false);
   }
 
   return (
@@ -97,116 +120,139 @@ export default function LoginPage() {
               The connected workspace for your next stage of growth.
             </h1>
             <p className="mt-5 max-w-md text-base leading-7 text-slate-300">
-              Sign in to manage your business tools, customer operations, and active automations from one focused place.
+              Sign in to manage your business tools, customer operations, and
+              active automations from one focused place.
             </p>
-            <ul className="mt-8 space-y-3.5 text-sm text-slate-300">
-              {workspaceBenefits.map((benefit) => (
-                <li key={benefit} className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-300/10 text-cyan-200">
-                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+
+            <ul className="mt-8 space-y-3">
+              {workspaceBenefits.map((item) => (
+                <li key={item} className="flex items-start gap-3 text-sm text-slate-300">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-cyan-200">
+                    <Check className="h-3 w-3" aria-hidden="true" />
                   </span>
-                  {benefit}
+                  {item}
                 </li>
               ))}
             </ul>
           </div>
 
-          <p className="flex items-center gap-2 text-xs text-slate-500">
-            <ShieldCheck className="h-4 w-4 text-cyan-300" aria-hidden="true" />
-            Secure access to your JNS workspace
-          </p>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <ShieldCheck className="h-4 w-4 text-cyan-300/80" aria-hidden="true" />
+            Secure access to your business systems
+          </div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
+        <section className="flex items-center justify-center px-6 py-12 sm:px-10">
           <div className="w-full max-w-md">
             <div className="mb-8 flex items-center justify-between lg:hidden">
-              <Link href="/" aria-label="JNS home">
+              <Link href="/" className="inline-flex" aria-label="JNS home">
                 <Image
                   src="/jns-logo.png"
                   alt="JNS Platform"
-                  width={160}
-                  height={60}
+                  width={140}
+                  height={52}
                   className="h-10 w-auto"
                   priority
                 />
               </Link>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-300 transition hover:text-white"
-              >
-                Back to site <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </Link>
             </div>
 
-            <div className="rounded-2xl border border-white/12 bg-[#101a37]/75 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-2xl shadow-black/20 sm:p-8">
               {confirmSent ? (
-                <div className="py-5 text-center">
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-300/25 bg-emerald-300/10 text-emerald-200">
-                    <Check className="h-6 w-6" aria-hidden="true" />
-                  </span>
-                  <h2 className="mt-5 text-xl font-semibold text-white">Check your inbox</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-300">
-                    We sent a confirmation email to <span className="font-medium text-slate-100">{email}</span>. Once confirmed, come back and sign in.
+                <div className="space-y-3 text-center">
+                  <h2 className="text-xl font-semibold text-white">
+                    Check your email
+                  </h2>
+                  <p className="text-sm leading-6 text-slate-300">
+                    We sent a confirmation link to{" "}
+                    <span className="font-medium text-white">{email}</span>.
+                    Open it to finish creating your account.
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setConfirmSent(false);
-                      chooseMode("signin");
-                    }}
-                    className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-cyan-200 transition hover:text-cyan-100"
+                    onClick={() => chooseMode("signin")}
+                    className="text-sm text-cyan-200 underline underline-offset-2 hover:text-cyan-100"
                   >
-                    Back to sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    Back to sign in
+                  </button>
+                </div>
+              ) : resetSent ? (
+                <div className="space-y-3 text-center">
+                  <h2 className="text-xl font-semibold text-white">
+                    Password reset sent
+                  </h2>
+                  <p className="text-sm leading-6 text-slate-300">
+                    If an account exists for{" "}
+                    <span className="font-medium text-white">{email}</span>,
+                    you’ll receive a link to set a new password.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => chooseMode("signin")}
+                    className="text-sm text-cyan-200 underline underline-offset-2 hover:text-cyan-100"
+                  >
+                    Back to sign in
                   </button>
                 </div>
               ) : (
                 <>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
-                    {mode === "signin" ? "Welcome back" : "Get started"}
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-                    {mode === "signin" ? "Sign in to your workspace" : "Create your JNS account"}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {mode === "signin"
-                      ? "Continue where your business work comes together."
-                      : "Set up secure access to your connected business workspace."}
-                  </p>
-
-                  <div className="mt-7 flex rounded-xl border border-white/10 bg-[#0B132B]/65 p-1">
-                    <button
-                      type="button"
-                      onClick={() => chooseMode("signin")}
-                      className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                        mode === "signin"
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-950/50"
-                          : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      Sign in
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => chooseMode("signup")}
-                      className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                        mode === "signup"
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-950/50"
-                          : "text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      Create account
-                    </button>
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold text-white">
+                      {mode === "forgot"
+                        ? "Reset your password"
+                        : mode === "signup"
+                          ? "Create your account"
+                          : "Welcome back"}
+                    </h2>
+                    <p className="mt-1.5 text-sm text-slate-400">
+                      {mode === "forgot"
+                        ? "Enter your email and we’ll send a reset link."
+                        : mode === "signup"
+                          ? "Start with email and password. You’ll choose account type next."
+                          : "Sign in to continue to your workspace."}
+                    </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+                  {mode !== "forgot" && (
+                    <div className="mb-5 grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-black/20 p-1">
+                      <button
+                        type="button"
+                        onClick={() => chooseMode("signin")}
+                        className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+                          mode === "signin"
+                            ? "bg-blue-600 text-white"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Sign in
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => chooseMode("signup")}
+                        className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+                          mode === "signup"
+                            ? "bg-blue-600 text-white"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Sign up
+                      </button>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label htmlFor="email" className="text-sm font-medium text-slate-200">
-                        Email address
+                      <label
+                        htmlFor="email"
+                        className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400"
+                      >
+                        Email
                       </label>
                       <input
                         id="email"
                         type="email"
                         required
+                        autoComplete="email"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         placeholder="you@company.com"
@@ -214,32 +260,42 @@ export default function LoginPage() {
                       />
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between gap-4">
-                        <label htmlFor="password" className="text-sm font-medium text-slate-200">
-                          Password
-                        </label>
-                        {mode === "signin" && (
-                          <button
-                            type="button"
-                            className="text-xs font-medium text-cyan-200 transition hover:text-cyan-100"
-                            onClick={() => alert("Password reset coming soon")}
+                    {mode !== "forgot" && (
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <label
+                            htmlFor="password"
+                            className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400"
                           >
-                            Forgot password?
-                          </button>
-                        )}
+                            Password
+                          </label>
+                          {mode === "signin" && (
+                            <button
+                              type="button"
+                              className="text-xs font-medium text-cyan-200 transition hover:text-cyan-100"
+                              onClick={() => chooseMode("forgot")}
+                            >
+                              Forgot password?
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          id="password"
+                          type="password"
+                          required
+                          minLength={6}
+                          autoComplete={
+                            mode === "signup"
+                              ? "new-password"
+                              : "current-password"
+                          }
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          placeholder="Enter your password"
+                          className="mt-2 w-full rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
+                        />
                       </div>
-                      <input
-                        id="password"
-                        type="password"
-                        required
-                        minLength={6}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder="Enter your password"
-                        className="mt-2 w-full rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
-                      />
-                    </div>
+                    )}
 
                     {error && (
                       <p className="rounded-lg border border-red-400/20 bg-red-400/10 px-3.5 py-3 text-sm text-red-200">
@@ -254,12 +310,26 @@ export default function LoginPage() {
                     >
                       {loading
                         ? "Please wait..."
-                        : mode === "signin"
-                          ? "Sign in to JNS"
-                          : "Create your account"}
-                      {!loading && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+                        : mode === "forgot"
+                          ? "Send reset link"
+                          : mode === "signup"
+                            ? "Create your account"
+                            : "Sign in to JNS"}
+                      {!loading && (
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      )}
                     </button>
                   </form>
+
+                  {mode === "forgot" && (
+                    <button
+                      type="button"
+                      onClick={() => chooseMode("signin")}
+                      className="mt-4 w-full text-center text-sm text-cyan-200 underline underline-offset-2 hover:text-cyan-100"
+                    >
+                      Back to sign in
+                    </button>
+                  )}
                 </>
               )}
             </div>
