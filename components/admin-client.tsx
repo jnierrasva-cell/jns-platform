@@ -1,8 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { approveUser, rejectUser, setUserRole } from "@/app/admin/actions";
+import {
+  approveUser,
+  rejectUser,
+  setUserRole,
+  generatePasswordResetLink,
+} from "@/app/admin/actions";
 
 type Profile = {
   id: string;
@@ -15,9 +20,38 @@ type Profile = {
 
 export function AdminClient({ profiles }: { profiles: Profile[] }) {
   const [isPending, startTransition] = useTransition();
+  const [resetInfo, setResetInfo] = useState<{
+    email: string;
+    link: string;
+  } | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const activeUsers = profiles.filter((p) => p.status !== "rejected");
   const rejectedUsers = profiles.filter((p) => p.status === "rejected");
+
+  function handleResetLink(userId: string) {
+    setResetError(null);
+    setResetInfo(null);
+    startTransition(async () => {
+      try {
+        const result = await generatePasswordResetLink(userId);
+        setResetInfo(result);
+      } catch (err) {
+        setResetError(
+          err instanceof Error ? err.message : "Could not generate link",
+        );
+      }
+    });
+  }
+
+  async function copyLink() {
+    if (!resetInfo?.link) return;
+    try {
+      await navigator.clipboard.writeText(resetInfo.link);
+    } catch {
+      // fallback: select is enough if clipboard blocked
+    }
+  }
 
   return (
     <div>
@@ -36,6 +70,44 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
       <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
         All users
       </h1>
+
+      {(resetInfo || resetError) && (
+        <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+          {resetError && (
+            <p className="text-sm text-red-300">{resetError}</p>
+          )}
+          {resetInfo && (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-300">
+                Reset link for{" "}
+                <span className="font-medium text-white">{resetInfo.email}</span>
+                . Copy and send it yourself (chat, SMS, email). No SMTP required.
+              </p>
+              <textarea
+                readOnly
+                value={resetInfo.link}
+                className="h-24 w-full rounded-lg border border-white/10 bg-[#0B132B] px-3 py-2 text-xs text-cyan-100"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={copyLink}
+                  className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1D4ED8]"
+                >
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResetInfo(null)}
+                  className="text-xs text-slate-400 underline underline-offset-2 hover:text-white"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <section className="mt-10">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
@@ -65,33 +137,42 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                   </td>
                   <td className="px-4 py-3 text-[#94A3B8]">{p.role}</td>
                   <td className="px-4 py-3 text-[#94A3B8]">active</td>
-                  <td className="px-4 py-3 text-right">
-                    {p.role !== "admin" && (
-                      <div className="flex justify-end gap-3">
-                        <button
-                        disabled={isPending}
-                        onClick={() =>
-                          startTransition(() => {
-                            setUserRole(p.id, "admin");
-                          })
-                        }
-                        className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
-                        >
-                          Make admin
-                        </button>
-                        <button
-                          disabled={isPending}
-                          onClick={() =>
-                            startTransition(() => {
-                              rejectUser(p.id);
-                            })
-                          }
-                          className="text-xs text-red-300 underline underline-offset-2 hover:text-red-200"
-                        >
-                          Block
-                        </button>
-                      </div>
-                    )}
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap justify-end gap-3">
+                      <button
+                        disabled={isPending || !p.email}
+                        onClick={() => handleResetLink(p.id)}
+                        className="text-xs text-cyan-200 underline underline-offset-2 hover:text-cyan-100 disabled:opacity-40"
+                      >
+                        Reset password link
+                      </button>
+                      {p.role !== "admin" && (
+                        <>
+                          <button
+                            disabled={isPending}
+                            onClick={() =>
+                              startTransition(() => {
+                                setUserRole(p.id, "admin");
+                              })
+                            }
+                            className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                          >
+                            Make admin
+                          </button>
+                          <button
+                            disabled={isPending}
+                            onClick={() =>
+                              startTransition(() => {
+                                rejectUser(p.id);
+                              })
+                            }
+                            className="text-xs text-red-300 underline underline-offset-2 hover:text-red-200"
+                          >
+                            Block
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
