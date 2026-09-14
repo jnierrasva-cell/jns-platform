@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { disconnectGoogle } from "@/app/dashboard/integrations/actions";
 import { TwilioConnectCard } from "@/components/twilio-connect-card";
+import { ArketaConnectCard } from "@/components/arketa-connect-card";
 
 export default async function IntegrationsPage() {
   const supabase = await createClient();
@@ -20,7 +21,8 @@ export default async function IntegrationsPage() {
   if (!membership) redirect("/onboarding/setup-business");
 
   const orgId = membership.organization_id;
-  const canManage = membership.role === "ceo";
+  const canManage =
+    membership.role === "ceo" || membership.role === "admin";
 
   const { data: googleConnection } = await supabase
     .from("connections")
@@ -34,6 +36,14 @@ export default async function IntegrationsPage() {
     .select("from_number")
     .eq("organization_id", orgId)
     .maybeSingle();
+
+  const { data: arketaLocations } = await supabase
+    .from("arketa_locations")
+    .select(
+      "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status",
+    )
+    .eq("organization_id", orgId)
+    .order("label", { ascending: true });
 
   return (
     <div>
@@ -57,7 +67,7 @@ export default async function IntegrationsPage() {
                 Google (Gmail)
               </h2>
               <p className="mt-1 text-sm text-[#94A3B8]">
-                Used for inbox watch and auto-acknowledgment replies.
+                Used for inbox watch, auto-acknowledgment, and calendar sync.
               </p>
             </div>
             <span
@@ -72,7 +82,7 @@ export default async function IntegrationsPage() {
           </div>
 
           {googleConnection ? (
-            <div className="mt-5">
+            <div className="mt-5 space-y-3">
               <p className="text-sm text-[#E2E8F0]">
                 Connected as{" "}
                 <span className="font-medium text-white">
@@ -80,13 +90,7 @@ export default async function IntegrationsPage() {
                 </span>
               </p>
               {canManage && (
-                <form
-                  action={async () => {
-                    "use server";
-                    await disconnectGoogle(orgId);
-                  }}
-                  className="mt-4"
-                >
+                <form action={disconnectGoogle}>
                   <button
                     type="submit"
                     className="rounded-lg border border-white/15 px-3 py-2 text-xs text-[#94A3B8] transition hover:border-white/25 hover:text-white"
@@ -113,9 +117,15 @@ export default async function IntegrationsPage() {
         {/* Twilio */}
         <TwilioConnectCard
           organizationId={orgId}
-          connected={Boolean(twilio)}
-          fromNumber={twilio?.from_number ?? null}
           canManage={canManage}
+          connectedFromNumber={twilio?.from_number ?? null}
+        />
+
+        {/* Arketa — full width */}
+        <ArketaConnectCard
+          organizationId={orgId}
+          canManage={canManage}
+          locations={arketaLocations ?? []}
         />
       </div>
     </div>
