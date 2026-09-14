@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { syncArketaLocationById } from "@/lib/arketa/sync";
 
 const ARKETA_BASE =
   "https://us-central1-sutra-prod.cloudfunctions.net/partnerApi/v0";
@@ -40,7 +41,6 @@ async function verifyArketaCredentials(partnerId: string, apiKey: string) {
   );
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
     throw new Error(
       `Arketa rejected these credentials (${res.status}). Check Partner ID and API key.`,
     );
@@ -133,4 +133,32 @@ export async function testArketaLocation(
     locationsFound: count,
     message: `Credentials work. Arketa returned ${count} location(s).`,
   };
+}
+
+export async function syncArketaLocation(
+  organizationId: string,
+  locationId: string,
+) {
+  await requireOrgManager(organizationId);
+
+  const supabase = await createClient();
+  const { data: loc } = await supabase
+    .from("arketa_locations")
+    .select("id")
+    .eq("id", locationId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (!loc) throw new Error("Location not found");
+
+  const result = await syncArketaLocationById(locationId);
+  revalidatePath("/dashboard/integrations");
+
+  if (result.error) {
+    throw new Error(
+      `${result.label}: ${result.error} (created ${result.created}, updated ${result.updated})`,
+    );
+  }
+
+  return result;
 }
