@@ -5,6 +5,7 @@ import {
   saveArketaLocation,
   deleteArketaLocation,
   testArketaLocation,
+  syncArketaLocation,
 } from "@/app/dashboard/integrations/arketa-actions";
 
 export type ArketaLocationRow = {
@@ -90,6 +91,21 @@ export function ArketaConnectCard({
     });
   }
 
+  function handleSync(id: string) {
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      try {
+        const result = await syncArketaLocation(organizationId, id);
+        setSuccess(
+          `${result.label}: created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Sync failed");
+      }
+    });
+  }
+
   const connected = locations.length > 0;
 
   return (
@@ -101,8 +117,7 @@ export function ArketaConnectCard({
           </h2>
           <p className="mt-1 text-sm text-[#94A3B8]">
             Sync class schedules from Arketa into Google Calendar (one-way).
-            Add each studio location with its Partner ID, API key, and target
-            calendar.
+            Each location uses its own Partner API credentials and calendar.
           </p>
         </div>
         <span
@@ -133,7 +148,7 @@ export function ArketaConnectCard({
                     Calendar:{" "}
                     {loc.google_calendar_id
                       ? loc.google_calendar_id
-                      : "Not set yet"}
+                      : "Not set — required for sync"}
                   </p>
                   <p className="mt-0.5 text-xs text-[#64748B]">
                     Last sync:{" "}
@@ -144,7 +159,15 @@ export function ArketaConnectCard({
                   </p>
                 </div>
                 {canManage && (
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      disabled={isPending || !loc.google_calendar_id}
+                      onClick={() => handleSync(loc.id)}
+                      className="text-xs font-medium text-emerald-300 underline underline-offset-2 hover:text-emerald-200 disabled:opacity-40"
+                    >
+                      Sync now
+                    </button>
                     <button
                       type="button"
                       disabled={isPending}
@@ -206,7 +229,7 @@ export function ArketaConnectCard({
               <input
                 value={calendarId}
                 onChange={(e) => setCalendarId(e.target.value)}
-                placeholder="Google Calendar ID (optional for now)"
+                placeholder="Google Calendar ID"
                 className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
               />
               <div className="flex flex-wrap gap-3">
