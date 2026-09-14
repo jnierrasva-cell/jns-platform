@@ -45,6 +45,9 @@ export default async function IntegrationsPage() {
     .eq("organization_id", orgId)
     .order("label", { ascending: true });
 
+  // Form actions must accept FormData — bind org id for disconnect
+  const disconnectGoogleAction = disconnectGoogle.bind(null, orgId);
+
   return (
     <div>
       <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
@@ -90,7 +93,7 @@ export default async function IntegrationsPage() {
                 </span>
               </p>
               {canManage && (
-                <form action={disconnectGoogle}>
+                <form action={disconnectGoogleAction}>
                   <button
                     type="submit"
                     className="rounded-lg border border-white/15 px-3 py-2 text-xs text-[#94A3B8] transition hover:border-white/25 hover:text-white"
@@ -114,11 +117,12 @@ export default async function IntegrationsPage() {
           )}
         </div>
 
-        {/* Twilio */}
+        {/* Twilio — match existing prop names */}
         <TwilioConnectCard
           organizationId={orgId}
+          connected={Boolean(twilio?.from_number)}
+          fromNumber={twilio?.from_number ?? null}
           canManage={canManage}
-          connectedFromNumber={twilio?.from_number ?? null}
         />
 
         {/* Arketa — full width */}
