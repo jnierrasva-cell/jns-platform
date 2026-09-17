@@ -28,11 +28,11 @@ export function UnmatchedClient({
 
   return (
     <div className="pb-4">
-      <div className="border-b border-white/10 pb-8">
+      <div className="border-b border-zinc-200 pb-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
           Inbox review
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
           Unmatched email
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
@@ -42,14 +42,14 @@ export function UnmatchedClient({
         </p>
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
+      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
         {rows.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
             No unmatched emails. Your CRM stays clean.
           </p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">From</th>
@@ -64,7 +64,7 @@ export function UnmatchedClient({
                     {new Date(row.created_at).toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-zinc-900">
                       {row.from_name || row.from_email}
                     </p>
                     {row.from_name && (
@@ -102,7 +102,7 @@ export function UnmatchedClient({
                             });
                           })
                         }
-                        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-400"
+                        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-slate-400"
                       >
                         Ignore
                       </button>
@@ -119,7 +119,7 @@ export function UnmatchedClient({
         Tip: create{" "}
         <Link
           href="/dashboard/email-rules"
-          className="text-cyan-200 underline underline-offset-2"
+          className="text-cyan-700 underline underline-offset-2"
         >
           Email rules
         </Link>{" "}

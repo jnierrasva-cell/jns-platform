@@ -23,7 +23,7 @@ export function BrandMark({
       <span
         className={cn(
           "text-[15px] font-semibold tracking-tight",
-          inverted ? "text-white" : "text-zinc-900",
+          inverted ? "text-zinc-900" : "text-zinc-900",
         )}
       >
         JNS

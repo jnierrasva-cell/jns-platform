@@ -121,11 +121,17 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
-    @apply font-sans;
+    @apply font-sans antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground text-[15px] leading-relaxed;
+  }
+  h1, h2, h3 {
+    @apply tracking-tight text-zinc-900;
   }
 }
 
@@ -140,10 +146,10 @@
     @apply mb-1.5 block text-sm font-medium text-zinc-700;
   }
   .jns-kicker {
-    @apply text-xs font-medium text-zinc-500;
+    @apply text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500;
   }
   .jns-title {
-    @apply text-xl font-semibold tracking-tight text-zinc-900;
+    @apply text-2xl font-semibold tracking-tight text-zinc-900;
   }
   .jns-muted {
     @apply text-sm text-zinc-500;

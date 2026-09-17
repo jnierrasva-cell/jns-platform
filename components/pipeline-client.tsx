@@ -44,11 +44,11 @@ export function PipelineClient({
 
   return (
     <div className="pb-4">
-      <div className="border-b border-white/10 pb-8">
+      <div className="border-b border-zinc-200 pb-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
           Lead management
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
           Pipeline stages
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
@@ -59,7 +59,7 @@ export function PipelineClient({
 
       <form
         onSubmit={handleCreate}
-        className="mt-8 flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
+        className="mt-8 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
       >
         <div className="flex-1">
           <label className="text-sm font-medium text-slate-200">
@@ -70,7 +70,7 @@ export function PipelineClient({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Proposal sent"
-            className="mt-2 w-full rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+            className="mt-2 w-full rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
           />
         </div>
         <button
@@ -82,9 +82,9 @@ export function PipelineClient({
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
+      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
         {stages.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-slate-400">
             No stages yet. Add your first lifecycle stage above.
@@ -101,7 +101,7 @@ export function PipelineClient({
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2 text-sm text-white outline-none focus:border-cyan-300/70"
+                      className="flex-1 rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                     />
                     <button
                       type="button"
@@ -131,7 +131,7 @@ export function PipelineClient({
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300"
+                      className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-slate-300"
                     >
                       Cancel
                     </button>
@@ -139,7 +139,7 @@ export function PipelineClient({
                 ) : (
                   <>
                     <div>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-zinc-900">
                         <span className="mr-2 text-slate-500">{index + 1}.</span>
                         {stage.name}
                       </p>
@@ -158,7 +158,7 @@ export function PipelineClient({
                           setEditingId(stage.id);
                           setEditName(stage.name);
                         }}
-                        className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300"
+                        className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-slate-300"
                       >
                         Rename
                       </button>
@@ -181,7 +181,7 @@ export function PipelineClient({
                             }
                           })
                         }
-                        className="rounded-lg border border-red-400/20 px-3 py-2 text-xs text-red-200"
+                        className="rounded-lg border border-red-400/20 px-3 py-2 text-xs text-red-600"
                       >
                         Delete
                       </button>

@@ -109,13 +109,13 @@ export function ArketaConnectCard({
   const connected = locations.length > 0;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
+    <div className="rounded-xl border border-zinc-200 bg-white p-6 lg:col-span-2">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-[family-name:var(--font-poppins)] text-base font-semibold text-white">
+          <h2 className="text-base font-semibold text-zinc-900">
             Arketa
           </h2>
-          <p className="mt-1 text-sm text-[#94A3B8]">
+          <p className="mt-1 text-sm text-zinc-500">
             Sync class schedules from Arketa into Google Calendar (one-way).
             Each location uses its own Partner API credentials and calendar.
           </p>
@@ -123,8 +123,8 @@ export function ArketaConnectCard({
         <span
           className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${
             connected
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-              : "border-white/10 bg-white/[0.04] text-[#94A3B8]"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-zinc-200 bg-zinc-50 text-zinc-500"
           }`}
         >
           {connected ? `${locations.length} location(s)` : "Not connected"}
@@ -136,21 +136,21 @@ export function ArketaConnectCard({
           {locations.map((loc) => (
             <div
               key={loc.id}
-              className="rounded-lg border border-white/10 bg-black/20 p-4"
+              className="rounded-lg border border-zinc-200 bg-zinc-50 p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-white">{loc.label}</p>
-                  <p className="mt-1 text-xs text-[#94A3B8]">
+                  <p className="text-sm font-medium text-zinc-900">{loc.label}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
                     Partner ID: {loc.partner_id}
                   </p>
-                  <p className="mt-0.5 text-xs text-[#94A3B8]">
+                  <p className="mt-0.5 text-xs text-zinc-500">
                     Calendar:{" "}
                     {loc.google_calendar_id
                       ? loc.google_calendar_id
                       : "Not set — required for sync"}
                   </p>
-                  <p className="mt-0.5 text-xs text-[#64748B]">
+                  <p className="mt-0.5 text-xs text-zinc-500">
                     Last sync:{" "}
                     {loc.last_synced_at
                       ? new Date(loc.last_synced_at).toLocaleString()
@@ -164,7 +164,7 @@ export function ArketaConnectCard({
                       type="button"
                       disabled={isPending || !loc.google_calendar_id}
                       onClick={() => handleSync(loc.id)}
-                      className="text-xs font-medium text-emerald-300 underline underline-offset-2 hover:text-emerald-200 disabled:opacity-40"
+                      className="text-xs font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-700 disabled:opacity-40"
                     >
                       Sync now
                     </button>
@@ -172,7 +172,7 @@ export function ArketaConnectCard({
                       type="button"
                       disabled={isPending}
                       onClick={() => handleTest(loc.id)}
-                      className="text-xs text-cyan-200 underline underline-offset-2 hover:text-cyan-100 disabled:opacity-50"
+                      className="text-xs text-cyan-700 underline underline-offset-2 hover:text-cyan-800 disabled:opacity-50"
                     >
                       Test API
                     </button>
@@ -180,7 +180,7 @@ export function ArketaConnectCard({
                       type="button"
                       disabled={isPending}
                       onClick={() => handleDelete(loc.id)}
-                      className="text-xs text-red-300 underline underline-offset-2 hover:text-red-200 disabled:opacity-50"
+                      className="text-xs text-red-600 underline underline-offset-2 hover:text-red-600 disabled:opacity-50"
                     >
                       Remove
                     </button>
@@ -198,7 +198,7 @@ export function ArketaConnectCard({
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8]"
+              className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
               Add Arketa location
             </button>
@@ -209,14 +209,14 @@ export function ArketaConnectCard({
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="Label (e.g. Upland)"
-                className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
                 required
                 value={partnerId}
                 onChange={(e) => setPartnerId(e.target.value)}
                 placeholder="Partner ID"
-                className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
                 required
@@ -224,26 +224,26 @@ export function ArketaConnectCard({
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="API key"
-                className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
                 value={calendarId}
                 onChange={(e) => setCalendarId(e.target.value)}
                 placeholder="Google Calendar ID"
-                className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+                  className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
                 >
                   {isPending ? "Verifying…" : "Save location"}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-[#94A3B8] hover:text-white"
+                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-zinc-500 hover:text-zinc-900"
                 >
                   Cancel
                 </button>
@@ -252,14 +252,14 @@ export function ArketaConnectCard({
           )}
         </div>
       ) : (
-        <p className="mt-5 text-sm text-[#94A3B8]">
+        <p className="mt-5 text-sm text-zinc-500">
           Ask your organization owner for Admin access to connect Arketa and
           run sync.
         </p>
       )}
 
       {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      {success && <p className="mt-3 text-sm text-[#67E8F9]">{success}</p>}
+      {success && <p className="mt-3 text-sm text-emerald-600">{success}</p>}
     </div>
   );
 }

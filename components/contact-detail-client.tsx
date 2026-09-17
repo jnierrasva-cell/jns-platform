@@ -131,10 +131,10 @@ export function ContactDetailClient({
 
   return (
     <div className="mt-4">
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+      <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
         Contact
       </span>
-      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
         {[firstName, lastName].filter(Boolean).join(" ") || email || "Contact"}
       </h1>
 
@@ -142,7 +142,7 @@ export function ContactDetailClient({
         {(contact.tags ?? []).map((tag) => (
           <span
             key={tag}
-            className="inline-flex rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-2.5 py-0.5 text-xs text-[#93C5FD]"
+            className="inline-flex rounded-full border border-[#2563EB]/30 bg-zinc-900/10 px-2.5 py-0.5 text-xs text-blue-600"
           >
             {tag}
           </span>
@@ -151,41 +151,41 @@ export function ContactDetailClient({
 
       <form
         onSubmit={handleSave}
-        className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] p-6"
+        className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
       >
-        <h2 className="text-sm font-medium text-white">Details</h2>
+        <h2 className="text-sm font-medium text-zinc-900">Details</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">First name</label>
+            <label className="text-sm text-zinc-700">First name</label>
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Last name</label>
+            <label className="text-sm text-zinc-700">Last name</label>
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Email</label>
+            <label className="text-sm text-zinc-700">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Pipeline stage</label>
+            <label className="text-sm text-zinc-700">Pipeline stage</label>
             <select
               value={pipelineStageId}
               onChange={(e) => setPipelineStageId(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="">Unassigned</option>
               {stages.map((s) => (
@@ -194,11 +194,11 @@ export function ContactDetailClient({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-[#64748B]">
+            <p className="text-xs text-zinc-500">
               Managed in{" "}
               <Link
                 href="/dashboard/pipeline"
-                className="text-cyan-200 underline underline-offset-2"
+                className="text-cyan-700 underline underline-offset-2"
               >
                 Pipeline
               </Link>
@@ -206,11 +206,11 @@ export function ContactDetailClient({
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Legacy status</label>
+            <label className="text-sm text-zinc-700">Legacy status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="lead">Lead</option>
               <option value="booked">Booked</option>
@@ -219,9 +219,9 @@ export function ContactDetailClient({
             </select>
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-[#E2E8F0]">Phone</label>
+            <label className="text-sm text-zinc-700">Phone</label>
             <CountryPhoneInput value={phone} onChange={setPhone} />
-            <p className="text-xs text-[#64748B]">
+            <p className="text-xs text-zinc-500">
               Country defaults from your browser timezone. Enter the local
               number only — country code is on the left.
             </p>
@@ -229,31 +229,31 @@ export function ContactDetailClient({
         </div>
 
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-        {saved && <p className="mt-3 text-sm text-[#67E8F9]">Saved.</p>}
+        {saved && <p className="mt-3 text-sm text-emerald-600">Saved.</p>}
 
         <button
           type="submit"
           disabled={isPending}
-          className="mt-5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+          className="mt-5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
         >
           {isPending ? "Saving…" : "Save contact"}
         </button>
       </form>
 
       <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
           Notes
         </h2>
         <form
           onSubmit={handleAddNote}
-          className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4"
+          className="mt-4 rounded-xl border border-zinc-200 bg-white p-4"
         >
           <textarea
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
             rows={3}
             placeholder="Log a call, follow-up, or internal note…"
-            className="w-full rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
           />
           {noteError && (
             <p className="mt-2 text-sm text-red-400">{noteError}</p>
@@ -261,25 +261,25 @@ export function ContactDetailClient({
           <button
             type="submit"
             disabled={isPending}
-            className="mt-3 rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/15 px-4 py-2 text-sm font-medium text-[#93C5FD] transition hover:bg-[#2563EB]/25 disabled:opacity-60"
+            className="mt-3 rounded-lg border border-[#2563EB]/40 bg-zinc-900/15 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-zinc-900/25 disabled:opacity-60"
           >
             {isPending ? "Adding…" : "Add note"}
           </button>
         </form>
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {notes.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-[#94A3B8]">
+            <p className="px-4 py-8 text-center text-sm text-zinc-500">
               No notes yet. Add the first one above.
             </p>
           ) : (
             <ul className="divide-y divide-white/5">
               {notes.map((n) => (
                 <li key={n.id} className="px-4 py-3">
-                  <p className="text-sm whitespace-pre-wrap text-[#E2E8F0]">
+                  <p className="text-sm whitespace-pre-wrap text-zinc-700">
                     {n.body}
                   </p>
-                  <p className="mt-1 text-xs text-[#64748B]">
+                  <p className="mt-1 text-xs text-zinc-500">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
                 </li>
@@ -290,12 +290,12 @@ export function ContactDetailClient({
       </div>
 
       <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
           Bookings
         </h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {bookings.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-[#94A3B8]">
+            <p className="px-4 py-8 text-center text-sm text-zinc-500">
               No bookings for this contact yet.
             </p>
           ) : (
@@ -306,14 +306,14 @@ export function ContactDetailClient({
                   className="flex items-center justify-between gap-4 px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-white">{b.title}</p>
-                    <p className="text-xs text-[#94A3B8]">
+                    <p className="text-sm font-medium text-zinc-900">{b.title}</p>
+                    <p className="text-xs text-zinc-500">
                       {new Date(b.starts_at).toLocaleString()} · {b.status}
                     </p>
                   </div>
                   <Link
                     href="/dashboard/bookings"
-                    className="text-xs text-[#60A5FA] underline underline-offset-2"
+                    className="text-xs text-blue-600 underline underline-offset-2"
                   >
                     View
                   </Link>
@@ -325,12 +325,12 @@ export function ContactDetailClient({
       </div>
 
       <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
           Email activity
         </h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {activity.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-[#94A3B8]">
+            <p className="px-4 py-8 text-center text-sm text-zinc-500">
               No email activity yet.
             </p>
           ) : (
@@ -339,15 +339,15 @@ export function ContactDetailClient({
                 <li key={row.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-zinc-900">
                         {row.subject || "(no subject)"}
                       </p>
-                      <p className="mt-0.5 text-xs text-[#94A3B8]">
+                      <p className="mt-0.5 text-xs text-zinc-500">
                         {row.direction === "inbound" ? "Received" : "Sent"} ·{" "}
                         {row.status}
                       </p>
                     </div>
-                    <p className="shrink-0 text-xs text-[#64748B]">
+                    <p className="shrink-0 text-xs text-zinc-500">
                       {new Date(row.created_at).toLocaleString()}
                     </p>
                   </div>

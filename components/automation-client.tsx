@@ -63,13 +63,13 @@ export function AutomationClient({
 
   return (
     <div>
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+      <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
         Automation
       </span>
-      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
         Your systems
       </h1>
-      <p className="mt-1 text-sm text-[#94A3B8]">
+      <p className="mt-1 text-sm text-zinc-500">
         {activeCount} of {services.length} systems switched on.
         {isPending ? " Saving…" : ""}
       </p>
@@ -79,7 +79,7 @@ export function AutomationClient({
       <div className="mt-8 flex flex-col gap-10">
         {categories.map(([category, categoryServices]) => (
           <section key={category}>
-            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
               {category}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -94,13 +94,13 @@ export function AutomationClient({
                     <div className="flex flex-wrap gap-3">
                       <Link
                         href="/dashboard/templates"
-                        className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
                       >
                         Edit reply template
                       </Link>
                       <Link
                         href="/dashboard/email-rules"
-                        className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
                       >
                         Email rules
                       </Link>
@@ -109,7 +109,7 @@ export function AutomationClient({
                   {service.id === "sms-reminders" && (
                     <Link
                       href="/dashboard/integrations"
-                      className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                      className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
                     >
                       Twilio settings / test SMS
                     </Link>

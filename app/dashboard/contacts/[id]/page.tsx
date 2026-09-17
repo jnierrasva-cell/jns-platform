@@ -68,7 +68,7 @@ export default async function ContactDetailPage({
     <div>
       <Link
         href="/dashboard/contacts"
-        className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
       >
         ← Back to Contacts
       </Link>

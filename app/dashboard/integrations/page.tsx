@@ -50,34 +50,34 @@ export default async function IntegrationsPage() {
 
   return (
     <div>
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+      <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
         Integrations
       </span>
-      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
         Connected accounts
       </h1>
-      <p className="mt-1 text-sm text-[#94A3B8]">
+      <p className="mt-1 text-sm text-zinc-500">
         Connect the tools your automations run on. Each business uses their own
         accounts.
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Google */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="font-[family-name:var(--font-poppins)] text-base font-semibold text-white">
+              <h2 className="text-base font-semibold text-zinc-900">
                 Google (Gmail)
               </h2>
-              <p className="mt-1 text-sm text-[#94A3B8]">
+              <p className="mt-1 text-sm text-zinc-500">
                 Used for inbox watch, auto-acknowledgment, and calendar sync.
               </p>
             </div>
             <span
               className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${
                 googleConnection
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                  : "border-white/10 bg-white/[0.04] text-[#94A3B8]"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-500"
               }`}
             >
               {googleConnection ? "Connected" : "Not connected"}
@@ -86,9 +86,9 @@ export default async function IntegrationsPage() {
 
           {googleConnection ? (
             <div className="mt-5 space-y-3">
-              <p className="text-sm text-[#E2E8F0]">
+              <p className="text-sm text-zinc-700">
                 Connected as{" "}
-                <span className="font-medium text-white">
+                <span className="font-medium text-zinc-900">
                   {googleConnection.connected_email}
                 </span>
               </p>
@@ -96,7 +96,7 @@ export default async function IntegrationsPage() {
                 <form action={disconnectGoogleAction}>
                   <button
                     type="submit"
-                    className="rounded-lg border border-white/15 px-3 py-2 text-xs text-[#94A3B8] transition hover:border-white/25 hover:text-white"
+                    className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900"
                   >
                     Disconnect Google
                   </button>
@@ -106,12 +106,12 @@ export default async function IntegrationsPage() {
           ) : canManage ? (
             <a
               href="/api/google/connect"
-              className="mt-5 inline-flex rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8]"
+              className="mt-5 inline-flex rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white  transition hover:bg-zinc-800"
             >
               Connect Google
             </a>
           ) : (
-            <p className="mt-5 text-sm text-[#94A3B8]">
+            <p className="mt-5 text-sm text-zinc-500">
               Ask the workspace owner to connect Google.
             </p>
           )}

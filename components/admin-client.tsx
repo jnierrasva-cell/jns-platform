@@ -56,50 +56,50 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+        <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
           Admin
         </span>
         <Link
           href="/dashboard"
-          className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+          className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
         >
           ← Back to dashboard
         </Link>
       </div>
 
-      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
         All users
       </h1>
 
       {(resetInfo || resetError) && (
-        <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
           {resetError && (
-            <p className="text-sm text-red-300">{resetError}</p>
+            <p className="text-sm text-red-600">{resetError}</p>
           )}
           {resetInfo && (
             <div className="space-y-3">
               <p className="text-sm text-slate-300">
                 Reset link for{" "}
-                <span className="font-medium text-white">{resetInfo.email}</span>
+                <span className="font-medium text-zinc-900">{resetInfo.email}</span>
                 . Copy and send it yourself (chat, SMS, email). No SMTP required.
               </p>
               <textarea
                 readOnly
                 value={resetInfo.link}
-                className="h-24 w-full rounded-lg border border-white/10 bg-[#0B132B] px-3 py-2 text-xs text-cyan-100"
+                className="h-24 w-full rounded-lg border border-zinc-200 bg-[#0B132B] px-3 py-2 text-xs text-cyan-800"
               />
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={copyLink}
-                  className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1D4ED8]"
+                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
                 >
                   Copy link
                 </button>
                 <button
                   type="button"
                   onClick={() => setResetInfo(null)}
-                  className="text-xs text-slate-400 underline underline-offset-2 hover:text-white"
+                  className="text-xs text-slate-400 underline underline-offset-2 hover:text-zinc-900"
                 >
                   Dismiss
                 </button>
@@ -110,12 +110,12 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
       )}
 
       <section className="mt-10">
-        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
           Active accounts
         </h2>
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-[#64748B]">
+            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
               <tr>
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Role</th>
@@ -130,19 +130,19 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                   className="border-b border-white/5 last:border-0"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-zinc-900">
                       {p.business_name || p.email}
                     </p>
-                    <p className="text-xs text-[#94A3B8]">{p.email}</p>
+                    <p className="text-xs text-zinc-500">{p.email}</p>
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{p.role}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">active</td>
+                  <td className="px-4 py-3 text-zinc-500">{p.role}</td>
+                  <td className="px-4 py-3 text-zinc-500">active</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap justify-end gap-3">
                       <button
                         disabled={isPending || !p.email}
                         onClick={() => handleResetLink(p.id)}
-                        className="text-xs text-cyan-200 underline underline-offset-2 hover:text-cyan-100 disabled:opacity-40"
+                        className="text-xs text-cyan-700 underline underline-offset-2 hover:text-cyan-800 disabled:opacity-40"
                       >
                         Reset password link
                       </button>
@@ -155,7 +155,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                                 setUserRole(p.id, "admin");
                               })
                             }
-                            className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+                            className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
                           >
                             Make admin
                           </button>
@@ -166,7 +166,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                                 rejectUser(p.id);
                               })
                             }
-                            className="text-xs text-red-300 underline underline-offset-2 hover:text-red-200"
+                            className="text-xs text-red-600 underline underline-offset-2 hover:text-red-600"
                           >
                             Block
                           </button>
@@ -183,7 +183,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
 
       {rejectedUsers.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-[#64748B]">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
             Blocked accounts
           </h2>
           <div className="flex flex-col gap-3">
@@ -193,10 +193,10 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                 className="flex items-center justify-between rounded-xl border border-red-400/20 bg-red-400/10 p-4"
               >
                 <div>
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-zinc-900">
                     {p.business_name || p.email}
                   </p>
-                  <p className="text-xs text-[#94A3B8]">{p.email}</p>
+                  <p className="text-xs text-zinc-500">{p.email}</p>
                 </div>
                 <button
                   disabled={isPending}
@@ -205,7 +205,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                       approveUser(p.id);
                     })
                   }
-                  className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-[#2563EB]/25 transition hover:bg-zinc-800 disabled:opacity-60"
                 >
                   Restore access
                 </button>

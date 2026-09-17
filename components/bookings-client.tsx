@@ -148,21 +148,21 @@ export function BookingsClient({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+          <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
             Calendar
           </span>
-          <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
             Bookings
           </h1>
-          <p className="mt-1 text-sm text-[#94A3B8]">
+          <p className="mt-1 text-sm text-zinc-500">
             Times use your browser timezone automatically.
           </p>
           {publicBookingPath && (
-            <p className="mt-2 text-xs text-[#64748B]">
+            <p className="mt-2 text-xs text-zinc-500">
               Public booking link:{" "}
               <a
                 href={publicBookingPath}
-                className="text-[#60A5FA] underline underline-offset-2"
+                className="text-blue-600 underline underline-offset-2"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -175,14 +175,14 @@ export function BookingsClient({
           type="button"
           disabled={isPending}
           onClick={handleSendReminders}
-          className="rounded-lg border border-[#2563EB]/40 bg-[#2563EB]/15 px-4 py-2.5 text-sm font-medium text-[#93C5FD] transition hover:bg-[#2563EB]/25 disabled:opacity-60"
+          className="rounded-lg border border-[#2563EB]/40 bg-zinc-900/15 px-4 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-zinc-900/25 disabled:opacity-60"
         >
           {isPending ? "Working…" : "Send due SMS reminders"}
         </button>
       </div>
 
       {smsRemindersEnabled && !twilioConnected && (
-        <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           SMS Reminders is on, but Twilio is not connected. Connect Twilio in
           Integrations to send texts.
         </p>
@@ -190,27 +190,27 @@ export function BookingsClient({
 
       <form
         onSubmit={handleCreate}
-        className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] p-6"
+        className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
       >
-        <h2 className="text-sm font-medium text-white">New booking</h2>
+        <h2 className="text-sm font-medium text-zinc-900">New booking</h2>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-[#E2E8F0]">Title</label>
+            <label className="text-sm text-zinc-700">Title</label>
             <input
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-[#E2E8F0]">Contact (optional)</label>
+            <label className="text-sm text-zinc-700">Contact (optional)</label>
             <select
               value={contactId}
               onChange={(e) => setContactId(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="">No contact</option>
               {contacts.map((c) => (
@@ -228,13 +228,13 @@ export function BookingsClient({
             )}
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748B]">
+          <div className="rounded-lg border border-zinc-200 bg-white/[0.02] p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
               Starts
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-[#E2E8F0]">Date</label>
+                <label className="text-sm text-zinc-700">Date</label>
                 <input
                   required
                   type="date"
@@ -243,74 +243,74 @@ export function BookingsClient({
                     setStartDate(e.target.value);
                     if (!endDate) setEndDate(e.target.value);
                   }}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                  className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-[#E2E8F0]">Time</label>
+                <label className="text-sm text-zinc-700">Time</label>
                 <input
                   required
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                  className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                 />
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748B]">
+          <div className="rounded-lg border border-zinc-200 bg-white/[0.02] p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
               Ends
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-[#E2E8F0]">Date</label>
+                <label className="text-sm text-zinc-700">Date</label>
                 <input
                   type="date"
                   value={endDate || startDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                  className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-[#E2E8F0]">Time</label>
+                <label className="text-sm text-zinc-700">Time</label>
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                  className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                 />
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-[#E2E8F0]">Notes</label>
+            <label className="text-sm text-zinc-700">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
         </div>
 
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-        {success && <p className="mt-3 text-sm text-[#67E8F9]">{success}</p>}
+        {success && <p className="mt-3 text-sm text-emerald-600">{success}</p>}
 
         <button
           type="submit"
           disabled={isPending}
-          className="mt-5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+          className="mt-5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
         >
           {isPending ? "Saving…" : "Create booking"}
         </button>
       </form>
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-[#64748B]">
+          <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3">When</th>
               <th className="px-4 py-3">Title</th>
@@ -325,7 +325,7 @@ export function BookingsClient({
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-10 text-center text-[#94A3B8]"
+                  className="px-4 py-10 text-center text-zinc-500"
                 >
                   No bookings yet. Create one above or share your public booking
                   link.
@@ -334,22 +334,22 @@ export function BookingsClient({
             ) : (
               bookings.map((b) => (
                 <tr key={b.id} className="border-b border-white/5 last:border-0">
-                  <td className="px-4 py-3 text-[#E2E8F0]">
+                  <td className="px-4 py-3 text-zinc-700">
                     <div>{formatLocal(b.starts_at)}</div>
                     {b.ends_at && (
-                      <div className="text-xs text-[#64748B]">
+                      <div className="text-xs text-zinc-500">
                         → {formatLocal(b.ends_at)}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium text-white">{b.title}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">
+                  <td className="px-4 py-3 font-medium text-zinc-900">{b.title}</td>
+                  <td className="px-4 py-3 text-zinc-500">
                     {contactLabel(getContact(b))}
                   </td>
-                  <td className="px-4 py-3 capitalize text-[#94A3B8]">
+                  <td className="px-4 py-3 capitalize text-zinc-500">
                     {b.status}
                   </td>
-                  <td className="px-4 py-3 text-xs text-[#94A3B8]">
+                  <td className="px-4 py-3 text-xs text-zinc-500">
                     {b.reminder_sms_sent_at
                       ? `Sent ${formatLocal(b.reminder_sms_sent_at)}`
                       : "—"}
@@ -359,7 +359,7 @@ export function BookingsClient({
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          className="text-xs text-[#60A5FA] underline underline-offset-2"
+                          className="text-xs text-blue-600 underline underline-offset-2"
                           onClick={() =>
                             startTransition(async () => {
                               await updateBookingStatus(b.id, "completed");

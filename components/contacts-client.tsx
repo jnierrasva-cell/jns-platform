@@ -400,19 +400,19 @@ export function ContactsClient({
 
   return (
     <div className="pb-4">
-      <div className="flex flex-col gap-4 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-zinc-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
             CRM
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
             Contacts
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
             Filter and move people through{" "}
             <Link
               href="/dashboard/pipeline"
-              className="text-cyan-200 underline underline-offset-2"
+              className="text-cyan-700 underline underline-offset-2"
             >
               your custom pipeline
             </Link>
@@ -423,7 +423,7 @@ export function ContactsClient({
           <button
             type="button"
             onClick={exportCsv}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -431,7 +431,7 @@ export function ContactsClient({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3.5 py-2.5 text-sm text-slate-200 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
           >
             <Upload className="h-4 w-4" />
             Import CSV
@@ -468,7 +468,7 @@ export function ContactsClient({
           className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
             stageFilter === "all"
               ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-              : "border-white/10 bg-white/[0.03] text-slate-400"
+              : "border-zinc-200 bg-white text-slate-400"
           }`}
         >
           All
@@ -482,7 +482,7 @@ export function ContactsClient({
             className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
               stageFilter === s.id
                 ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-                : "border-white/10 bg-white/[0.03] text-slate-400"
+                : "border-zinc-200 bg-white text-slate-400"
             }`}
           >
             {s.name}
@@ -496,21 +496,21 @@ export function ContactsClient({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, phone…"
-          className="w-full max-w-md rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+          className="w-full max-w-md rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
         />
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
-      {info && <p className="mt-3 text-sm text-emerald-300">{info}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
 
-      <div className="mt-6 overflow-visible rounded-xl border border-white/10 bg-white/[0.035]">
+      <div className="mt-6 overflow-visible rounded-xl border border-zinc-200 bg-white/[0.035]">
         {filtered.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
             No contacts in this stage.
           </p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
@@ -526,7 +526,7 @@ export function ContactsClient({
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
-                      className="font-medium text-white hover:text-cyan-200"
+                      className="font-medium text-zinc-900 hover:text-cyan-700"
                     >
                       {displayName(c)}
                     </Link>
@@ -539,7 +539,7 @@ export function ContactsClient({
                       onChange={(e) =>
                         changePipelineStage(c.id, e.target.value)
                       }
-                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 outline-none"
+                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-800 outline-none"
                     >
                       <option value="">Unassigned</option>
                       {stages.map((s) => (
@@ -558,7 +558,7 @@ export function ContactsClient({
                       onClick={() =>
                         setMenuId((id) => (id === c.id ? null : c.id))
                       }
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
                       aria-label="Actions"
                     >
                       <MoreVertical className="h-4 w-4" />
@@ -566,7 +566,7 @@ export function ContactsClient({
                     {menuId === c.id && (
                       <div
                         ref={menuRef}
-                        className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-white/10 bg-[#0f1a35] py-1 shadow-xl"
+                        className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-zinc-200 bg-[#0f1a35] py-1 shadow-xl"
                       >
                         <button
                           type="button"
@@ -607,7 +607,7 @@ export function ContactsClient({
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
                   New contact
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-white">
+                <h2 className="mt-1 text-xl font-semibold text-zinc-900">
                   Add to your CRM
                 </h2>
               </div>
@@ -617,7 +617,7 @@ export function ContactsClient({
                   setShowAdd(false);
                   resetForm();
                 }}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -629,7 +629,7 @@ export function ContactsClient({
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -637,7 +637,7 @@ export function ContactsClient({
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                   />
                 </div>
               </div>
@@ -647,7 +647,7 @@ export function ContactsClient({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -667,7 +667,7 @@ export function ContactsClient({
                         | "inactive",
                     )
                   }
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                 >
                   <option value="lead">Lead</option>
                   <option value="booked">Booked</option>
@@ -681,10 +681,10 @@ export function ContactsClient({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                 />
               </div>
-              {formError && <p className="text-sm text-red-300">{formError}</p>}
+              {formError && <p className="text-sm text-red-600">{formError}</p>}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
@@ -692,7 +692,7 @@ export function ContactsClient({
                     setShowAdd(false);
                     resetForm();
                   }}
-                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-slate-300"
+                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-slate-300"
                 >
                   Cancel
                 </button>
@@ -717,7 +717,7 @@ export function ContactsClient({
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
                   {compose.type === "email" ? "Send email" : "Send SMS"}
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-white">
+                <h2 className="mt-1 text-xl font-semibold text-zinc-900">
                   {displayName(compose.contact)}
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
@@ -729,7 +729,7 @@ export function ContactsClient({
               <button
                 type="button"
                 onClick={() => setCompose(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -745,7 +745,7 @@ export function ContactsClient({
                     required
                     value={composeSubject}
                     onChange={(e) => setComposeSubject(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                   />
                 </div>
               )}
@@ -756,20 +756,20 @@ export function ContactsClient({
                   value={composeBody}
                   onChange={(e) => setComposeBody(e.target.value)}
                   rows={5}
-                  className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                 />
               </div>
               {composeError && (
-                <p className="text-sm text-red-300">{composeError}</p>
+                <p className="text-sm text-red-600">{composeError}</p>
               )}
               {composeSuccess && (
-                <p className="text-sm text-emerald-300">{composeSuccess}</p>
+                <p className="text-sm text-emerald-700">{composeSuccess}</p>
               )}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setCompose(null)}
-                  className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-slate-300"
+                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-slate-300"
                 >
                   Cancel
                 </button>

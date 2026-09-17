@@ -125,11 +125,11 @@ export function FormsClient({
 
   return (
     <div className="pb-4">
-      <div className="border-b border-white/10 pb-8">
+      <div className="border-b border-zinc-200 pb-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
           Lead capture
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
           Intake forms
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
@@ -141,7 +141,7 @@ export function FormsClient({
       {/* Create */}
       <form
         onSubmit={handleCreate}
-        className="mt-8 flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
+        className="mt-8 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
       >
         <div className="flex-1">
           <label className="text-sm font-medium text-slate-200">
@@ -152,7 +152,7 @@ export function FormsClient({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="e.g. Website contact"
-            className="mt-2 w-full rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
+            className="mt-2 w-full rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
           />
         </div>
         <button
@@ -165,13 +165,13 @@ export function FormsClient({
       </form>
 
       {error && (
-        <p className="mt-3 text-sm text-red-300">{error}</p>
+        <p className="mt-3 text-sm text-red-600">{error}</p>
       )}
 
       {/* Forms list */}
       <section className="mt-8">
-        <h2 className="text-sm font-medium text-white">Your forms</h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
+        <h2 className="text-sm font-medium text-zinc-900">Your forms</h2>
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
           {forms.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-slate-400">
               No forms yet. Create one above.
@@ -185,14 +185,14 @@ export function FormsClient({
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                        className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                       />
                       <textarea
                         value={editSuccess}
                         onChange={(e) => setEditSuccess(e.target.value)}
                         rows={2}
                         placeholder="Success message after submit"
-                        className="rounded-lg border border-white/15 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-white outline-none focus:border-cyan-300/70"
+                        className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
                       />
                       <div className="flex gap-2">
                         <button
@@ -206,7 +206,7 @@ export function FormsClient({
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="rounded-lg border border-white/15 px-3 py-2 text-xs text-slate-300"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-slate-300"
                         >
                           Cancel
                         </button>
@@ -215,14 +215,14 @@ export function FormsClient({
                   ) : (
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="font-medium text-white">{form.name}</p>
+                        <p className="font-medium text-zinc-900">{form.name}</p>
                         <p className="mt-1 text-xs text-slate-500">
                           /forms/{orgSlug}/{form.slug}
                           {" · "}
                           <span
                             className={
                               form.is_published
-                                ? "text-emerald-300"
+                                ? "text-emerald-700"
                                 : "text-amber-300"
                             }
                           >
@@ -235,7 +235,7 @@ export function FormsClient({
                           href={publicUrl(form.slug)}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-white/25 hover:text-white"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-zinc-300 hover:text-zinc-900"
                         >
                           Open
                         </a>
@@ -249,7 +249,7 @@ export function FormsClient({
                         <button
                           type="button"
                           onClick={() => startEdit(form)}
-                          className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 transition hover:text-white"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-slate-300 transition hover:text-zinc-900"
                         >
                           Edit
                         </button>
@@ -257,7 +257,7 @@ export function FormsClient({
                           type="button"
                           disabled={isPending}
                           onClick={() => togglePublish(form)}
-                          className="rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-slate-300 transition hover:text-white"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-slate-300 transition hover:text-zinc-900"
                         >
                           {form.is_published ? "Unpublish" : "Publish"}
                         </button>
@@ -273,15 +273,15 @@ export function FormsClient({
 
       {/* Submissions */}
       <section className="mt-10">
-        <h2 className="text-sm font-medium text-white">Recent submissions</h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
+        <h2 className="text-sm font-medium text-zinc-900">Recent submissions</h2>
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
           {submissions.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-slate-400">
               No submissions yet. Share a form link to start capturing leads.
             </p>
           ) : (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">When</th>
                   <th className="px-4 py-3">Name</th>
@@ -299,7 +299,7 @@ export function FormsClient({
                     <td className="px-4 py-3 text-slate-400">
                       {new Date(s.created_at).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 font-medium text-white">
+                    <td className="px-4 py-3 font-medium text-zinc-900">
                       {s.name ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-slate-300">
@@ -310,7 +310,7 @@ export function FormsClient({
                       {s.contact_id ? (
                         <Link
                           href={`/dashboard/contacts/${s.contact_id}`}
-                          className="text-xs text-cyan-200 underline underline-offset-2 hover:text-cyan-100"
+                          className="text-xs text-cyan-700 underline underline-offset-2 hover:text-cyan-800"
                         >
                           Contact
                         </Link>

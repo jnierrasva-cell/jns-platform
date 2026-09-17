@@ -88,21 +88,21 @@ export function EmailRulesClient({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
+        <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
           Email
         </span>
         <Link
           href="/dashboard/automation"
-          className="text-xs text-[#60A5FA] underline underline-offset-2 hover:text-[#93C5FD]"
+          className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
         >
           ← Back to Automation
         </Link>
       </div>
 
-      <h1 className="mt-1 font-[family-name:var(--font-poppins)] text-2xl font-semibold text-white">
+      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
         Email rules
       </h1>
-      <p className="mt-1 max-w-2xl text-sm text-[#94A3B8]">
+      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
         Filter inbound mail by sender, domain, or subject, then choose what
         happens. Lower priority numbers run first. If no rule matches, default
         auto-ack is used when that system is on.
@@ -111,70 +111,70 @@ export function EmailRulesClient({
       {/* Create rule */}
       <form
         onSubmit={handleCreate}
-        className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] p-6"
+        className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
       >
-        <h2 className="text-sm font-medium text-white">New rule</h2>
+        <h2 className="text-sm font-medium text-zinc-900">New rule</h2>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Name</label>
+            <label className="text-sm text-zinc-700">Name</label>
             <input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Pricing inquiries"
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Priority (lower = first)</label>
+            <label className="text-sm text-zinc-700">Priority (lower = first)</label>
             <input
               type="number"
               value={priority}
               onChange={(e) => setPriority(Number(e.target.value))}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">From email (optional)</label>
+            <label className="text-sm text-zinc-700">From email (optional)</label>
             <input
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
               placeholder="someone@company.com"
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">From domain (optional)</label>
+            <label className="text-sm text-zinc-700">From domain (optional)</label>
             <input
               value={fromDomain}
               onChange={(e) => setFromDomain(e.target.value)}
               placeholder="company.com"
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Subject contains (optional)</label>
+            <label className="text-sm text-zinc-700">Subject contains (optional)</label>
             <input
               value={subjectContains}
               onChange={(e) => setSubjectContains(e.target.value)}
               placeholder="pricing"
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Action</label>
+            <label className="text-sm text-zinc-700">Action</label>
             <select
               value={action}
               onChange={(e) =>
                 setAction(e.target.value as "auto_ack" | "skip" | "tag_only")
               }
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="auto_ack">Send auto-ack</option>
               <option value="skip">Skip (no reply)</option>
@@ -183,16 +183,16 @@ export function EmailRulesClient({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-[#E2E8F0]">Tag (optional)</label>
+            <label className="text-sm text-zinc-700">Tag (optional)</label>
             <input
               value={tag}
               onChange={(e) => setTag(e.target.value)}
               placeholder="pricing"
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             />
           </div>
 
-          <label className="mt-6 flex items-center gap-2 text-sm text-[#E2E8F0]">
+          <label className="mt-6 flex items-center gap-2 text-sm text-zinc-700">
             <input
               type="checkbox"
               checked={onlyNewContact}
@@ -208,16 +208,16 @@ export function EmailRulesClient({
         <button
           type="submit"
           disabled={isPending}
-          className="mt-5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+          className="mt-5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
         >
           {isPending ? "Saving…" : "Create rule"}
         </button>
       </form>
 
       {/* Rules list */}
-      <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-[#64748B]">
+          <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3">Rule</th>
               <th className="px-4 py-3">Conditions</th>
@@ -229,7 +229,7 @@ export function EmailRulesClient({
           <tbody>
             {rules.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-[#94A3B8]">
+                <td colSpan={5} className="px-4 py-10 text-center text-zinc-500">
                   No custom rules yet. Default auto-ack still runs when that
                   system is on.
                 </td>
@@ -238,22 +238,22 @@ export function EmailRulesClient({
               rules.map((rule) => (
                 <tr key={rule.id} className="border-b border-white/5 last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white">{rule.name}</p>
-                    <p className="text-xs text-[#64748B]">
+                    <p className="font-medium text-zinc-900">{rule.name}</p>
+                    <p className="text-xs text-zinc-500">
                       {rule.is_enabled ? "Enabled" : "Disabled"}
                       {rule.tag ? ` · tag: ${rule.tag}` : ""}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">
+                  <td className="px-4 py-3 text-zinc-500">
                     {conditionSummary(rule)}
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{rule.action}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{rule.priority}</td>
+                  <td className="px-4 py-3 text-zinc-500">{rule.action}</td>
+                  <td className="px-4 py-3 text-zinc-500">{rule.priority}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
-                        className="text-xs text-[#60A5FA] underline underline-offset-2"
+                        className="text-xs text-blue-600 underline underline-offset-2"
                         onClick={() =>
                           startTransition(async () => {
                             await setEmailRuleEnabled(rule.id, !rule.is_enabled);
