@@ -52,9 +52,6 @@ export default async function DashboardLayout({
   const isOrgManager =
     membership.role === "ceo" || membership.role === "admin";
 
-   const isPlatformAdmin = profile?.role === "super_admin";
-  const isOrgManager =
-    membership.role === "ceo" || membership.role === "admin";
 
   return (
     <DashboardShell
@@ -65,4 +62,5 @@ export default async function DashboardLayout({
     >
       {children}
     </DashboardShell>
-  );
+  )
+};
