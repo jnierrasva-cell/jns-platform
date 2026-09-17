@@ -20,7 +20,6 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .single();
 
-  // Soft auto-heal for any leftover pending rows
   if (profile && profile.status !== "approved") {
     await supabase
       .from("profiles")
@@ -49,14 +48,21 @@ export default async function DashboardLayout({
     ? membership.organizations[0]?.name
     : (membership.organizations as { name: string } | null)?.name;
 
+  const isPlatformAdmin = profile?.role === "super_admin";
+  const isOrgManager =
+    membership.role === "ceo" || membership.role === "admin";
+
+   const isPlatformAdmin = profile?.role === "super_admin";
+  const isOrgManager =
+    membership.role === "ceo" || membership.role === "admin";
+
   return (
     <DashboardShell
       userEmail={user.email ?? ""}
-      isAdmin={profile?.role === "admin"}
-      isOrgCeo={membership.role === "ceo"}
+      isPlatformAdmin={isPlatformAdmin}
+      isOrgManager={isOrgManager}
       orgName={orgName ?? "Your workspace"}
     >
       {children}
     </DashboardShell>
   );
-}
