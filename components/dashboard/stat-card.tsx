@@ -6,14 +6,10 @@ interface StatCardProps {
 
 export function StatCard({ label, value, hint }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-[#2c3140] bg-[#1b1f29] p-5">
-      <p className="text-xs uppercase tracking-wide text-[#a8a6a0] font-mono mb-2">
-        {label}
-      </p>
-      <p className="text-2xl font-semibold text-[#edeae3] tracking-tight">
-        {value}
-      </p>
-      {hint && <p className="text-xs text-[#a8a6a0] mt-1">{hint}</p>}
+    <div className="jns-card p-4">
+      <p className="jns-kicker mb-2">{label}</p>
+      <p className="text-2xl font-semibold tracking-tight text-zinc-900">{value}</p>
+      {hint && <p className="mt-1 text-xs text-zinc-500">{hint}</p>}
     </div>
   );
 }

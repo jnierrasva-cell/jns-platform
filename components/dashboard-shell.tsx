@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -18,6 +17,7 @@ import {
   Kanban,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { BrandMark } from "@/components/brand-mark";
 
 type NavItem = {
   label: string;
@@ -70,23 +70,14 @@ export function DashboardShell({
   }
 
   return (
-    <div className="flex min-h-full bg-[#0B132B] text-[#F1F5F9]">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-white/10 bg-[#0B132B]">
-        <div className="border-b border-white/10 px-5 py-5">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/jns-logo.png"
-              alt="JNS Platform"
-              width={120}
-              height={40}
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
-          <p className="mt-2 truncate text-xs text-[#64748B]">{orgName}</p>
+    <div className="flex min-h-full bg-zinc-50 text-zinc-900">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white">
+        <div className="border-b border-zinc-200 px-4 py-4">
+          <BrandMark href="/dashboard" />
+          <p className="mt-2 truncate px-0.5 text-xs text-zinc-500">{orgName}</p>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 p-3">
+        <nav className="flex flex-1 flex-col gap-0.5 p-2">
           {navItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
@@ -94,13 +85,13 @@ export function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-all ${
+                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
                   active
-                    ? "bg-[#2563EB]/15 font-medium text-[#93C5FD]"
-                    : "text-[#94A3B8] hover:bg-white/[0.04] hover:text-white"
+                    ? "bg-zinc-100 font-medium text-zinc-900"
+                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
                 }`}
               >
-                <Icon size={16} />
+                <Icon size={16} className={active ? "text-zinc-900" : "text-zinc-400"} />
                 {item.label}
               </Link>
             );
@@ -108,36 +99,36 @@ export function DashboardShell({
 
           {isAdmin && (
             <>
-              <div className="my-2 border-t border-white/10" />
+              <div className="my-2 border-t border-zinc-200" />
               <Link
                 href="/admin"
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-all ${
+                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
                   pathname.startsWith("/admin")
-                    ? "bg-[#2563EB]/15 font-medium text-[#93C5FD]"
-                    : "text-[#94A3B8] hover:bg-white/[0.04] hover:text-white"
+                    ? "bg-zinc-100 font-medium text-zinc-900"
+                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
                 }`}
               >
-                <Shield size={16} />
-                Admin panel
+                <Shield size={16} className="text-zinc-400" />
+                Admin
               </Link>
             </>
           )}
         </nav>
 
-        <div className="border-t border-white/10 p-3">
-          <p className="truncate px-3 text-xs text-[#64748B]">{userEmail}</p>
+        <div className="border-t border-zinc-200 p-2">
+          <p className="truncate px-2.5 text-xs text-zinc-500">{userEmail}</p>
           <button
             onClick={handleSignOut}
-            className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-[#94A3B8] transition-all hover:bg-white/[0.04] hover:text-white"
+            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900"
           >
-            <LogOut size={16} />
+            <LogOut size={16} className="text-zinc-400" />
             Sign out
           </button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-8 py-10">{children}</div>
+        <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
       </main>
     </div>
   );

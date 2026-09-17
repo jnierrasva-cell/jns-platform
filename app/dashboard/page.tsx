@@ -1,14 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Plug,
-  Sparkles,
-  Users,
-  Zap,
-  Contact,
-  CalendarDays,
-} from "lucide-react";
+import { ArrowRight, Plug, Users, Zap, Contact, CalendarDays } from "lucide-react";
 import { mockServices } from "@/lib/mock-services";
 import { createClient } from "@/lib/supabase/server";
 
@@ -99,25 +90,25 @@ export default async function OverviewPage() {
   const metrics: OverviewMetric[] = [
     {
       href: "/dashboard/automation",
-      label: "Automations active",
+      label: "Automations on",
       value: activeAutomations,
-      detail: `of ${mockServices.length} available workflows`,
+      detail: `${mockServices.length} available`,
       icon: Zap,
     },
     {
       href: "/dashboard/integrations",
-      label: "Tools connected",
+      label: "Connected tools",
       value: integrationsCount,
       detail: googleConnection
-        ? `Google connected as ${googleConnection.connected_email}`
-        : "Connect the tools you use every day",
+        ? googleConnection.connected_email ?? "Google connected"
+        : "None connected",
       icon: Plug,
     },
     {
       href: "/dashboard/team",
-      label: "Team members",
+      label: "Team",
       value: teamCount ?? 1,
-      detail: "People with workspace access",
+      detail: "With workspace access",
       icon: Users,
     },
   ];
@@ -126,37 +117,29 @@ export default async function OverviewPage() {
     integrationsCount === 0
       ? {
           href: "/dashboard/integrations",
-          eyebrow: "Suggested next step",
-          title: "Connect your first business tool",
-          description:
-            "Link a service to start bringing your workflow into one place.",
-          action: "View integrations",
+          title: "Connect a tool",
+          description: "Link Google or SMS so automations can actually send.",
+          action: "Integrations",
         }
       : activeAutomations === 0
         ? {
             href: "/dashboard/automation",
-            eyebrow: "Suggested next step",
-            title: "Activate an automation",
-            description:
-              "Choose a ready-to-use workflow to reduce repetitive follow-up.",
-            action: "Explore automation",
+            title: "Turn on an automation",
+            description: "Pick a workflow for replies or reminders.",
+            action: "Automation",
           }
         : pipeline.lead > 0
           ? {
               href: "/dashboard/contacts?stage=lead",
-              eyebrow: "Suggested next step",
               title: `${pipeline.lead} lead${pipeline.lead === 1 ? "" : "s"} waiting`,
-              description:
-                "Review new leads, add notes, and move them through your pipeline.",
-              action: "Open leads",
+              description: "Open the list, add notes, and move them forward.",
+              action: "Contacts",
             }
           : {
               href: "/dashboard/forms",
-              eyebrow: "Workspace status",
-              title: "Your workspace is taking shape",
-              description:
-                "Share an intake form or booking link to start capturing demand.",
-              action: "View forms",
+              title: "Share a form or booking link",
+              description: "Start capturing new inquiries into this workspace.",
+              action: "Forms",
             };
 
   function contactName(c: {
@@ -170,199 +153,125 @@ export default async function OverviewPage() {
   }
 
   return (
-    <div className="pb-4">
-      <div className="flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <div className="flex flex-col gap-4 border-b border-zinc-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-            Workspace overview
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-            A clearer view of your business.
+          <p className="jns-kicker">Overview</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+            Workspace
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-            Pipeline, new leads, and the systems supporting your customer
-            operations.
+          <p className="mt-1 text-sm text-zinc-500">
+            Pipeline, new leads, and upcoming bookings.
           </p>
         </div>
-        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
-          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-          Workspace active
-        </span>
       </div>
 
-      {/* Metrics */}
-      <section className="mt-8" aria-label="Workspace metrics">
-        <div className="grid gap-4 md:grid-cols-3">
+      <section className="mt-6" aria-label="Workspace metrics">
+        <div className="grid gap-3 md:grid-cols-3">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             return (
               <Link
                 key={metric.label}
                 href={metric.href}
-                className="group rounded-xl border border-white/10 bg-white/[0.035] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-blue-400/30 hover:bg-white/[0.06]"
+                className="jns-card group p-4 transition hover:bg-zinc-50"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-400/20 bg-blue-400/10 text-cyan-200">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
+                <div className="flex items-start justify-between">
+                  <Icon className="h-4 w-4 text-zinc-400" aria-hidden="true" />
                   <ArrowRight
-                    className="mt-1 h-4 w-4 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-200"
+                    className="h-4 w-4 text-zinc-300 group-hover:text-zinc-500"
                     aria-hidden="true"
                   />
                 </div>
-                <p className="mt-5 text-3xl font-semibold tracking-tight text-white">
+                <p className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900">
                   {metric.value}
                 </p>
-                <h2 className="mt-1 text-sm font-medium text-slate-200">
+                <h2 className="mt-0.5 text-sm font-medium text-zinc-800">
                   {metric.label}
                 </h2>
-                <p className="mt-2 min-h-10 text-xs leading-5 text-slate-500">
-                  {metric.detail}
-                </p>
+                <p className="mt-1 truncate text-xs text-zinc-500">{metric.detail}</p>
               </Link>
             );
           })}
         </div>
       </section>
 
-      {/* Pipeline strip */}
-      <section className="mt-8">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-white">Pipeline</h2>
-          <Link
-            href="/dashboard/contacts"
-            className="text-xs text-cyan-200 underline underline-offset-2 hover:text-cyan-100"
-          >
-            View contacts
+      <section className="mt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-zinc-900">Pipeline</h2>
+          <Link href="/dashboard/contacts" className="jns-link text-xs">
+            All contacts
           </Link>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(
             [
-              { key: "lead", label: "Leads", href: "/dashboard/contacts" },
-              { key: "booked", label: "Booked", href: "/dashboard/contacts" },
-              {
-                key: "customer",
-                label: "Customers",
-                href: "/dashboard/contacts",
-              },
-              {
-                key: "inactive",
-                label: "Inactive",
-                href: "/dashboard/contacts",
-              },
+              { key: "lead", label: "Leads" },
+              { key: "booked", label: "Booked" },
+              { key: "customer", label: "Customers" },
+              { key: "inactive", label: "Inactive" },
             ] as const
           ).map((s) => (
             <Link
               key={s.key}
-              href={s.href}
-              className="rounded-xl border border-white/10 bg-white/[0.035] p-4 transition hover:border-blue-400/30 hover:bg-white/[0.06]"
+              href="/dashboard/contacts"
+              className="jns-card p-4 transition hover:bg-zinc-50"
             >
-              <p className="text-2xl font-semibold text-white">
-                {pipeline[s.key]}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">{s.label}</p>
+              <p className="text-xl font-semibold text-zinc-900">{pipeline[s.key]}</p>
+              <p className="mt-0.5 text-xs text-zinc-500">{s.label}</p>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Next step + at a glance */}
-      <section className="mt-8 grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
+      <section className="mt-6">
         <Link
           href={nextStep.href}
-          className="group relative overflow-hidden rounded-xl border border-blue-400/20 bg-gradient-to-br from-blue-500/[0.16] via-[#152654] to-[#101a37] p-6 transition hover:border-cyan-300/35"
+          className="jns-card group flex items-start justify-between gap-4 p-5 transition hover:bg-zinc-50"
         >
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-cyan-300/10 blur-3xl" />
-          <div className="relative">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
-              {nextStep.eyebrow}
-            </p>
-            <div className="mt-5 flex items-start justify-between gap-5">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight text-white">
-                  {nextStep.title}
-                </h2>
-                <p className="mt-3 max-w-lg text-sm leading-6 text-slate-300">
-                  {nextStep.description}
-                </p>
-              </div>
-              <Sparkles
-                className="h-5 w-5 shrink-0 text-cyan-200"
-                aria-hidden="true"
-              />
-            </div>
-            <span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-white">
+          <div>
+            <p className="jns-kicker">Next</p>
+            <h2 className="mt-1 text-base font-semibold text-zinc-900">
+              {nextStep.title}
+            </h2>
+            <p className="mt-1 text-sm text-zinc-600">{nextStep.description}</p>
+            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-zinc-900">
               {nextStep.action}
-              <ArrowRight
-                className="h-4 w-4 transition group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </span>
           </div>
         </Link>
-
-        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            At a glance
-          </p>
-          <dl className="mt-5 space-y-4 text-sm">
-            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-              <dt className="text-slate-400">Connected services</dt>
-              <dd className="font-medium text-white">{integrationsCount}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-              <dt className="text-slate-400">Active workflows</dt>
-              <dd className="font-medium text-white">{activeAutomations}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-slate-400">Workspace access</dt>
-              <dd className="font-medium text-white">
-                {teamCount ?? 1} members
-              </dd>
-            </div>
-          </dl>
-        </div>
       </section>
 
-      {/* New leads + upcoming bookings */}
-      <section className="mt-8 grid gap-5 lg:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/[0.035] p-6">
-          <div className="flex items-center justify-between gap-3">
+      <section className="mt-6 grid gap-3 lg:grid-cols-2">
+        <div className="jns-card p-5">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-cyan-300" aria-hidden="true" />
-              <h2 className="text-sm font-medium text-white">New leads</h2>
+              <Contact className="h-4 w-4 text-zinc-400" aria-hidden="true" />
+              <h2 className="text-sm font-medium text-zinc-900">New leads</h2>
             </div>
-            <Link
-              href="/dashboard/contacts"
-              className="text-xs text-cyan-200 underline underline-offset-2"
-            >
+            <Link href="/dashboard/contacts" className="jns-link text-xs">
               View all
             </Link>
           </div>
-          <ul className="mt-4 divide-y divide-white/5">
+          <ul className="mt-3 divide-y divide-zinc-100">
             {newLeads.length === 0 ? (
-              <li className="py-6 text-center text-sm text-slate-400">
+              <li className="py-5 text-center text-sm text-zinc-500">
                 No new contacts this week.
               </li>
             ) : (
               newLeads.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-start justify-between gap-3 py-3"
-                >
+                <li key={c.id} className="flex items-start justify-between gap-3 py-2.5">
                   <div>
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
-                      className="text-sm font-medium text-white hover:text-cyan-200"
+                      className="text-sm font-medium text-zinc-900 hover:underline"
                     >
                       {contactName(c)}
                     </Link>
-                    <p className="text-xs capitalize text-slate-500">
-                      {c.status}
-                    </p>
+                    <p className="text-xs capitalize text-zinc-500">{c.status}</p>
                   </div>
-                  <p className="shrink-0 text-xs text-slate-500">
+                  <p className="shrink-0 text-xs text-zinc-400">
                     {new Date(c.created_at).toLocaleDateString()}
                   </p>
                 </li>
@@ -371,44 +280,29 @@ export default async function OverviewPage() {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.035] p-6">
-          <div className="flex items-center justify-between gap-3">
+        <div className="jns-card p-5">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CalendarDays
-                className="h-4 w-4 text-cyan-300"
-                aria-hidden="true"
-              />
-              <h2 className="text-sm font-medium text-white">
-                Upcoming bookings
-              </h2>
+              <CalendarDays className="h-4 w-4 text-zinc-400" aria-hidden="true" />
+              <h2 className="text-sm font-medium text-zinc-900">Upcoming bookings</h2>
             </div>
-            <Link
-              href="/dashboard/bookings"
-              className="text-xs text-cyan-200 underline underline-offset-2"
-            >
+            <Link href="/dashboard/bookings" className="jns-link text-xs">
               View all
             </Link>
           </div>
-          <ul className="mt-4 divide-y divide-white/5">
+          <ul className="mt-3 divide-y divide-zinc-100">
             {(upcomingBookings ?? []).length === 0 ? (
-              <li className="py-6 text-center text-sm text-slate-400">
+              <li className="py-5 text-center text-sm text-zinc-500">
                 No bookings in the next 7 days.
               </li>
             ) : (
               (upcomingBookings ?? []).map((b) => {
-                const c = Array.isArray(b.contacts)
-                  ? b.contacts[0]
-                  : b.contacts;
+                const c = Array.isArray(b.contacts) ? b.contacts[0] : b.contacts;
                 return (
-                  <li
-                    key={b.id}
-                    className="flex items-start justify-between gap-3 py-3"
-                  >
+                  <li key={b.id} className="flex items-start justify-between gap-3 py-2.5">
                     <div>
-                      <p className="text-sm font-medium text-white">
-                        {b.title}
-                      </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-medium text-zinc-900">{b.title}</p>
+                      <p className="text-xs text-zinc-500">
                         {contactName(
                           c as {
                             first_name?: string | null;
@@ -418,7 +312,7 @@ export default async function OverviewPage() {
                         )}
                       </p>
                     </div>
-                    <p className="shrink-0 text-xs text-slate-500">
+                    <p className="shrink-0 text-xs text-zinc-400">
                       {new Date(b.starts_at).toLocaleString()}
                     </p>
                   </li>

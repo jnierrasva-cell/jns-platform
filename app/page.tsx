@@ -1,37 +1,213 @@
-import type { ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Blocks, CalendarDays, Check, Compass, Mail, Network, ShieldCheck, Sparkles, Users, Workflow, Zap } from "lucide-react";
+import { ArrowRight, CalendarDays, Mail, Plug, Users } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
-const platformBenefits = [
-  { icon: Network, title: "Your tools, one workspace", description: "Bring the systems your business relies on into one clear, connected place." },
-  { icon: Users, title: "A CRM built around your work", description: "Keep contacts, bookings, your team, and the next important action aligned." },
-  { icon: Workflow, title: "Operations that keep moving", description: "Create practical workflows that route, respond, and follow through without busywork." },
+const features = [
+  {
+    icon: Users,
+    title: "Contacts & pipeline",
+    body: "Track leads through booked, customer, and inactive. Notes, tags, and history stay on the contact.",
+  },
+  {
+    icon: CalendarDays,
+    title: "Bookings",
+    body: "Share a booking page, keep the calendar current, and see what’s coming up this week.",
+  },
+  {
+    icon: Mail,
+    title: "Forms & follow-up",
+    body: "Publish an intake form. New submissions land as contacts you can email or text from the same record.",
+  },
+  {
+    icon: Plug,
+    title: "Tools you already use",
+    body: "Connect Google, Twilio, and studio software so reminders and syncs run on your accounts.",
+  },
 ];
 
-const marketplaceCategories = [
-  { icon: Mail, title: "Email response", description: "Acknowledge inquiries and keep follow-ups from slipping through.", label: "Email" },
-  { icon: Compass, title: "Lead routing", description: "Direct new opportunities to the right person and next step.", label: "CRM" },
-  { icon: CalendarDays, title: "Scheduling sync", description: "Keep bookings and calendars coordinated across your workflow.", label: "Calendar" },
-  { icon: Blocks, title: "Connected workflows", description: "Activate repeatable processes that work across your business tools.", label: "Automation" },
-];
-
-function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <div className="max-w-2xl"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">{eyebrow}</p><h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h2><p className="mt-5 text-base leading-7 text-slate-300 sm:text-lg">{description}</p></div>;
-}
-
-function PreviewStat({ label, value, trend }: { label: string; value: string; trend: string }) {
-  return <div className="rounded-lg border border-white/10 bg-white/[0.035] p-3"><p className="text-[11px] text-slate-400">{label}</p><p className="mt-1 text-xl font-semibold text-white">{value}</p><p className="mt-1 text-[11px] text-cyan-300">{trend}</p></div>;
-}
-
-function DashboardPreview() {
-  return <div className="relative mx-auto w-full max-w-xl rounded-2xl border border-white/15 bg-[#101b3c]/90 p-3 shadow-2xl shadow-blue-950/60 backdrop-blur-sm sm:p-4"><div className="rounded-xl border border-white/10 bg-[#0B132B] p-4 sm:p-5"><div className="flex items-center justify-between border-b border-white/10 pb-4"><div><p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Workspace</p><p className="mt-1 font-semibold text-white">Business overview</p></div><span className="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Systems online</span></div><div className="mt-4 grid grid-cols-2 gap-3"><PreviewStat label="New contacts" value="24" trend="This week" /><PreviewStat label="Active workflows" value="08" trend="Running now" /></div><div className="mt-3 rounded-lg border border-blue-400/20 bg-blue-500/[0.08] p-3.5"><div className="flex items-center gap-2 text-sm font-medium text-blue-100"><Zap className="h-4 w-4 text-cyan-300" aria-hidden="true" /> Automation Marketplace</div><div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-white/10 bg-[#0d1733] px-3 py-2.5 text-xs text-slate-300"><span className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" /> New lead acknowledgement</span><span className="font-medium text-emerald-300">Active</span></div></div></div></div>;
-}
-
-function IconFrame({ children }: { children: ReactNode }) {
-  return <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-blue-400/25 bg-blue-400/10 text-cyan-200">{children}</span>;
+function ProductPreview() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_24px_60px_-28px_rgba(24,24,27,0.35)]">
+      <div className="flex border-b border-zinc-200">
+        <div className="hidden w-44 shrink-0 border-r border-zinc-200 bg-zinc-50 p-3 sm:block">
+          <p className="px-2 text-[11px] font-medium text-zinc-400">Workspace</p>
+          <div className="mt-3 space-y-1">
+            {["Overview", "Contacts", "Bookings", "Automation"].map((item, i) => (
+              <div
+                key={item}
+                className={`rounded-md px-2 py-1.5 text-[13px] ${
+                  i === 0 ? "bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500"
+                }`}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 p-4 sm:p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-zinc-500">Overview</p>
+              <p className="mt-0.5 text-sm font-semibold text-zinc-900">This week</p>
+            </div>
+            <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
+              3 tools connected
+            </span>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {[
+              ["12", "Leads"],
+              ["4", "Booked"],
+              ["2", "Automations"],
+            ].map(([value, label]) => (
+              <div key={label} className="rounded-md border border-zinc-200 px-3 py-2.5">
+                <p className="text-lg font-semibold tracking-tight text-zinc-900">{value}</p>
+                <p className="text-[11px] text-zinc-500">{label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 rounded-md border border-zinc-200">
+            {[
+              ["Maya Chen", "Lead · intake form"],
+              ["Jordan Hale", "Booked · Thu 10:00"],
+              ["New lead acknowledgement", "Automation · on"],
+            ].map(([title, meta], i) => (
+              <div
+                key={title}
+                className={`flex items-center justify-between px-3 py-2.5 text-[13px] ${
+                  i > 0 ? "border-t border-zinc-100" : ""
+                }`}
+              >
+                <span className="font-medium text-zinc-800">{title}</span>
+                <span className="text-zinc-500">{meta}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function LandingPage() {
-  return <div className="min-h-full overflow-hidden bg-[#0B132B] text-slate-100"><header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B132B]/80 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-6"><Link href="/" className="flex items-center" aria-label="JNS home"><Image src="/jns-logo.png" alt="JNS Platform" width={160} height={60} className="h-10 w-auto" priority /></Link><nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex" aria-label="Main navigation"><a href="#platform" className="transition hover:text-white">Platform</a><a href="#marketplace" className="transition hover:text-white">Marketplace</a><a href="#how-it-works" className="transition hover:text-white">How it works</a></nav><Link href="/login" className="rounded-lg border border-blue-400/35 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-100 transition hover:border-blue-300/60 hover:bg-blue-500/20">Sign in</Link></div></header><main><section className="relative isolate"><div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"><div className="absolute -right-44 -top-48 h-[42rem] w-[42rem] rounded-full bg-blue-600/20 blur-3xl" /><div className="absolute -bottom-36 -left-44 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" /></div><div className="mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-20 sm:px-6 sm:pb-28 sm:pt-28 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-16"><div><p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.08] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-cyan-200"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Journey Network Systems</p><h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl lg:leading-[1.06]">Your business tools. <span className="text-blue-300">Working as one.</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">JNS brings your CRM, customer operations, connected tools, and ready-to-use automations into one focused workspace—so your business can move with clarity.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/login" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/50 transition hover:bg-blue-500">Access your workspace <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link><a href="#marketplace" className="inline-flex items-center justify-center rounded-lg border border-white/15 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/[0.05]">Explore automations</a></div><div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">{["CRM & contacts", "Connected tools", "Self-serve automation"].map((item) => <span key={item} className="flex items-center gap-2"><Check className="h-4 w-4 text-cyan-300" aria-hidden="true" />{item}</span>)}</div></div><DashboardPreview /></div></section><section id="platform" className="border-y border-white/10 bg-[#101a37]/55"><div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><SectionHeading eyebrow="One connected platform" title="Less switching. More momentum." description="JNS gives your team a clear home for the core work that keeps your business moving—without turning your day into a stack of disconnected tabs." /><div className="mt-12 grid gap-4 md:grid-cols-3">{platformBenefits.map((benefit) => { const Icon = benefit.icon; return <article key={benefit.title} className="rounded-xl border border-white/10 bg-white/[0.035] p-6 transition duration-200 hover:-translate-y-1 hover:border-blue-400/30 hover:bg-white/[0.06]"><IconFrame><Icon className="h-5 w-5" aria-hidden="true" /></IconFrame><h3 className="mt-5 text-lg font-semibold text-white">{benefit.title}</h3><p className="mt-3 text-sm leading-6 text-slate-300">{benefit.description}</p></article>; })}</div></div></section><section id="marketplace" className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><SectionHeading eyebrow="Automation Marketplace" title="Activate the work that should not need chasing." description="Discover practical automations for the moments that repeat in your business. Choose what fits your workflow, activate it, and keep ownership in your hands." /><div className="grid gap-3 sm:grid-cols-2">{marketplaceCategories.map((category) => { const Icon = category.icon; return <article key={category.title} className="group rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-5 transition duration-200 hover:border-cyan-300/30"><div className="flex items-start justify-between gap-4"><IconFrame><Icon className="h-5 w-5" aria-hidden="true" /></IconFrame><span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-medium text-slate-400">{category.label}</span></div><h3 className="mt-5 font-semibold text-white">{category.title}</h3><p className="mt-2 text-sm leading-6 text-slate-300">{category.description}</p></article>; })}</div></div></section><section id="how-it-works" className="border-t border-white/10 bg-[#0d1731]"><div className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><SectionHeading eyebrow="Built to simplify" title="A clearer way to run your operations." description="Start with the systems you use today, then add structure and automation as your business grows." /><ol className="mt-12 grid gap-5 md:grid-cols-3">{[["01", "Connect your workspace", "Bring the tools and essential business information you rely on into a single operating view."], ["02", "Manage the day-to-day", "Keep customer relationships, bookings, team activity, and follow-through organized in JNS."], ["03", "Activate what helps", "Choose available automations that fit your process, then let the routine work stay in motion."]].map(([number, title, description]) => <li key={number} className="relative border-t border-blue-400/30 pt-5"><span className="text-sm font-semibold text-cyan-300">{number}</span><h3 className="mt-4 text-lg font-semibold text-white">{title}</h3><p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">{description}</p></li>)}</ol></div></section><section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 sm:py-28"><div className="relative overflow-hidden rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-600/25 via-[#152655] to-[#0d1731] px-6 py-12 text-center sm:px-12 sm:py-16"><div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" /><ShieldCheck className="relative mx-auto h-7 w-7 text-cyan-200" aria-hidden="true" /><h2 className="relative mx-auto mt-5 max-w-2xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">A stronger system for the work ahead.</h2><p className="relative mx-auto mt-5 max-w-xl text-slate-300">Sign in to your JNS workspace to manage your business tools, customer operations, and active automations.</p><Link href="/login" className="relative mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-[#0B132B] transition hover:bg-cyan-50">Go to your workspace <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></div></section></main><footer className="border-t border-white/10 px-5 py-8 sm:px-6"><div className="mx-auto flex max-w-7xl flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between"><p>© {new Date().getFullYear()} Journey Network Systems</p><p>One platform for your tools, workflows, and growth.</p></div></footer></div>;
+  return (
+    <div className="min-h-full bg-zinc-50">
+      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-50/90 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
+          <BrandMark />
+          <nav className="hidden items-center gap-6 text-sm text-zinc-600 md:flex" aria-label="Main">
+            <a href="#product" className="hover:text-zinc-900">
+              Product
+            </a>
+            <a href="#how" className="hover:text-zinc-900">
+              How it works
+            </a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="hidden px-3 py-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-900 sm:inline">
+              Sign in
+            </Link>
+            <Link href="/login" className="jns-btn h-8 px-3">
+              Get started
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section className="mx-auto grid max-w-5xl gap-12 px-5 pb-16 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:pt-20">
+          <div>
+            <p className="text-sm text-zinc-500">For studios, coaches, and service teams</p>
+            <h1 className="mt-3 max-w-lg text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-zinc-900 sm:text-5xl">
+              Run the front of the business in one place.
+            </h1>
+            <p className="mt-4 max-w-md text-[15px] leading-7 text-zinc-600">
+              JNS is the workspace for contacts, bookings, intake, and the
+              automations that follow them — without another stack of tabs.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/login" className="jns-btn h-10 px-4">
+                Sign in
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <a href="#product" className="jns-btn-secondary h-10 px-4">
+                See what’s included
+              </a>
+            </div>
+          </div>
+          <ProductPreview />
+        </section>
+
+        <section id="product" className="border-y border-zinc-200 bg-white">
+          <div className="mx-auto max-w-5xl px-5 py-16">
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
+              What you actually use day to day
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
+              Built around the work of getting someone from inquiry to booked to
+              customer — then staying in touch.
+            </p>
+            <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-zinc-200 bg-zinc-200 sm:grid-cols-2">
+              {features.map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <article key={feature.title} className="bg-white p-6">
+                    <Icon className="h-4 w-4 text-zinc-400" aria-hidden="true" />
+                    <h3 className="mt-4 text-sm font-semibold text-zinc-900">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-zinc-600">
+                      {feature.body}
+                    </p>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="how" className="mx-auto max-w-5xl px-5 py-16">
+          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            Set up in three steps
+          </h2>
+          <ol className="mt-8 grid gap-8 md:grid-cols-3">
+            {[
+              ["1", "Create a workspace", "Sign in, name the business, and invite the people who need access."],
+              ["2", "Connect accounts", "Link Google, SMS, and class software so data isn’t copied by hand."],
+              ["3", "Turn on the boring work", "Enable the automations you want — replies, reminders, routing."],
+            ].map(([n, title, body]) => (
+              <li key={n}>
+                <p className="text-xs font-medium text-zinc-400">{n}</p>
+                <h3 className="mt-2 text-sm font-semibold text-zinc-900">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">{body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="border-t border-zinc-200 bg-white">
+          <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-6 px-5 py-14 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
+                Ready when you are
+              </h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Use your existing JNS account, or create one from the sign-in page.
+              </p>
+            </div>
+            <Link href="/login" className="jns-btn h-10 px-4">
+              Go to sign in
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-zinc-200 px-5 py-8">
+        <div className="mx-auto flex max-w-5xl flex-col gap-1 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Journey Network Systems</p>
+          <p>Contacts, bookings, forms, and automations.</p>
+        </div>
+      </footer>
+    </div>
+  );
 }
