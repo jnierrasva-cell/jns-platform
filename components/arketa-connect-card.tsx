@@ -253,7 +253,8 @@ export function ArketaConnectCard({
         </div>
       ) : (
         <p className="mt-5 text-sm text-[#94A3B8]">
-          Ask a workspace owner or admin to connect Arketa.
+          Ask your organization owner for Admin access to connect Arketa and
+          run sync.
         </p>
       )}
 

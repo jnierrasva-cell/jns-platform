@@ -22,8 +22,9 @@ async function requireOrgManager(organizationId: string) {
     .maybeSingle();
 
   if (!membership || !["ceo", "admin"].includes(membership.role)) {
-    throw new Error("Not authorized");
-  }
+  throw new Error(
+      "You don’t have permission to manage integrations. Ask your organization owner to grant you Admin access.",
+    );
 
   return supabase;
 }
