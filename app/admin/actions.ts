@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
-async function requireAdmin() {
+async function requirePlatformAdmin() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,13 +17,13 @@ async function requireAdmin() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") throw new Error("Not authorized");
+  if (profile?.role !== "super_admin") throw new Error("Not authorized");
 
   return { supabase, user };
 }
 
 export async function approveUser(userId: string) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requirePlatformAdmin();
   await supabase
     .from("profiles")
     .update({ status: "approved" })
@@ -32,7 +32,7 @@ export async function approveUser(userId: string) {
 }
 
 export async function rejectUser(userId: string) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requirePlatformAdmin();
   await supabase
     .from("profiles")
     .update({ status: "rejected" })
@@ -40,21 +40,20 @@ export async function rejectUser(userId: string) {
   revalidatePath("/admin");
 }
 
-export async function setUserRole(userId: string, role: "client" | "admin") {
-  const { supabase } = await requireAdmin();
+export async function setUserRole(
+  userId: string,
+  role: "user" | "super_admin",
+) {
+  const { supabase } = await requirePlatformAdmin();
   await supabase.from("profiles").update({ role }).eq("id", userId);
   revalidatePath("/admin");
 }
 
-/**
- * Creates a password-recovery link for a member.
- * Does NOT send email — returns the link for the admin to copy/share.
- */
 export async function generatePasswordResetLink(userId: string): Promise<{
   link: string;
   email: string;
 }> {
-  await requireAdmin();
+  await requirePlatformAdmin();
 
   const admin = createAdminClient();
 

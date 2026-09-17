@@ -27,14 +27,14 @@ type NavItem = {
 
 export function DashboardShell({
   userEmail,
-  isAdmin,
-  isOrgCeo,
+  isPlatformAdmin,
+  isOrgManager,
   orgName,
   children,
 }: {
   userEmail: string;
-  isAdmin: boolean;
-  isOrgCeo: boolean;
+  isPlatformAdmin: boolean;
+  isOrgManager: boolean;
   orgName: string;
   children: React.ReactNode;
 }) {
@@ -60,7 +60,8 @@ export function DashboardShell({
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
   ];
 
-  if (isOrgCeo) {
+  // Org owner or org admin — Team for their workspace only
+  if (isOrgManager) {
     navItems.push({ label: "Team", href: "/dashboard/team", icon: Users });
   }
 
@@ -91,13 +92,17 @@ export function DashboardShell({
                     : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
                 }`}
               >
-                <Icon size={16} className={active ? "text-zinc-900" : "text-zinc-400"} />
+                <Icon
+                  size={16}
+                  className={active ? "text-zinc-900" : "text-zinc-400"}
+                />
                 {item.label}
               </Link>
             );
           })}
 
-          {isAdmin && (
+          {/* Platform only — you (JNS), not Athena */}
+          {isPlatformAdmin && (
             <>
               <div className="my-2 border-t border-zinc-200" />
               <Link
@@ -109,7 +114,7 @@ export function DashboardShell({
                 }`}
               >
                 <Shield size={16} className="text-zinc-400" />
-                Admin
+                JNS Admin
               </Link>
             </>
           )}

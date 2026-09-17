@@ -13,8 +13,8 @@ type Profile = {
   id: string;
   email: string | null;
   business_name: string | null;
-  role: "client" | "admin";
-  status: "pending" | "approved" | "rejected";
+  role: string;
+  status: "pending" | "approved" | "rejected" | string;
   created_at: string;
 };
 
@@ -49,129 +49,134 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
     try {
       await navigator.clipboard.writeText(resetInfo.link);
     } catch {
-      // fallback: select is enough if clipboard blocked
+      // ignore
     }
   }
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-          Admin
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+          JNS Admin
         </span>
         <Link
           href="/dashboard"
-          className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
+          className="text-xs font-medium text-zinc-900 underline-offset-2 hover:underline"
         >
           ← Back to dashboard
         </Link>
       </div>
 
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
         All users
       </h1>
+      <p className="mt-1 text-sm text-zinc-500">
+        Platform access only. Org roles (Owner / Admin / Assistant) are managed
+        inside each workspace under Team.
+      </p>
 
       {(resetInfo || resetError) && (
-        <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          {resetError && (
-            <p className="text-sm text-red-600">{resetError}</p>
-          )}
+        <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-4">
+          {resetError && <p className="text-sm text-red-600">{resetError}</p>}
           {resetInfo && (
             <div className="space-y-3">
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-zinc-600">
                 Reset link for{" "}
-                <span className="font-medium text-zinc-900">{resetInfo.email}</span>
-                . Copy and send it yourself (chat, SMS, email). No SMTP required.
+                <span className="font-medium text-zinc-900">
+                  {resetInfo.email}
+                </span>
+                . Copy and send it yourself.
               </p>
-              <textarea
+              <input
                 readOnly
                 value={resetInfo.link}
-                className="h-24 w-full rounded-lg border border-zinc-200 bg-[#0B132B] px-3 py-2 text-xs text-cyan-800"
+                className="w-full rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs text-zinc-800"
               />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={copyLink}
-                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
-                >
-                  Copy link
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setResetInfo(null)}
-                  className="text-xs text-slate-400 underline underline-offset-2 hover:text-zinc-900"
-                >
-                  Dismiss
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={copyLink}
+                className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
+              >
+                Copy link
+              </button>
             </div>
           )}
         </div>
       )}
 
-      <section className="mt-10">
-        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-          Active accounts
-        </h2>
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
+      <section className="mt-8">
+        <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500">
               <tr>
-                <th className="px-4 py-3">Client</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3 font-medium">User</th>
+                <th className="px-4 py-3 font-medium">Platform role</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {activeUsers.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b border-white/5 last:border-0"
-                >
+                <tr key={p.id} className="border-b border-zinc-100">
                   <td className="px-4 py-3">
                     <p className="font-medium text-zinc-900">
-                      {p.business_name || p.email}
+                      {p.business_name || p.email || "—"}
                     </p>
                     <p className="text-xs text-zinc-500">{p.email}</p>
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{p.role}</td>
-                  <td className="px-4 py-3 text-zinc-500">active</td>
+                  <td className="px-4 py-3 text-zinc-600">
+                    {p.role === "super_admin" ? "super_admin" : "user"}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-600">{p.status}</td>
                   <td className="px-4 py-3">
-                    <div className="flex flex-wrap justify-end gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <button
-                        disabled={isPending || !p.email}
+                        type="button"
+                        disabled={isPending}
                         onClick={() => handleResetLink(p.id)}
-                        className="text-xs text-cyan-700 underline underline-offset-2 hover:text-cyan-800 disabled:opacity-40"
+                        className="text-xs text-zinc-700 underline underline-offset-2 hover:text-zinc-900 disabled:opacity-50"
                       >
-                        Reset password link
+                        Reset link
                       </button>
-                      {p.role !== "admin" && (
-                        <>
-                          <button
-                            disabled={isPending}
-                            onClick={() =>
-                              startTransition(() => {
-                                setUserRole(p.id, "admin");
-                              })
-                            }
-                            className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
-                          >
-                            Make admin
-                          </button>
-                          <button
-                            disabled={isPending}
-                            onClick={() =>
-                              startTransition(() => {
-                                rejectUser(p.id);
-                              })
-                            }
-                            className="text-xs text-red-600 underline underline-offset-2 hover:text-red-600"
-                          >
-                            Block
-                          </button>
-                        </>
+                      {p.role !== "super_admin" ? (
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            startTransition(() => {
+                              setUserRole(p.id, "super_admin");
+                            })
+                          }
+                          className="text-xs text-blue-600 underline underline-offset-2 disabled:opacity-50"
+                        >
+                          Make super admin
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            startTransition(() => {
+                              setUserRole(p.id, "user");
+                            })
+                          }
+                          className="text-xs text-zinc-600 underline underline-offset-2 disabled:opacity-50"
+                        >
+                          Remove super admin
+                        </button>
                       )}
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() =>
+                          startTransition(() => {
+                            rejectUser(p.id);
+                          })
+                        }
+                        className="text-xs text-red-600 underline underline-offset-2 disabled:opacity-50"
+                      >
+                        Block
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -183,14 +188,14 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
 
       {rejectedUsers.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
+          <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
             Blocked accounts
           </h2>
           <div className="flex flex-col gap-3">
             {rejectedUsers.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded-xl border border-red-400/20 bg-red-400/10 p-4"
+                className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4"
               >
                 <div>
                   <p className="text-sm font-medium text-zinc-900">
@@ -199,13 +204,14 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                   <p className="text-xs text-zinc-500">{p.email}</p>
                 </div>
                 <button
+                  type="button"
                   disabled={isPending}
                   onClick={() =>
                     startTransition(() => {
                       approveUser(p.id);
                     })
                   }
-                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-[#2563EB]/25 transition hover:bg-zinc-800 disabled:opacity-60"
+                  className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
                   Restore access
                 </button>
