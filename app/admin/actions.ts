@@ -49,6 +49,29 @@ export async function setUserRole(
   revalidatePath("/admin");
 }
 
+/**
+ * Permanently removes a user from the platform (Auth + profile).
+ * They can register again with the same email.
+ * Cannot delete yourself.
+ */
+export async function removeUser(userId: string) {
+  const { user } = await requirePlatformAdmin();
+
+  if (userId === user.id) {
+    throw new Error("You cannot remove your own account.");
+  }
+
+  const admin = createAdminClient();
+
+  // Remove profile first if it doesn't cascade from auth.users
+  await admin.from("profiles").delete().eq("id", userId);
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin");
+}
+
 export async function generatePasswordResetLink(userId: string): Promise<{
   link: string;
   email: string;
