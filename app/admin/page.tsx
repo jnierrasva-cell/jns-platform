@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { AdminClient } from "@/components/admin-client";
 
 export default async function AdminPage() {
@@ -10,6 +11,7 @@ export default async function AdminPage() {
 
   if (!user) redirect("/login");
 
+  // Auth check with the signed-in user
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -18,7 +20,9 @@ export default async function AdminPage() {
 
   if (profile?.role !== "super_admin") redirect("/dashboard");
 
-  const { data: profiles } = await supabase
+  // List ALL users with service role (bypasses RLS)
+  const admin = createAdminClient();
+  const { data: profiles } = await admin
     .from("profiles")
     .select("id, email, business_name, role, status, created_at")
     .order("created_at", { ascending: false });
