@@ -42,6 +42,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Platform panel: only super_admin (not org "admin")
   if (user && isAdminRoute) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -49,7 +50,7 @@ export async function proxy(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (profile?.role !== "super_admin") {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);
