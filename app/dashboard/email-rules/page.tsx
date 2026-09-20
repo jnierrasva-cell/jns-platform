@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { EmailRulesClient } from "@/components/email-rules-client";
 
 export default async function EmailRulesPage() {
@@ -10,27 +11,21 @@ export default async function EmailRulesPage() {
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
+  const orgId = active.organizationId;
 
   const { data: rules } = await supabase
     .from("email_rules")
     .select(
       "id, name, is_enabled, priority, from_email, from_domain, subject_contains, only_new_contact, action, tag, created_at",
     )
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .order("priority", { ascending: true })
     .order("created_at", { ascending: true });
 
   return (
-    <EmailRulesClient
-      organizationId={membership.organization_id}
-      rules={rules ?? []}
-    />
+    <EmailRulesClient organizationId={orgId} rules={rules ?? []} />
   );
 }

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { UnmatchedClient } from "@/components/unmatched-client";
 
 export default async function UnmatchedPage() {
@@ -10,15 +11,10 @@ export default async function UnmatchedPage() {
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
-
-  const orgId = membership.organization_id;
+  const orgId = active.organizationId;
 
   const { data: rows } = await supabase
     .from("unmatched_emails")
@@ -30,7 +26,5 @@ export default async function UnmatchedPage() {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  return (
-    <UnmatchedClient organizationId={orgId} rows={rows ?? []} />
-  );
+  return <UnmatchedClient organizationId={orgId} rows={rows ?? []} />;
 }

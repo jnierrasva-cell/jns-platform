@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { PipelineClient } from "@/components/pipeline-client";
 
 export default async function PipelinePage() {
@@ -10,15 +11,10 @@ export default async function PipelinePage() {
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
-
-  const orgId = membership.organization_id;
+  const orgId = active.organizationId;
 
   const { data: stages } = await supabase
     .from("pipeline_stages")
