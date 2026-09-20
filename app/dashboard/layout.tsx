@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { getActiveOrg } from "@/lib/org/active";
 
 export default async function DashboardLayout({
   children,
@@ -31,36 +32,26 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("role, organizations(name)")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
 
-  if (!membership) {
+  if (!active) {
     if (profile.account_type === "business") {
       redirect("/onboarding/setup-business");
     }
     redirect("/onboarding/account-type");
   }
 
-  const orgName = Array.isArray(membership.organizations)
-    ? membership.organizations[0]?.name
-    : (membership.organizations as { name: string } | null)?.name;
-
   const isPlatformAdmin = profile?.role === "super_admin";
-  const isOrgManager =
-    membership.role === "ceo" || membership.role === "admin";
-
+  const isOrgManager = active.role === "ceo" || active.role === "admin";
 
   return (
     <DashboardShell
       userEmail={user.email ?? ""}
       isPlatformAdmin={isPlatformAdmin}
       isOrgManager={isOrgManager}
-      orgName={orgName ?? "Your workspace"}
+      orgName={active.orgName}
     >
       {children}
     </DashboardShell>
-  )
-};
+  );
+}

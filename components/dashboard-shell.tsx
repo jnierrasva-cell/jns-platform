@@ -15,6 +15,7 @@ import {
   FileInput,
   Inbox,
   Kanban,
+  Building2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -60,7 +61,6 @@ export function DashboardShell({
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
   ];
 
-  // Org owner or org admin — Team for their workspace only
   if (isOrgManager) {
     navItems.push({ label: "Team", href: "/dashboard/team", icon: Users });
   }
@@ -101,28 +101,46 @@ export function DashboardShell({
             );
           })}
 
-          {/* Platform only — you (JNS), not Athena */}
+          <div className="my-2 border-t border-zinc-200" />
+
+          <Link
+            href="/dashboard/orgs"
+            className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
+              pathname.startsWith("/dashboard/orgs")
+                ? "bg-zinc-100 font-medium text-zinc-900"
+                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+            }`}
+          >
+            <Building2
+              size={16}
+              className={
+                pathname.startsWith("/dashboard/orgs")
+                  ? "text-zinc-900"
+                  : "text-zinc-400"
+              }
+            />
+            My orgs
+          </Link>
+
           {isPlatformAdmin && (
-            <>
-              <div className="my-2 border-t border-zinc-200" />
-              <Link
-                href="/admin"
-                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
-                  pathname.startsWith("/admin")
-                    ? "bg-zinc-100 font-medium text-zinc-900"
-                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
-                }`}
-              >
-                <Shield size={16} className="text-zinc-400" />
-                JNS Admin
-              </Link>
-            </>
+            <Link
+              href="/admin"
+              className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
+                pathname.startsWith("/admin")
+                  ? "bg-zinc-100 font-medium text-zinc-900"
+                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+              }`}
+            >
+              <Shield size={16} className="text-zinc-400" />
+              JNS Admin
+            </Link>
           )}
         </nav>
 
         <div className="border-t border-zinc-200 p-2">
           <p className="truncate px-2.5 text-xs text-zinc-500">{userEmail}</p>
           <button
+            type="button"
             onClick={handleSignOut}
             className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900"
           >
