@@ -6,6 +6,7 @@ import {
   approveUser,
   rejectUser,
   setUserRole,
+  removeUser,
   generatePasswordResetLink,
 } from "@/app/admin/actions";
 
@@ -14,7 +15,7 @@ type Profile = {
   email: string | null;
   business_name: string | null;
   role: string;
-  status: "pending" | "approved" | "rejected" | string;
+  status: string;
   created_at: string;
 };
 
@@ -25,6 +26,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
     link: string;
   } | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const activeUsers = profiles.filter((p) => p.status !== "rejected");
   const rejectedUsers = profiles.filter((p) => p.status === "rejected");
@@ -32,6 +34,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
   function handleResetLink(userId: string) {
     setResetError(null);
     setResetInfo(null);
+    setActionError(null);
     startTransition(async () => {
       try {
         const result = await generatePasswordResetLink(userId);
@@ -39,6 +42,25 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
       } catch (err) {
         setResetError(
           err instanceof Error ? err.message : "Could not generate link",
+        );
+      }
+    });
+  }
+
+  function handleRemove(userId: string, email: string | null) {
+    const label = email || "this user";
+    const ok = window.confirm(
+      `Permanently delete ${label}?\n\nThis removes their login from the platform. They can register again with the same email.`,
+    );
+    if (!ok) return;
+
+    setActionError(null);
+    startTransition(async () => {
+      try {
+        await removeUser(userId);
+      } catch (err) {
+        setActionError(
+          err instanceof Error ? err.message : "Could not delete user",
         );
       }
     });
@@ -54,7 +76,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
           JNS Admin
@@ -71,9 +93,12 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
         All users
       </h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Platform access only. Org roles (Owner / Admin / Assistant) are managed
-        inside each workspace under Team.
+        Platform access only. Org roles are managed under each workspace Team.
       </p>
+
+      {actionError && (
+        <p className="mt-4 text-sm text-red-600">{actionError}</p>
+      )}
 
       {(resetInfo || resetError) && (
         <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-4">
@@ -177,6 +202,14 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                       >
                         Block
                       </button>
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => handleRemove(p.id, p.email)}
+                        className="text-xs font-medium text-red-700 underline underline-offset-2 disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -195,7 +228,7 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
             {rejectedUsers.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
               >
                 <div>
                   <p className="text-sm font-medium text-zinc-900">
@@ -203,18 +236,28 @@ export function AdminClient({ profiles }: { profiles: Profile[] }) {
                   </p>
                   <p className="text-xs text-zinc-500">{p.email}</p>
                 </div>
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(() => {
-                      approveUser(p.id);
-                    })
-                  }
-                  className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-                >
-                  Restore access
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() =>
+                      startTransition(() => {
+                        approveUser(p.id);
+                      })
+                    }
+                    className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                  >
+                    Restore access
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleRemove(p.id, p.email)}
+                    className="text-xs font-medium text-red-700 underline underline-offset-2 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>

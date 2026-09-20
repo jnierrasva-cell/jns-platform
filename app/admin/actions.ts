@@ -50,8 +50,8 @@ export async function setUserRole(
 }
 
 /**
- * Permanently removes a user from the platform (Auth + profile).
- * They can register again with the same email.
+ * Permanently deletes a user from the platform.
+ * They can sign up again with the same email.
  * Cannot delete yourself.
  */
 export async function removeUser(userId: string) {
@@ -63,7 +63,12 @@ export async function removeUser(userId: string) {
 
   const admin = createAdminClient();
 
-  // Remove profile first if it doesn't cascade from auth.users
+  // Clear memberships / invites so nothing is left hanging
+  await admin.from("org_members").delete().eq("user_id", userId);
+  await admin.from("invites").delete().eq("email", (
+    await admin.from("profiles").select("email").eq("id", userId).maybeSingle()
+  ).data?.email ?? "");
+
   await admin.from("profiles").delete().eq("id", userId);
 
   const { error } = await admin.auth.admin.deleteUser(userId);
