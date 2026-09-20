@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { disconnectGoogle } from "@/app/dashboard/integrations/actions";
 import { TwilioConnectCard } from "@/components/twilio-connect-card";
 import { ArketaConnectCard } from "@/components/arketa-connect-card";
@@ -12,17 +13,11 @@ export default async function IntegrationsPage() {
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id, role")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
-
-  const orgId = membership.organization_id;
-  const canManage =
-    membership.role === "ceo" || membership.role === "admin";
+  const orgId = active.organizationId;
+  const canManage = active.role === "ceo" || active.role === "admin";
 
   const { data: googleConnection } = await supabase
     .from("connections")
@@ -45,7 +40,6 @@ export default async function IntegrationsPage() {
     .eq("organization_id", orgId)
     .order("label", { ascending: true });
 
-  // Form actions must accept FormData — bind org id for disconnect
   const disconnectGoogleAction = disconnectGoogle.bind(null, orgId);
 
   return (
@@ -62,7 +56,6 @@ export default async function IntegrationsPage() {
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Google */}
         <div className="rounded-xl border border-zinc-200 bg-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -106,7 +99,7 @@ export default async function IntegrationsPage() {
           ) : canManage ? (
             <a
               href="/api/google/connect"
-              className="mt-5 inline-flex rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white  transition hover:bg-zinc-800"
+              className="mt-5 inline-flex rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
               Connect Google
             </a>
@@ -117,7 +110,6 @@ export default async function IntegrationsPage() {
           )}
         </div>
 
-        {/* Twilio — match existing prop names */}
         <TwilioConnectCard
           organizationId={orgId}
           connected={Boolean(twilio?.from_number)}
@@ -125,7 +117,6 @@ export default async function IntegrationsPage() {
           canManage={canManage}
         />
 
-        {/* Arketa — full width */}
         <ArketaConnectCard
           organizationId={orgId}
           canManage={canManage}

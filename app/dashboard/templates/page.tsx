@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { TemplateClient } from "@/components/template-client";
 
 export default async function TemplatesPage() {
@@ -10,28 +11,26 @@ export default async function TemplatesPage() {
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("role, organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
-  if (membership.role !== "ceo") redirect("/dashboard");
+  if (active.role !== "ceo" && active.role !== "admin") {
+    redirect("/dashboard");
+  }
+
+  const orgId = active.organizationId;
 
   const { data: template } = await supabase
     .from("email_templates")
     .select("subject, body")
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .eq("template_key", "gmail_auto_ack")
     .maybeSingle();
 
   return (
     <TemplateClient
-      orgId={membership.organization_id}
-      initialSubject={
-        template?.subject ?? "Thanks for reaching out!"
-      }
+      orgId={orgId}
+      initialSubject={template?.subject ?? "Thanks for reaching out!"}
       initialBody={
         template?.body ??
         `Hi {{first_name}},
