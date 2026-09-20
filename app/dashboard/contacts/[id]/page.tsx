@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { ContactDetailClient } from "@/components/contact-detail-client";
 
 export default async function ContactDetailPage({
@@ -16,21 +17,18 @@ export default async function ContactDetailPage({
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
+  const orgId = active.organizationId;
 
   const { data: contact } = await supabase
     .from("contacts")
     .select(
-      "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at",
+      "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at, pipeline_stage_id",
     )
     .eq("id", id)
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!contact) notFound();
@@ -38,7 +36,7 @@ export default async function ContactDetailPage({
   const { data: stages } = await supabase
     .from("pipeline_stages")
     .select("id, name, slug, position, is_won, is_lost")
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .order("position", { ascending: true });
 
   const { data: activity } = await supabase
@@ -68,13 +66,13 @@ export default async function ContactDetailPage({
     <div>
       <Link
         href="/dashboard/contacts"
-        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
+        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
       >
         ← Back to Contacts
       </Link>
 
       <ContactDetailClient
-        organizationId={membership.organization_id}
+        organizationId={orgId}
         contact={contact}
         stages={stages ?? []}
         activity={activity ?? []}

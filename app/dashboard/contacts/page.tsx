@@ -1,14 +1,9 @@
-import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ContactDetailClient } from "@/components/contact-detail-client";
+import { getActiveOrg } from "@/lib/org/active";
+import { ContactsClient } from "@/components/contacts-client";
 
-export default async function ContactDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export default async function ContactsPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,26 +11,18 @@ export default async function ContactDetailPage({
 
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
 
-  if (!membership) redirect("/onboarding/setup-business");
+  const orgId = active.organizationId;
 
-  const orgId = membership.organization_id;
-
-  const { data: contact } = await supabase
+  const { data: contacts } = await supabase
     .from("contacts")
     .select(
       "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at, pipeline_stage_id",
     )
-    .eq("id", id)
     .eq("organization_id", orgId)
-    .maybeSingle();
-
-  if (!contact) notFound();
+    .order("created_at", { ascending: false });
 
   const { data: stages } = await supabase
     .from("pipeline_stages")
@@ -43,46 +30,26 @@ export default async function ContactDetailPage({
     .eq("organization_id", orgId)
     .order("position", { ascending: true });
 
-  const { data: activity } = await supabase
-    .from("email_activity")
-    .select(
-      "id, direction, subject, from_email, to_email, status, created_at",
-    )
-    .eq("contact_id", contact.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const { data: googleConnection } = await supabase
+    .from("connections")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("provider", "google")
+    .maybeSingle();
 
-  const { data: bookings } = await supabase
-    .from("bookings")
-    .select("id, title, starts_at, status")
-    .eq("contact_id", contact.id)
-    .order("starts_at", { ascending: false })
-    .limit(20);
-
-  const { data: notes } = await supabase
-    .from("contact_notes")
-    .select("id, body, created_at, created_by")
-    .eq("contact_id", contact.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const { data: twilioConnection } = await supabase
+    .from("twilio_connections")
+    .select("id")
+    .eq("organization_id", orgId)
+    .maybeSingle();
 
   return (
-    <div>
-      <Link
-        href="/dashboard/contacts"
-        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
-      >
-        ← Back to Contacts
-      </Link>
-
-      <ContactDetailClient
-        organizationId={orgId}
-        contact={contact}
-        stages={stages ?? []}
-        activity={activity ?? []}
-        bookings={bookings ?? []}
-        notes={notes ?? []}
-      />
-    </div>
+    <ContactsClient
+      organizationId={orgId}
+      contacts={contacts ?? []}
+      stages={stages ?? []}
+      googleConnected={Boolean(googleConnection)}
+      twilioConnected={Boolean(twilioConnection)}
+    />
   );
 }

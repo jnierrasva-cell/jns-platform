@@ -1,7 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, Plug, Users, Zap, Contact, CalendarDays } from "lucide-react";
+import { redirect } from "next/navigation";
+import {
+  ArrowRight,
+  Plug,
+  Users,
+  Zap,
+  CalendarDays,
+} from "lucide-react";
 import { mockServices } from "@/lib/mock-services";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 
 type OverviewMetric = {
   href: string;
@@ -17,13 +25,12 @@ export default async function OverviewPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user!.id)
-    .maybeSingle();
+  if (!user) redirect("/login");
 
-  const orgId = membership?.organization_id;
+  const active = await getActiveOrg();
+  if (!active) redirect("/onboarding/setup-business");
+
+  const orgId = active.organizationId;
 
   const { data: googleConnection } = await supabase
     .from("connections")
@@ -100,7 +107,7 @@ export default async function OverviewPage() {
       label: "Connected tools",
       value: integrationsCount,
       detail: googleConnection
-        ? googleConnection.connected_email ?? "Google connected"
+        ? (googleConnection.connected_email ?? "Google connected")
         : "None connected",
       icon: Plug,
     },
@@ -189,7 +196,9 @@ export default async function OverviewPage() {
                 <h2 className="mt-0.5 text-sm font-medium text-zinc-800">
                   {metric.label}
                 </h2>
-                <p className="mt-1 truncate text-xs text-zinc-500">{metric.detail}</p>
+                <p className="mt-1 truncate text-xs text-zinc-500">
+                  {metric.detail}
+                </p>
               </Link>
             );
           })}
@@ -217,7 +226,9 @@ export default async function OverviewPage() {
               href="/dashboard/contacts"
               className="jns-card p-4 transition hover:bg-zinc-50"
             >
-              <p className="text-xl font-semibold text-zinc-900">{pipeline[s.key]}</p>
+              <p className="text-xl font-semibold text-zinc-900">
+                {pipeline[s.key]}
+              </p>
               <p className="mt-0.5 text-xs text-zinc-500">{s.label}</p>
             </Link>
           ))}
@@ -227,29 +238,22 @@ export default async function OverviewPage() {
       <section className="mt-6">
         <Link
           href={nextStep.href}
-          className="jns-card group flex items-start justify-between gap-4 p-5 transition hover:bg-zinc-50"
+          className="jns-card flex items-center justify-between gap-4 p-4 transition hover:bg-zinc-50"
         >
           <div>
-            <p className="jns-kicker">Next</p>
-            <h2 className="mt-1 text-base font-semibold text-zinc-900">
-              {nextStep.title}
-            </h2>
-            <p className="mt-1 text-sm text-zinc-600">{nextStep.description}</p>
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-zinc-900">
-              {nextStep.action}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </span>
+            <p className="text-sm font-medium text-zinc-900">{nextStep.title}</p>
+            <p className="mt-0.5 text-xs text-zinc-500">{nextStep.description}</p>
           </div>
+          <span className="shrink-0 text-xs font-medium text-zinc-700">
+            {nextStep.action} →
+          </span>
         </Link>
       </section>
 
-      <section className="mt-6 grid gap-3 lg:grid-cols-2">
+      <section className="mt-6 grid gap-4 lg:grid-cols-2">
         <div className="jns-card p-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-zinc-400" aria-hidden="true" />
-              <h2 className="text-sm font-medium text-zinc-900">New leads</h2>
-            </div>
+            <h2 className="text-sm font-medium text-zinc-900">New leads</h2>
             <Link href="/dashboard/contacts" className="jns-link text-xs">
               View all
             </Link>
@@ -261,7 +265,10 @@ export default async function OverviewPage() {
               </li>
             ) : (
               newLeads.map((c) => (
-                <li key={c.id} className="flex items-start justify-between gap-3 py-2.5">
+                <li
+                  key={c.id}
+                  className="flex items-start justify-between gap-3 py-2.5"
+                >
                   <div>
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
@@ -269,7 +276,9 @@ export default async function OverviewPage() {
                     >
                       {contactName(c)}
                     </Link>
-                    <p className="text-xs capitalize text-zinc-500">{c.status}</p>
+                    <p className="text-xs capitalize text-zinc-500">
+                      {c.status}
+                    </p>
                   </div>
                   <p className="shrink-0 text-xs text-zinc-400">
                     {new Date(c.created_at).toLocaleDateString()}
@@ -283,8 +292,13 @@ export default async function OverviewPage() {
         <div className="jns-card p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-zinc-400" aria-hidden="true" />
-              <h2 className="text-sm font-medium text-zinc-900">Upcoming bookings</h2>
+              <CalendarDays
+                className="h-4 w-4 text-zinc-400"
+                aria-hidden="true"
+              />
+              <h2 className="text-sm font-medium text-zinc-900">
+                Upcoming bookings
+              </h2>
             </div>
             <Link href="/dashboard/bookings" className="jns-link text-xs">
               View all
@@ -297,11 +311,18 @@ export default async function OverviewPage() {
               </li>
             ) : (
               (upcomingBookings ?? []).map((b) => {
-                const c = Array.isArray(b.contacts) ? b.contacts[0] : b.contacts;
+                const c = Array.isArray(b.contacts)
+                  ? b.contacts[0]
+                  : b.contacts;
                 return (
-                  <li key={b.id} className="flex items-start justify-between gap-3 py-2.5">
+                  <li
+                    key={b.id}
+                    className="flex items-start justify-between gap-3 py-2.5"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">{b.title}</p>
+                      <p className="text-sm font-medium text-zinc-900">
+                        {b.title}
+                      </p>
                       <p className="text-xs text-zinc-500">
                         {contactName(
                           c as {
