@@ -38,11 +38,8 @@ export default function InvitePage() {
         .rpc("get_invite_info", { invite_token: token })
         .maybeSingle();
 
-      if (rpcError) {
-        setError(rpcError.message || "This invite link isn't valid.");
-        setInvite(null);
-      } else if (!data) {
-        setError("This invite link isn't valid.");
+      if (rpcError || !data) {
+        setError(rpcError?.message || "This invite link isn't valid.");
         setInvite(null);
       } else {
         setInvite(data as InviteInfo);
@@ -60,21 +57,60 @@ export default function InvitePage() {
     setError(null);
 
     startTransition(async () => {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: invite.email,
-        password,
-      });
+      // 1) Try sign up
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email: invite.email,
+          password,
+        });
+
+      // 2) If already registered → sign in with same password
       if (signUpError) {
-        setError(signUpError.message);
-        return;
+        const msg = signUpError.message.toLowerCase();
+        const already =
+          msg.includes("already") ||
+          msg.includes("registered") ||
+          msg.includes("exists");
+
+        if (!already) {
+          setError(signUpError.message);
+          return;
+        }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: invite.email,
+          password,
+        });
+        if (signInError) {
+          setError(
+            signInError.message ||
+              "Account exists — check the password and try again.",
+          );
+          return;
+        }
+      } else if (!signUpData.session) {
+        // Confirm-email still ON: try sign-in anyway
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: invite.email,
+          password,
+        });
+        if (signInError) {
+          setError(
+            "Account created but not signed in. Turn off Confirm email in Supabase, or sign in from /login then open this invite link again.",
+          );
+          return;
+        }
       }
 
+      // 3) Join org + mark invite accepted
       try {
         await consumeInvite(token);
         router.push("/dashboard");
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not join the team");
+        setError(
+          err instanceof Error ? err.message : "Could not join the team",
+        );
       }
     });
   }
@@ -83,7 +119,10 @@ export default function InvitePage() {
     <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <Link href="/" className="text-sm font-medium tracking-tight text-zinc-900">
+          <Link
+            href="/"
+            className="text-sm font-medium tracking-tight text-zinc-900"
+          >
             JNS
           </Link>
         </div>
@@ -92,18 +131,29 @@ export default function InvitePage() {
           {loading ? (
             <p className="text-sm text-zinc-500">Loading invite…</p>
           ) : !invite || invite.status !== "pending" ? (
-            <p className="text-sm text-red-600">
-              {error ?? "This invite is no longer valid."}
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-red-600">
+                {error ?? "This invite is no longer valid."}
+              </p>
+              <p className="text-sm text-zinc-500">
+                If you already joined,{" "}
+                <Link href="/login" className="underline">
+                  sign in
+                </Link>{" "}
+                instead.
+              </p>
+            </div>
           ) : (
             <>
               <h1 className="text-lg font-semibold text-zinc-900">
                 Join {invite.organization_name}
               </h1>
               <p className="mt-2 text-sm text-zinc-500">
-                You’re invited as <span className="font-medium">{invite.role}</span>
-                . Create a password for{" "}
-                <span className="font-medium text-zinc-800">{invite.email}</span>.
+                Role: <span className="font-medium">{invite.role}</span>
+                <br />
+                Use password for{" "}
+                <span className="font-medium text-zinc-800">{invite.email}</span>
+                . If you already have an account, enter that password to join.
               </p>
 
               <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -124,7 +174,7 @@ export default function InvitePage() {
                   disabled={isPending}
                   className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
-                  {isPending ? "Joining…" : "Accept invite"}
+                  {isPending ? "Joining…" : "Accept invite & open dashboard"}
                 </button>
               </form>
             </>
