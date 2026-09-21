@@ -27,9 +27,13 @@ export default async function TeamPage() {
 
   const { data: invites } = await supabase
     .from("invites")
-    .select("id, email, role, status, created_at")
+    .select("id, email, role, status, token, created_at")
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
+
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    "https://jns-platform.vercel.app";
 
   return (
     <TeamClient
@@ -37,6 +41,7 @@ export default async function TeamPage() {
       orgName={active.orgName}
       members={members ?? []}
       invites={invites ?? []}
+      appOrigin={origin}
     />
   );
 }

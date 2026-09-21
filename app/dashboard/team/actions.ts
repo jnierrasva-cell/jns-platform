@@ -1,7 +1,12 @@
 "use server";
 
+import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+
+function newInviteToken() {
+  return randomBytes(24).toString("hex");
+}
 
 export async function createInvite(
   organizationId: string,
@@ -14,11 +19,31 @@ export async function createInvite(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (!membership || !["ceo", "admin"].includes(membership.role)) {
+    throw new Error("Not authorized to invite members");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail.includes("@")) {
+    throw new Error("Enter a valid email");
+  }
+
+  const token = newInviteToken();
+
   const { error } = await supabase.from("invites").insert({
     organization_id: organizationId,
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     role,
     invited_by: user.id,
+    token,
+    status: "pending",
   });
 
   if (error) throw new Error(error.message);
@@ -27,6 +52,11 @@ export async function createInvite(
 
 export async function revokeInvite(inviteId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const { error } = await supabase
     .from("invites")
     .update({ status: "revoked" })
