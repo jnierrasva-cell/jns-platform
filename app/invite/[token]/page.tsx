@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { consumeInvite } from "./actions";
@@ -13,12 +13,10 @@ type InviteInfo = {
   status: string;
 };
 
-export default function InvitePage({
-  params,
-}: {
-  params: { token: string };
-}) {
-  const { token } = params;
+export default function InvitePage() {
+  const params = useParams();
+  const token = String(params?.token ?? "");
+
   const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [password, setPassword] = useState("");
@@ -30,23 +28,35 @@ export default function InvitePage({
 
   useEffect(() => {
     async function loadInvite() {
-      const { data, error } = await supabase
-        .rpc("get_invite_info", { invite_token: token })
-        .single();
-
-      if (error || !data) {
+      if (!token) {
         setError("This invite link isn't valid.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error: rpcError } = await supabase
+        .rpc("get_invite_info", { invite_token: token })
+        .maybeSingle();
+
+      if (rpcError) {
+        setError(rpcError.message || "This invite link isn't valid.");
+        setInvite(null);
+      } else if (!data) {
+        setError("This invite link isn't valid.");
+        setInvite(null);
       } else {
         setInvite(data as InviteInfo);
+        setError(null);
       }
       setLoading(false);
     }
+
     loadInvite();
   }, [token, supabase]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!invite) return;
+    if (!invite || !token) return;
     setError(null);
 
     startTransition(async () => {
@@ -70,68 +80,51 @@ export default function InvitePage({
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-[#F6F5F1] px-6 py-16">
+    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <Link
-            href="/"
-            className="font-mono text-sm tracking-tight text-[#1B1D1F]"
-          >
-            JNSystem
+          <Link href="/" className="text-sm font-medium tracking-tight text-zinc-900">
+            JNS
           </Link>
         </div>
 
-        <div className="rounded-lg border border-[#E1DFD6] bg-white p-8">
+        <div className="rounded-lg border border-zinc-200 bg-white p-8">
           {loading ? (
-            <p className="text-sm text-[#6B7069]">Loading invite…</p>
+            <p className="text-sm text-zinc-500">Loading invite…</p>
           ) : !invite || invite.status !== "pending" ? (
-            <p className="text-sm text-[#B3432B]">
-              {error ?? "This invite has already been used or revoked."}
+            <p className="text-sm text-red-600">
+              {error ?? "This invite is no longer valid."}
             </p>
           ) : (
             <>
-              <h1 className="text-lg font-medium text-[#1B1D1F]">
+              <h1 className="text-lg font-semibold text-zinc-900">
                 Join {invite.organization_name}
               </h1>
-              <p className="mt-1.5 text-sm text-[#6B7069]">
-                You've been invited as {invite.role}. Set a password to
-                finish joining.
+              <p className="mt-2 text-sm text-zinc-500">
+                You’re invited as <span className="font-medium">{invite.role}</span>
+                . Create a password for{" "}
+                <span className="font-medium text-zinc-800">{invite.email}</span>.
               </p>
 
-              <form
-                onSubmit={handleSubmit}
-                className="mt-6 flex flex-col gap-4"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-[#1B1D1F]">Email</label>
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                <div>
+                  <label className="text-sm text-zinc-700">Password</label>
                   <input
-                    type="email"
-                    value={invite.email}
-                    disabled
-                    className="rounded-md border border-[#DEDCD3] bg-[#F6F5F1] px-3 py-2 text-sm text-[#6B7069]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="password" className="text-sm text-[#1B1D1F]">
-                    Password
-                  </label>
-                  <input
-                    id="password"
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="rounded-md border border-[#DEDCD3] bg-white px-3 py-2 text-sm text-[#1B1D1F] outline-none focus:border-[#1F4D42] focus:ring-1 focus:ring-[#1F4D42]"
+                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                   />
                 </div>
-                {error && <p className="text-sm text-[#B3432B]">{error}</p>}
+                {error && <p className="text-sm text-red-600">{error}</p>}
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="mt-2 rounded-md bg-[#1F4D42] py-2.5 text-sm font-medium text-white hover:bg-[#163B33] disabled:opacity-60"
+                  className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
-                  {isPending ? "Joining…" : "Join team"}
+                  {isPending ? "Joining…" : "Accept invite"}
                 </button>
               </form>
             </>

@@ -1,12 +1,8 @@
 "use server";
 
-import { randomBytes } from "crypto";
+import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-function newInviteToken() {
-  return randomBytes(24).toString("hex");
-}
 
 export async function createInvite(
   organizationId: string,
@@ -35,7 +31,7 @@ export async function createInvite(
     throw new Error("Enter a valid email");
   }
 
-  const token = newInviteToken();
+  const token = randomUUID();
 
   const { error } = await supabase.from("invites").insert({
     organization_id: organizationId,
