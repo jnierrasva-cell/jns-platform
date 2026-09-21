@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -23,7 +22,6 @@ export default function LoginPage() {
   const [confirmSent, setConfirmSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  const router = useRouter();
   const supabase = createClient();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -31,56 +29,83 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    if (mode === "forgot") {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email,
-        {
-          redirectTo: `${window.location.origin}/auth/reset-password`,
-        },
-      );
-      setLoading(false);
-
-      if (resetError) {
-        setError(resetError.message);
+    try {
+      if (mode === "forgot") {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          email,
+          {
+            redirectTo: `${window.location.origin}/auth/reset-password`,
+          },
+        );
+        if (resetError) {
+          setError(resetError.message);
+          return;
+        }
+        setResetSent(true);
         return;
       }
 
-      setResetSent(true);
-      return;
-    }
+      if (mode === "signin") {
+        const { data, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
 
-    if (mode === "signin") {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      setLoading(false);
+        if (signInError) {
+          setError(signInError.message);
+          return;
+        }
+
+        if (!data.session) {
+          setError(
+            "No session created. Check Supabase → Auth → Email → Confirm email is OFF.",
+          );
+          return;
+        }
+
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      // signup
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+        });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      if (signUpData.session) {
+        window.location.href = "/onboarding/account-type";
+        return;
+      }
+
+      // No session = confirm email still on, or needs sign-in
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+      if (signInData.session) {
+        window.location.href = "/onboarding/account-type";
+        return;
+      }
 
       if (signInError) {
         setError(signInError.message);
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
-      return;
+      setConfirmSent(true);
+    } finally {
+      setLoading(false);
     }
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    setLoading(false);
-
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
-    }
-
-    setConfirmSent(true);
   }
 
   function chooseMode(nextMode: Mode) {
@@ -96,166 +121,117 @@ export default function LoginPage() {
         <BrandMark />
         <div className="max-w-md pb-6">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-            Sign in to your workspace
+            {mode === "signin" ? "Sign in to your workspace" : "Welcome to JNS"}
           </h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-600">
-            Manage contacts, bookings, forms, and automations from one place.
-          </p>
-          <ul className="mt-8 space-y-2.5 text-sm text-zinc-600">
-            {workspaceBenefits.map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-zinc-400" />
-                {item}
+          <ul className="mt-6 space-y-2">
+            {workspaceBenefits.map((b) => (
+              <li key={b} className="text-sm text-zinc-600">
+                {b}
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-xs text-zinc-400">Journey Network Systems</p>
+        <p className="text-xs text-zinc-400">JNSystem</p>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-[380px]">
+        <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
             <BrandMark />
           </div>
 
+          <div className="flex gap-2 text-sm">
+            <button
+              type="button"
+              onClick={() => chooseMode("signin")}
+              className={
+                mode === "signin"
+                  ? "font-medium text-zinc-900"
+                  : "text-zinc-500"
+              }
+            >
+              Sign in
+            </button>
+            <span className="text-zinc-300">·</span>
+            <button
+              type="button"
+              onClick={() => chooseMode("signup")}
+              className={
+                mode === "signup"
+                  ? "font-medium text-zinc-900"
+                  : "text-zinc-500"
+              }
+            >
+              Sign up
+            </button>
+          </div>
+
           {confirmSent ? (
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Check your email</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
-                We sent a confirmation link to{" "}
-                <span className="font-medium text-zinc-900">{email}</span>.
-              </p>
-              <button type="button" onClick={() => chooseMode("signin")} className="jns-link mt-4">
-                Back to sign in
-              </button>
-            </div>
+            <p className="mt-6 text-sm text-zinc-600">
+              Check your email to confirm, or turn off Confirm email in Supabase
+              Auth settings.
+            </p>
           ) : resetSent ? (
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Reset email sent</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
-                If an account exists for{" "}
-                <span className="font-medium text-zinc-900">{email}</span>, you’ll
-                get a link to set a new password.
-              </p>
-              <button type="button" onClick={() => chooseMode("signin")} className="jns-link mt-4">
-                Back to sign in
-              </button>
-            </div>
+            <p className="mt-6 text-sm text-zinc-600">
+              If that email exists, a reset link was sent.
+            </p>
           ) : (
-            <>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                {mode === "forgot"
-                  ? "Reset password"
-                  : mode === "signup"
-                    ? "Create an account"
-                    : "Welcome back"}
-              </h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                {mode === "forgot"
-                  ? "Enter your email and we’ll send a reset link."
-                  : mode === "signup"
-                    ? "Start with email and password. You’ll choose account type next."
-                    : "Enter your email and password."}
-              </p>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="text-sm text-zinc-700">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+              </div>
 
               {mode !== "forgot" && (
-                <div className="mt-5 grid grid-cols-2 gap-1 rounded-md border border-zinc-200 bg-zinc-50 p-1">
-                  <button
-                    type="button"
-                    onClick={() => chooseMode("signin")}
-                    className={`rounded px-3 py-1.5 text-sm font-medium ${
-                      mode === "signin" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"
-                    }`}
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => chooseMode("signup")}
-                    className={`rounded px-3 py-1.5 text-sm font-medium ${
-                      mode === "signup" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"
-                    }`}
-                  >
-                    Sign up
-                  </button>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 <div>
-                  <label htmlFor="email" className="jns-label">
-                    Email
-                  </label>
+                  <label className="text-sm text-zinc-700">Password</label>
                   <input
-                    id="email"
-                    type="email"
+                    type="password"
                     required
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@studio.com"
-                    className="jns-input"
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                   />
                 </div>
+              )}
 
-                {mode !== "forgot" && (
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <label htmlFor="password" className="text-sm font-medium text-zinc-700">
-                        Password
-                      </label>
-                      {mode === "signin" && (
-                        <button
-                          type="button"
-                          className="text-xs font-medium text-zinc-500 hover:text-zinc-900"
-                          onClick={() => chooseMode("forgot")}
-                        >
-                          Forgot password?
-                        </button>
-                      )}
-                    </div>
-                    <input
-                      id="password"
-                      type="password"
-                      required
-                      minLength={6}
-                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Enter your password"
-                      className="jns-input"
-                    />
-                  </div>
-                )}
+              {error && (
+                <p className="text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+              )}
 
-                {error && (
-                  <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                    {error}
-                  </p>
-                )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+              >
+                {loading
+                  ? "Please wait…"
+                  : mode === "forgot"
+                    ? "Send reset link"
+                    : mode === "signin"
+                      ? "Sign in"
+                      : "Create account"}
+              </button>
 
-                <button type="submit" disabled={loading} className="jns-btn w-full">
-                  {loading
-                    ? "Please wait..."
-                    : mode === "forgot"
-                      ? "Send reset link"
-                      : mode === "signup"
-                        ? "Create account"
-                        : "Sign in"}
-                </button>
-              </form>
-
-              {mode === "forgot" && (
+              {mode === "signin" && (
                 <button
                   type="button"
-                  onClick={() => chooseMode("signin")}
-                  className="jns-link mt-4 w-full text-center"
+                  onClick={() => chooseMode("forgot")}
+                  className="text-xs text-zinc-500 underline"
                 >
-                  Back to sign in
+                  Forgot password?
                 </button>
               )}
-            </>
+            </form>
           )}
         </div>
       </section>

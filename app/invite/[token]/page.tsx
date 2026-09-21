@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { consumeInvite } from "./actions";
@@ -23,7 +23,6 @@ export default function InvitePage() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -57,56 +56,47 @@ export default function InvitePage() {
     setError(null);
 
     startTransition(async () => {
-      // 1) Try sign up
-      const { data: signUpData, error: signUpError } =
-        await supabase.auth.signUp({
-          email: invite.email,
-          password,
-        });
-
-      // 2) If already registered → sign in with same password
-      if (signUpError) {
-        const msg = signUpError.message.toLowerCase();
-        const already =
-          msg.includes("already") ||
-          msg.includes("registered") ||
-          msg.includes("exists");
-
-        if (!already) {
-          setError(signUpError.message);
-          return;
-        }
-
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: invite.email,
-          password,
-        });
-        if (signInError) {
-          setError(
-            signInError.message ||
-              "Account exists — check the password and try again.",
-          );
-          return;
-        }
-      } else if (!signUpData.session) {
-        // Confirm-email still ON: try sign-in anyway
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: invite.email,
-          password,
-        });
-        if (signInError) {
-          setError(
-            "Account created but not signed in. Turn off Confirm email in Supabase, or sign in from /login then open this invite link again.",
-          );
-          return;
-        }
-      }
-
-      // 3) Join org + mark invite accepted
       try {
+        // Always end with a password sign-in so cookies exist for the server
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: invite.email,
+          password,
+        });
+
+        if (signUpError) {
+          const msg = signUpError.message.toLowerCase();
+          const already =
+            msg.includes("already") ||
+            msg.includes("registered") ||
+            msg.includes("exists");
+          if (!already) {
+            setError(signUpError.message);
+            return;
+          }
+        }
+
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: invite.email,
+            password,
+          });
+
+        if (signInError) {
+          setError(signInError.message);
+          return;
+        }
+
+        if (!signInData.session) {
+          setError(
+            "Could not start a session. In Supabase → Auth → Email, turn Confirm email OFF, then try again.",
+          );
+          return;
+        }
+
         await consumeInvite(token);
-        router.push("/dashboard");
-        router.refresh();
+
+        // Full page load so cookies are sent to proxy/layout
+        window.location.href = "/dashboard";
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Could not join the team",
@@ -139,8 +129,8 @@ export default function InvitePage() {
                 If you already joined,{" "}
                 <Link href="/login" className="underline">
                   sign in
-                </Link>{" "}
-                instead.
+                </Link>
+                .
               </p>
             </div>
           ) : (
@@ -151,9 +141,8 @@ export default function InvitePage() {
               <p className="mt-2 text-sm text-zinc-500">
                 Role: <span className="font-medium">{invite.role}</span>
                 <br />
-                Use password for{" "}
+                Password for{" "}
                 <span className="font-medium text-zinc-800">{invite.email}</span>
-                . If you already have an account, enter that password to join.
               </p>
 
               <form onSubmit={handleSubmit} className="mt-6 space-y-4">
