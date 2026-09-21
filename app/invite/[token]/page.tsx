@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { consumeInvite } from "./actions";
+import { acceptInvite } from "./actions";
 
 type InviteInfo = {
   organization_name: string;
@@ -57,27 +57,13 @@ export default function InvitePage() {
 
     startTransition(async () => {
       try {
-        // Always end with a password sign-in so cookies exist for the server
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: invite.email,
-          password,
-        });
+        // 1) Server: validate invite, create/update user + password, join org
+        const { email } = await acceptInvite(token, password);
 
-        if (signUpError) {
-          const msg = signUpError.message.toLowerCase();
-          const already =
-            msg.includes("already") ||
-            msg.includes("registered") ||
-            msg.includes("exists");
-          if (!already) {
-            setError(signUpError.message);
-            return;
-          }
-        }
-
+        // 2) Browser: establish session cookies
         const { data: signInData, error: signInError } =
           await supabase.auth.signInWithPassword({
-            email: invite.email,
+            email,
             password,
           });
 
@@ -86,21 +72,18 @@ export default function InvitePage() {
           return;
         }
 
-        if (!signInData.session) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session && !signInData.session) {
           setError(
-            "Could not start a session. In Supabase → Auth → Email, turn Confirm email OFF, then try again.",
+            "Account is ready but session was not created. Try Sign in on /login with the same email and password.",
           );
           return;
         }
 
-        await consumeInvite(token);
-
-        // Full page load so cookies are sent to proxy/layout
+        // 3) Full navigation so proxy/layout see cookies
         window.location.href = "/dashboard";
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Could not join the team",
-        );
+        setError(err instanceof Error ? err.message : "Could not accept invite");
       }
     });
   }
@@ -126,11 +109,10 @@ export default function InvitePage() {
                 {error ?? "This invite is no longer valid."}
               </p>
               <p className="text-sm text-zinc-500">
-                If you already joined,{" "}
+                Already joined?{" "}
                 <Link href="/login" className="underline">
-                  sign in
+                  Sign in
                 </Link>
-                .
               </p>
             </div>
           ) : (
@@ -141,7 +123,7 @@ export default function InvitePage() {
               <p className="mt-2 text-sm text-zinc-500">
                 Role: <span className="font-medium">{invite.role}</span>
                 <br />
-                Password for{" "}
+                Create a password for{" "}
                 <span className="font-medium text-zinc-800">{invite.email}</span>
               </p>
 
@@ -152,12 +134,17 @@ export default function InvitePage() {
                     type="password"
                     required
                     minLength={8}
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
                   />
                 </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={isPending}
