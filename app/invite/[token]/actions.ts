@@ -1,25 +1,24 @@
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Custom invite token flow:
- * 1) Validate token + pending status
- * 2) Create or update Auth user with password (email confirmed)
- * 3) Attach org membership + heal profile
- * 4) Mark invite accepted
- * Client must then signInWithPassword with the same email/password.
+ * Login-first invite:
+ * User must already be signed in. We only join them to the org.
  */
-export async function acceptInvite(token: string, password: string) {
-  const trimmedToken = token.trim();
-  const trimmedPassword = password;
+export async function joinWithInvite(token: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!trimmedToken) throw new Error("Invalid invite");
-  if (!trimmedPassword || trimmedPassword.length < 8) {
-    throw new Error("Password must be at least 8 characters");
+  if (!user?.email) {
+    throw new Error("NOT_SIGNED_IN");
   }
 
   const admin = createAdminClient();
+  const trimmedToken = token.trim();
 
   const { data: invite, error: inviteError } = await admin
     .from("invites")
@@ -29,94 +28,59 @@ export async function acceptInvite(token: string, password: string) {
 
   if (inviteError || !invite) throw new Error("Invite not found");
   if (invite.status === "accepted") {
-    throw new Error("This invite was already used. Sign in instead.");
+    throw new Error("This invite was already used.");
   }
   if (invite.status === "revoked") {
     throw new Error("This invite was revoked.");
   }
   if (invite.status !== "pending") {
-    throw new Error("This invite is no longer valid");
+    throw new Error("This invite is no longer valid.");
   }
 
-  const email = invite.email.trim().toLowerCase();
+  const inviteEmail = invite.email.trim().toLowerCase();
+  const userEmail = user.email.trim().toLowerCase();
 
-  // Find existing profile/user by email
-  const { data: existingProfile } = await admin
-    .from("profiles")
-    .select("id, account_type")
-    .eq("email", email)
-    .maybeSingle();
-
-  let userId = existingProfile?.id as string | undefined;
-
-  if (userId) {
-    const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
-      password: trimmedPassword,
-      email_confirm: true,
-    });
-    if (updateErr) throw new Error(updateErr.message);
-  } else {
-    const { data: created, error: createErr } =
-      await admin.auth.admin.createUser({
-        email,
-        password: trimmedPassword,
-        email_confirm: true,
-      });
-
-    if (createErr) {
-      // Race: user exists in Auth but not profiles
-      const msg = createErr.message.toLowerCase();
-      if (msg.includes("already") || msg.includes("registered")) {
-        throw new Error(
-          "An account with this email already exists. Use Sign in on /login with this password, or reset password. If you never set a password, ask the owner for a fresh invite after deleting the Auth user.",
-        );
-      }
-      throw new Error(createErr.message);
-    }
-
-    userId = created.user?.id;
-    if (!userId) throw new Error("Could not create user");
+  if (inviteEmail !== userEmail) {
+    throw new Error(
+      `This invite is for ${invite.email}. You are signed in as ${user.email}. Sign out and sign in with the invited email.`,
+    );
   }
 
-  // Membership
-  const { data: existingMember } = await admin
+  const { data: existing } = await admin
     .from("org_members")
     .select("user_id")
     .eq("organization_id", invite.organization_id)
-    .eq("user_id", userId)
+    .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!existingMember) {
+  if (!existing) {
     const { error: memberError } = await admin.from("org_members").insert({
       organization_id: invite.organization_id,
-      user_id: userId,
+      user_id: user.id,
       role: invite.role,
     });
     if (memberError) throw new Error(memberError.message);
   }
 
-  // Profile heal (trigger may have created row on createUser)
-  await admin.from("profiles").upsert(
-    {
-      id: userId,
-      email,
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("account_type")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  await admin
+    .from("profiles")
+    .update({
       status: "approved",
-      account_type: existingProfile?.account_type ?? "individual",
+      account_type: profile?.account_type ?? "individual",
       active_organization_id: invite.organization_id,
-      role: "user",
-    },
-    { onConflict: "id" },
-  );
+    })
+    .eq("id", user.id);
 
   await admin
     .from("invites")
     .update({ status: "accepted" })
     .eq("id", invite.id);
 
-  return { email, organizationId: invite.organization_id };
-}
-
-/** @deprecated kept so old imports don't break; prefer acceptInvite */
-export async function consumeInvite(token: string) {
-  throw new Error("Use acceptInvite(token, password) instead");
+  return { organizationId: invite.organization_id };
 }
