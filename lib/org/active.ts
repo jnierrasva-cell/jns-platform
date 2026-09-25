@@ -6,10 +6,6 @@ export type ActiveOrg = {
   orgName: string;
 };
 
-/**
- * Resolves the user's active organization from profiles.active_organization_id.
- * If missing/invalid, picks the first membership and saves it.
- */
 export async function getActiveOrg(): Promise<ActiveOrg | null> {
   const supabase = await createClient();
   const {
@@ -19,7 +15,7 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
 
   const { data: memberships } = await supabase
     .from("org_members")
-    .select("organization_id, role, organizations(name)")
+    .select("organization_id, role")
     .eq("user_id", user.id);
 
   if (!memberships?.length) return null;
@@ -42,13 +38,16 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
       .eq("id", user.id);
   }
 
-  const org = Array.isArray(selected.organizations)
-    ? selected.organizations[0]
-    : selected.organizations;
+  // Load name separately so a failed embed doesn't kill the whole active org
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", selected.organization_id)
+    .maybeSingle();
 
   return {
     organizationId: selected.organization_id,
     role: selected.role as string,
-    orgName: (org as { name?: string } | null)?.name ?? "Workspace",
+    orgName: org?.name ?? "Workspace",
   };
 }

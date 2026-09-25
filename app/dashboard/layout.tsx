@@ -21,7 +21,6 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .maybeSingle();
 
-  // Any org membership means they belong somewhere (e.g. invited)
   const { data: memberships } = await supabase
     .from("org_members")
     .select("organization_id, role")
@@ -29,68 +28,45 @@ export default async function DashboardLayout({
 
   const hasMembership = (memberships?.length ?? 0) > 0;
 
-  // Heal profile so we never bounce invitees back to onboarding
-  if (user && (!profile?.status || profile.status !== "approved" || !profile.account_type || !profile.active_organization_id)) {
-    const fallbackOrgId =
-      profile?.active_organization_id ||
-      memberships?.[0]?.organization_id ||
-      null;
-
-    await supabase
-      .from("profiles")
-      .upsert({
-        id: user.id,
-        email: user.email ?? null,
-        status: "approved",
-        account_type: profile?.account_type ?? "individual",
-        active_organization_id: fallbackOrgId,
-        role: profile?.role ?? "user",
-      })
-      .eq("id", user.id);
-  }
-
-  // Still no membership and no account type → real onboarding
-  if (!hasMembership && !profile?.account_type) {
-    redirect("/onboarding/account-type");
-  }
-
-  if (!hasMembership && profile?.account_type === "business") {
-    redirect("/onboarding/setup-business");
-  }
-
-  if (!hasMembership) {
-    redirect("/onboarding/account-type");
-  }
-
-  const active = await getActiveOrg();
-  if (!active) {
-    // Last resort: use first membership without looping to account-type
-    const first = memberships![0];
+  if (profile) {
     await supabase
       .from("profiles")
       .update({
-        active_organization_id: first.organization_id,
+        status: "approved",
+        account_type: profile.account_type ?? "individual",
+        active_organization_id:
+          profile.active_organization_id ??
+          memberships?.[0]?.organization_id ??
+          null,
+      })
+      .eq("id", user.id);
+  }
+
+  // Not in any org yet → onboarding (NOT login)
+  if (!hasMembership) {
+    if (profile?.account_type === "business") {
+      redirect("/onboarding/setup-business");
+    }
+    redirect("/onboarding/account-type");
+  }
+
+  let active = await getActiveOrg();
+
+  if (!active && memberships?.[0]) {
+    await supabase
+      .from("profiles")
+      .update({
+        active_organization_id: memberships[0].organization_id,
         account_type: profile?.account_type ?? "individual",
         status: "approved",
       })
       .eq("id", user.id);
+    active = await getActiveOrg();
+  }
 
-    const retry = await getActiveOrg();
-    if (!retry) redirect("/login");
-
-    const isPlatformAdmin = profile?.role === "super_admin";
-    const isOrgManager = retry.role === "ceo" || retry.role === "admin";
-
-    return (
-      <DashboardShell
-        userEmail={user.email ?? ""}
-        isPlatformAdmin={isPlatformAdmin}
-        isOrgManager={isOrgManager}
-        orgName={retry.orgName}
-      >
-        {children}
-      </DashboardShell>
-    );
+  // Still no active org but user is logged in → onboarding, never /login
+  if (!active) {
+    redirect("/onboarding/account-type");
   }
 
   const isPlatformAdmin = profile?.role === "super_admin";
