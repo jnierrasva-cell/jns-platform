@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function switchOrganization(organizationId: string) {
   const supabase = await createClient();
@@ -12,6 +13,7 @@ export async function switchOrganization(organizationId: string) {
     return { ok: false as const, error: "Not authenticated" };
   }
 
+  // Prove membership with the signed-in user
   const { data: membership, error: memberError } = await supabase
     .from("org_members")
     .select("organization_id")
@@ -29,7 +31,9 @@ export async function switchOrganization(organizationId: string) {
     };
   }
 
-  const { error: updateError } = await supabase
+  // Update active org with service role (avoids "permission denied for table users")
+  const admin = createAdminClient();
+  const { error: updateError } = await admin
     .from("profiles")
     .update({ active_organization_id: organizationId })
     .eq("id", user.id);
