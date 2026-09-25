@@ -16,6 +16,7 @@ import {
   Inbox,
   Kanban,
   Building2,
+  BookOpen,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -56,6 +57,7 @@ export function DashboardShell({
     { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
     { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
     { label: "Forms", href: "/dashboard/forms", icon: FileInput },
+    { label: "SOPs", href: "/dashboard/sops", icon: BookOpen },
     { label: "Automation", href: "/dashboard/automation", icon: Zap },
     { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
     { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
