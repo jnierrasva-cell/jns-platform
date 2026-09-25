@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
-  createSop,
+  saveSopRecord,
   deleteSop,
   getSopDownloadUrl,
 } from "@/app/dashboard/sops/actions";
@@ -26,31 +28,81 @@ function formatSize(bytes: number | null) {
 }
 
 export function SopsClient({
+  organizationId,
   orgName,
   canManage,
   sops,
 }: {
+  organizationId: string;
   orgName: string;
   canManage: boolean;
   sops: Sop[];
 }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
+    if (!file || file.size === 0) {
+      setError("Choose a file to upload");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setError("File must be under 20MB");
+      return;
+    }
+
+    const uploadFile = file;
+    const uploadTitle = title.trim();
+    const uploadDescription = description.trim();
 
     startTransition(async () => {
       try {
-        await createSop(formData);
+        const supabase = createClient();
+        const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `${organizationId}/${crypto.randomUUID()}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("org-sops")
+          .upload(path, uploadFile, {
+            contentType: uploadFile.type || "application/octet-stream",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          setError(uploadError.message);
+          return;
+        }
+
+        const result = await saveSopRecord({
+          title: uploadTitle,
+          description: uploadDescription,
+          filePath: path,
+          fileName: uploadFile.name,
+          fileType: uploadFile.type || null,
+          fileSize: uploadFile.size,
+        });
+
+        if (!result.ok) {
+          await supabase.storage.from("org-sops").remove([path]);
+          setError(result.error);
+          return;
+        }
+
         setTitle("");
         setDescription("");
-        form.reset();
+        setFile(null);
+        router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
       }
@@ -60,19 +112,19 @@ export function SopsClient({
   function handleDownload(sopId: string) {
     setError(null);
     startTransition(async () => {
-      try {
-        const { url, fileName } = await getSopDownloadUrl(sopId);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.target = "_blank";
-        a.rel = "noreferrer";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Download failed");
+      const result = await getSopDownloadUrl(sopId);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      const a = document.createElement("a");
+      a.href = result.url;
+      a.download = result.fileName;
+      a.target = "_blank";
+      a.rel = "noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     });
   }
 
@@ -80,11 +132,12 @@ export function SopsClient({
     if (!window.confirm(`Delete SOP “${sopTitle}”?`)) return;
     setError(null);
     startTransition(async () => {
-      try {
-        await deleteSop(sopId);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Delete failed");
+      const result = await deleteSop(sopId);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      router.refresh();
     });
   }
 
@@ -114,7 +167,6 @@ export function SopsClient({
             <div>
               <label className="text-sm text-zinc-700">Title</label>
               <input
-                name="title"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -125,7 +177,6 @@ export function SopsClient({
             <div>
               <label className="text-sm text-zinc-700">Notes (optional)</label>
               <textarea
-                name="description"
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -136,10 +187,10 @@ export function SopsClient({
             <div>
               <label className="text-sm text-zinc-700">File</label>
               <input
-                name="file"
                 type="file"
                 required
                 accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="mt-1 block w-full text-sm text-zinc-600"
               />
               <p className="mt-1 text-xs text-zinc-400">Max 20MB</p>

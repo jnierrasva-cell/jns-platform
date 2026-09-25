@@ -1,60 +1,50 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrg } from "@/lib/org/active";
 
-export async function createSop(formData: FormData) {
+export async function saveSopRecord(input: {
+  title: string;
+  description?: string;
+  filePath: string;
+  fileName: string;
+  fileType: string | null;
+  fileSize: number;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  if (!user) return { ok: false as const, error: "Not authenticated" };
 
   const active = await getActiveOrg();
-  if (!active) throw new Error("No workspace selected");
+  if (!active) return { ok: false as const, error: "No workspace selected" };
   if (active.role !== "ceo" && active.role !== "admin") {
-    throw new Error("Only owners and admins can upload SOPs");
+    return {
+      ok: false as const,
+      error: "Only owners and admins can upload SOPs",
+    };
   }
 
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const file = formData.get("file") as File | null;
+  const title = input.title.trim();
+  if (!title) return { ok: false as const, error: "Title is required" };
+  if (!input.filePath.startsWith(`${active.organizationId}/`)) {
+    return { ok: false as const, error: "Invalid file path" };
+  }
 
-  if (!title) throw new Error("Title is required");
-  if (!file || file.size === 0) throw new Error("Choose a file to upload");
-  if (file.size > 20 * 1024 * 1024) throw new Error("File must be under 20MB");
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = `${active.organizationId}/${crypto.randomUUID()}-${safeName}`;
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const { error: uploadError } = await supabase.storage
-    .from("org-sops")
-    .upload(path, buffer, {
-      contentType: file.type || "application/octet-stream",
-      upsert: false,
-    });
-
-  if (uploadError) throw new Error(uploadError.message);
-
-  const { error: insertError } = await supabase.from("org_sops").insert({
+  const { error } = await supabase.from("org_sops").insert({
     organization_id: active.organizationId,
     title,
-    description: description || null,
-    file_path: path,
-    file_name: file.name,
-    file_type: file.type || null,
-    file_size: file.size,
+    description: input.description?.trim() || null,
+    file_path: input.filePath,
+    file_name: input.fileName,
+    file_type: input.fileType,
+    file_size: input.fileSize,
     uploaded_by: user.id,
   });
 
-  if (insertError) {
-    await supabase.storage.from("org-sops").remove([path]);
-    throw new Error(insertError.message);
-  }
-
-  revalidatePath("/dashboard/sops");
+  if (error) return { ok: false as const, error: error.message };
+  return { ok: true as const };
 }
 
 export async function deleteSop(sopId: string) {
@@ -62,12 +52,15 @@ export async function deleteSop(sopId: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  if (!user) return { ok: false as const, error: "Not authenticated" };
 
   const active = await getActiveOrg();
-  if (!active) throw new Error("No workspace selected");
+  if (!active) return { ok: false as const, error: "No workspace selected" };
   if (active.role !== "ceo" && active.role !== "admin") {
-    throw new Error("Only owners and admins can delete SOPs");
+    return {
+      ok: false as const,
+      error: "Only owners and admins can delete SOPs",
+    };
   }
 
   const { data: sop, error } = await supabase
@@ -77,18 +70,22 @@ export async function deleteSop(sopId: string) {
     .eq("organization_id", active.organizationId)
     .maybeSingle();
 
-  if (error || !sop) throw new Error("SOP not found");
+  if (error || !sop) return { ok: false as const, error: "SOP not found" };
 
   await supabase.storage.from("org-sops").remove([sop.file_path]);
-  await supabase.from("org_sops").delete().eq("id", sop.id);
+  const { error: delError } = await supabase
+    .from("org_sops")
+    .delete()
+    .eq("id", sop.id);
 
-  revalidatePath("/dashboard/sops");
+  if (delError) return { ok: false as const, error: delError.message };
+  return { ok: true as const };
 }
 
 export async function getSopDownloadUrl(sopId: string) {
   const supabase = await createClient();
   const active = await getActiveOrg();
-  if (!active) throw new Error("No workspace selected");
+  if (!active) return { ok: false as const, error: "No workspace selected" };
 
   const { data: sop, error } = await supabase
     .from("org_sops")
@@ -97,15 +94,22 @@ export async function getSopDownloadUrl(sopId: string) {
     .eq("organization_id", active.organizationId)
     .maybeSingle();
 
-  if (error || !sop) throw new Error("SOP not found");
+  if (error || !sop) return { ok: false as const, error: "SOP not found" };
 
   const { data, error: signError } = await supabase.storage
     .from("org-sops")
-    .createSignedUrl(sop.file_path, 60 * 10); // 10 minutes
+    .createSignedUrl(sop.file_path, 60 * 10);
 
   if (signError || !data?.signedUrl) {
-    throw new Error(signError?.message || "Could not create download link");
+    return {
+      ok: false as const,
+      error: signError?.message || "Could not create download link",
+    };
   }
 
-  return { url: data.signedUrl, fileName: sop.file_name };
+  return {
+    ok: true as const,
+    url: data.signedUrl,
+    fileName: sop.file_name,
+  };
 }

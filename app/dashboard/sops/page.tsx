@@ -25,6 +25,7 @@ export default async function SopsPage() {
 
   return (
     <SopsClient
+      organizationId={active.organizationId}
       orgName={active.orgName}
       canManage={canManage}
       sops={sops ?? []}
