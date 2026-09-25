@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function switchOrganization(organizationId: string) {
@@ -30,5 +29,5 @@ export async function switchOrganization(organizationId: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/dashboard", "layout");
-  redirect("/dashboard");
+  return { ok: true as const };
 }

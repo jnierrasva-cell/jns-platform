@@ -27,6 +27,7 @@ export function OrgsClient({ orgs }: { orgs: OrgRow[] }) {
     startTransition(async () => {
       try {
         await switchOrganization(organizationId);
+        window.location.href = "/dashboard";
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not switch");
       }
