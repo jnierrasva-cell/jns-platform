@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -13,7 +14,6 @@ export async function switchOrganization(organizationId: string) {
     return { ok: false as const, error: "Not authenticated" };
   }
 
-  // Prove membership with the signed-in user
   const { data: membership, error: memberError } = await supabase
     .from("org_members")
     .select("organization_id")
@@ -31,7 +31,6 @@ export async function switchOrganization(organizationId: string) {
     };
   }
 
-  // Update active org with service role (avoids "permission denied for table users")
   const admin = createAdminClient();
   const { error: updateError } = await admin
     .from("profiles")
@@ -42,5 +41,29 @@ export async function switchOrganization(organizationId: string) {
     return { ok: false as const, error: updateError.message };
   }
 
-  return { ok: true as const };
+  // Confirm write
+  const { data: check } = await admin
+    .from("profiles")
+    .select("active_organization_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (check?.active_organization_id !== organizationId) {
+    return {
+      ok: false as const,
+      error: "Could not save active workspace (profile update did not stick)",
+    };
+  }
+
+  // Cookie wins for the next dashboard render
+  const jar = await cookies();
+  jar.set("jns_active_org", organizationId, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+
+  return { ok: true as const, organizationId };
 }

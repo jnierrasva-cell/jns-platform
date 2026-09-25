@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrg } from "@/lib/org/active";
 import { OrgsClient } from "@/components/orgs-client";
 
 export default async function OrgsPage() {
@@ -9,11 +10,7 @@ export default async function OrgsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("active_organization_id")
-    .eq("id", user.id)
-    .maybeSingle();
+  const active = await getActiveOrg();
 
   const { data: memberships } = await supabase
     .from("org_members")
@@ -28,7 +25,7 @@ export default async function OrgsPage() {
       id: m.organization_id as string,
       name: (org as { name?: string } | null)?.name ?? "Workspace",
       role: m.role as string,
-      isActive: m.organization_id === profile?.active_organization_id,
+      isActive: m.organization_id === active?.organizationId,
     };
   });
 

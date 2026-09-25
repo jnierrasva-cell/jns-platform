@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type ActiveOrg = {
   organizationId: string;
@@ -20,32 +22,45 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
 
   if (!memberships?.length) return null;
 
-  const { data: profile } = await supabase
+  const jar = await cookies();
+  const cookieOrgId = jar.get("jns_active_org")?.value ?? null;
+
+  // Prefer admin read so RLS/triggers can't hide the value
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("active_organization_id")
     .eq("id", user.id)
     .maybeSingle();
 
-  const activeId = profile?.active_organization_id as string | null;
+  const preferredId =
+    cookieOrgId || (profile?.active_organization_id as string | null);
 
-  // Prefer the org the user opened — never silently replace it
   let selected =
-    (activeId &&
-      memberships.find((m) => m.organization_id === activeId)) ||
+    (preferredId &&
+      memberships.find((m) => m.organization_id === preferredId)) ||
     null;
 
   if (!selected) {
     selected = memberships[0];
-    // Only write when nothing valid was stored
-    if (!activeId || activeId !== selected.organization_id) {
-      await supabase
-        .from("profiles")
-        .update({ active_organization_id: selected.organization_id })
-        .eq("id", user.id);
-    }
   }
 
-  const { data: org } = await supabase
+  // Keep cookie + profile aligned to what we actually use
+  if (preferredId !== selected.organization_id) {
+    jar.set("jns_active_org", selected.organization_id, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+    await admin
+      .from("profiles")
+      .update({ active_organization_id: selected.organization_id })
+      .eq("id", user.id);
+  }
+
+  const { data: org } = await admin
     .from("organizations")
     .select("name")
     .eq("id", selected.organization_id)
