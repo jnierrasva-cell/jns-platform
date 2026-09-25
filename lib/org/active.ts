@@ -26,19 +26,25 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
     .eq("id", user.id)
     .maybeSingle();
 
-  let selected = memberships.find(
-    (m) => m.organization_id === profile?.active_organization_id,
-  );
+  const activeId = profile?.active_organization_id as string | null;
+
+  // Prefer the org the user opened — never silently replace it
+  let selected =
+    (activeId &&
+      memberships.find((m) => m.organization_id === activeId)) ||
+    null;
 
   if (!selected) {
     selected = memberships[0];
-    await supabase
-      .from("profiles")
-      .update({ active_organization_id: selected.organization_id })
-      .eq("id", user.id);
+    // Only write when nothing valid was stored
+    if (!activeId || activeId !== selected.organization_id) {
+      await supabase
+        .from("profiles")
+        .update({ active_organization_id: selected.organization_id })
+        .eq("id", user.id);
+    }
   }
 
-  // Load name separately so a failed embed doesn't kill the whole active org
   const { data: org } = await supabase
     .from("organizations")
     .select("name")
