@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 
 export async function saveSopRecord(input: {
@@ -32,7 +33,10 @@ export async function saveSopRecord(input: {
     return { ok: false as const, error: "Invalid file path" };
   }
 
-  const { error } = await supabase.from("org_sops").insert({
+  // Service role insert avoids "permission denied for table users"
+  // (FK to auth.users on uploaded_by)
+  const admin = createAdminClient();
+  const { error } = await admin.from("org_sops").insert({
     organization_id: active.organizationId,
     title,
     description: input.description?.trim() || null,
@@ -63,7 +67,9 @@ export async function deleteSop(sopId: string) {
     };
   }
 
-  const { data: sop, error } = await supabase
+  const admin = createAdminClient();
+
+  const { data: sop, error } = await admin
     .from("org_sops")
     .select("id, file_path")
     .eq("id", sopId)
@@ -72,8 +78,9 @@ export async function deleteSop(sopId: string) {
 
   if (error || !sop) return { ok: false as const, error: "SOP not found" };
 
-  await supabase.storage.from("org-sops").remove([sop.file_path]);
-  const { error: delError } = await supabase
+  await admin.storage.from("org-sops").remove([sop.file_path]);
+
+  const { error: delError } = await admin
     .from("org_sops")
     .delete()
     .eq("id", sop.id);
