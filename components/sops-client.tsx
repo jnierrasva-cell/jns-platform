@@ -29,7 +29,7 @@ function formatSize(bytes: number | null) {
 }
 
 export function SopsClient({
-  organizationId,
+  organizationId: _organizationId,
   orgName,
   canManage,
   sops,
@@ -71,7 +71,7 @@ export function SopsClient({
       try {
         const prepared = await prepareSopUpload(uploadFile.name);
         if (!prepared.ok) {
-          setError(prepared.error);
+          setError(prepared.error ?? "Could not prepare upload");
           return;
         }
 
@@ -83,7 +83,7 @@ export function SopsClient({
           });
 
         if (uploadError) {
-          setError(uploadError.message);
+          setError(uploadError.message ?? "Upload to storage failed");
           return;
         }
 
@@ -97,7 +97,7 @@ export function SopsClient({
         });
 
         if (!result.ok) {
-          setError(result.error);
+          setError(result.error ?? "Could not save SOP");
           return;
         }
 
@@ -116,7 +116,7 @@ export function SopsClient({
     startTransition(async () => {
       const result = await getSopDownloadUrl(sopId);
       if (!result.ok) {
-        setError(result.error);
+        setError(result.error ?? "Download failed");
         return;
       }
       const a = document.createElement("a");
@@ -136,7 +136,7 @@ export function SopsClient({
     startTransition(async () => {
       const result = await deleteSop(sopId);
       if (!result.ok) {
-        setError(result.error);
+        setError(result.error ?? "Delete failed");
         return;
       }
       router.refresh();
