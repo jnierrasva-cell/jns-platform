@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
+  prepareSopUpload,
   saveSopRecord,
   deleteSop,
   getSopDownloadUrl,
@@ -68,15 +69,17 @@ export function SopsClient({
 
     startTransition(async () => {
       try {
-        const supabase = createClient();
-        const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const path = `${organizationId}/${crypto.randomUUID()}-${safeName}`;
+        const prepared = await prepareSopUpload(uploadFile.name);
+        if (!prepared.ok) {
+          setError(prepared.error);
+          return;
+        }
 
+        const supabase = createClient();
         const { error: uploadError } = await supabase.storage
           .from("org-sops")
-          .upload(path, uploadFile, {
+          .uploadToSignedUrl(prepared.path, prepared.token, uploadFile, {
             contentType: uploadFile.type || "application/octet-stream",
-            upsert: false,
           });
 
         if (uploadError) {
@@ -87,14 +90,13 @@ export function SopsClient({
         const result = await saveSopRecord({
           title: uploadTitle,
           description: uploadDescription,
-          filePath: path,
+          filePath: prepared.path,
           fileName: uploadFile.name,
           fileType: uploadFile.type || null,
           fileSize: uploadFile.size,
         });
 
         if (!result.ok) {
-          await supabase.storage.from("org-sops").remove([path]);
           setError(result.error);
           return;
         }
