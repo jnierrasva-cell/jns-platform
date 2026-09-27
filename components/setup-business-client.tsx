@@ -22,16 +22,16 @@ export function SetupBusinessClient() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
+    <div className="flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
       <div className="w-full max-w-[380px]">
         <div className="mb-8">
           <BrandMark />
-          <p className="mt-4 text-sm text-zinc-500">Set up your workspace</p>
+          <p className="mt-4 text-sm text-[#94A3B8]">Set up your workspace</p>
         </div>
 
         <div className="jns-card p-6">
-          <h1 className="text-lg font-semibold text-zinc-900">Name your business</h1>
-          <p className="mt-1.5 text-sm text-zinc-500">
+          <h1 className="text-lg font-semibold text-white">Name your business</h1>
+          <p className="mt-1.5 text-sm text-[#94A3B8]">
             This creates the workspace. You can invite your team after.
           </p>
 

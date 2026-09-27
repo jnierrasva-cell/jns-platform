@@ -46,12 +46,12 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-[#0B132B] px-6 py-12">
       <div className="w-full max-w-[380px]">
         <BrandMark />
         <div className="jns-card mt-8 p-6">
-          <h1 className="text-lg font-semibold text-zinc-900">Set a new password</h1>
-          <p className="mt-1.5 text-sm text-zinc-500">
+          <h1 className="text-lg font-semibold text-white">Set a new password</h1>
+          <p className="mt-1.5 text-sm text-[#94A3B8]">
             Choose a new password for your JNS account.
           </p>
 

@@ -116,22 +116,22 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-full bg-white lg:grid-cols-2">
-      <section className="hidden flex-col justify-between border-r border-zinc-200 bg-zinc-50 px-10 py-8 lg:flex xl:px-14">
+    <main className="grid min-h-full bg-[#0B132B] lg:grid-cols-2">
+      <section className="hidden flex-col justify-between border-r border-[#1e2a4a] bg-[#080f22] px-10 py-8 lg:flex xl:px-14">
         <BrandMark />
         <div className="max-w-md pb-6">
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">
             {mode === "signin" ? "Sign in to your workspace" : "Welcome to JNS"}
           </h1>
           <ul className="mt-6 space-y-2">
             {workspaceBenefits.map((b) => (
-              <li key={b} className="text-sm text-zinc-600">
+              <li key={b} className="text-sm text-[#94A3B8]">
                 {b}
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-xs text-zinc-400">JNSystem</p>
+        <p className="text-xs text-[#64748B]">JNSystem</p>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12">
@@ -146,20 +146,20 @@ export default function LoginPage() {
               onClick={() => chooseMode("signin")}
               className={
                 mode === "signin"
-                  ? "font-medium text-zinc-900"
-                  : "text-zinc-500"
+                  ? "font-medium text-white"
+                  : "text-[#94A3B8]"
               }
             >
               Sign in
             </button>
-            <span className="text-zinc-300">·</span>
+            <span className="text-[#1e2a4a]">·</span>
             <button
               type="button"
               onClick={() => chooseMode("signup")}
               className={
                 mode === "signup"
-                  ? "font-medium text-zinc-900"
-                  : "text-zinc-500"
+                  ? "font-medium text-white"
+                  : "text-[#94A3B8]"
               }
             >
               Sign up
@@ -167,43 +167,43 @@ export default function LoginPage() {
           </div>
 
           {confirmSent ? (
-            <p className="mt-6 text-sm text-zinc-600">
+            <p className="mt-6 text-sm text-[#94A3B8]">
               Check your email to confirm, or turn off Confirm email in Supabase
               Auth settings.
             </p>
           ) : resetSent ? (
-            <p className="mt-6 text-sm text-zinc-600">
+            <p className="mt-6 text-sm text-[#94A3B8]">
               If that email exists, a reset link was sent.
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="text-sm text-zinc-700">Email</label>
+                <label className="text-sm text-[#94A3B8]">Email</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-[#1e2a4a] bg-[#111e3a] px-3 py-2 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
                 />
               </div>
 
               {mode !== "forgot" && (
                 <div>
-                  <label className="text-sm text-zinc-700">Password</label>
+                  <label className="text-sm text-[#94A3B8]">Password</label>
                   <input
                     type="password"
                     required
                     minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-[#1e2a4a] bg-[#111e3a] px-3 py-2 text-sm text-white placeholder:text-[#64748B] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
                   />
                 </div>
               )}
 
               {error && (
-                <p className="text-sm text-red-600" role="alert">
+                <p className="text-sm text-red-500" role="alert">
                   {error}
                 </p>
               )}
@@ -211,7 +211,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                className="w-full rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1d4ed8] disabled:opacity-60"
               >
                 {loading
                   ? "Please wait…"
@@ -226,7 +226,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => chooseMode("forgot")}
-                  className="text-xs text-zinc-500 underline"
+                  className="text-xs text-[#2563EB] underline"
                 >
                   Forgot password?
                 </button>
