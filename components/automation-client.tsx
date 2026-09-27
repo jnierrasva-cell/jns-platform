@@ -59,27 +59,116 @@ export function AutomationClient({
     return Array.from(map.entries());
   }, [services]);
 
-  const activeCount = enabledKeys.size;
+  const activeCount = [...enabledKeys].filter((id) =>
+    services.some((s) => s.id === id && s.status !== "coming_soon"),
+  ).length;
+  const availableCount = services.filter((s) => s.status !== "coming_soon")
+    .length;
+  const autoAckOn = enabledKeys.has("email-auto-ack");
 
   return (
     <div>
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
         Automation
       </span>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
         Your systems
       </h1>
       <p className="mt-1 text-sm text-zinc-500">
-        {activeCount} of {services.length} systems switched on.
-        {isPending ? " Saving…" : ""}
+        {activeCount} of {availableCount} systems on
+        {isPending ? " · Saving…" : ""}. Coming soon items stay off until
+        ready.
       </p>
 
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {/* Email path — the product story */}
+      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
+        <h2 className="text-sm font-medium text-zinc-900">
+          How inbound email works
+        </h2>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-600">
+          <li>
+            <strong className="text-zinc-800">Connect Google</strong> under{" "}
+            <Link
+              href="/dashboard/integrations"
+              className="underline underline-offset-2"
+            >
+              Integrations
+            </Link>{" "}
+            so we can read new mail for this workspace.
+          </li>
+          <li>
+            <strong className="text-zinc-800">Turn on Auto-Acknowledgment</strong>{" "}
+            below when you want instant replies.
+          </li>
+          <li>
+            <strong className="text-zinc-800">Edit the reply template</strong>{" "}
+            and set{" "}
+            <Link
+              href="/dashboard/email-rules"
+              className="underline underline-offset-2"
+            >
+              Email rules
+            </Link>{" "}
+            so only the right senders become contacts (newsletters stay out).
+          </li>
+          <li>
+            Check{" "}
+            <Link
+              href="/dashboard/unmatched"
+              className="underline underline-offset-2"
+            >
+              Unmatched
+            </Link>{" "}
+            for messages that didn&apos;t match a rule — attach or ignore.
+          </li>
+        </ol>
 
-      <div className="mt-8 flex flex-col gap-10">
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/integrations"
+            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+          >
+            Integrations
+          </Link>
+          <Link
+            href="/dashboard/templates"
+            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+          >
+            Reply template
+          </Link>
+          <Link
+            href="/dashboard/email-rules"
+            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+          >
+            Email rules
+          </Link>
+          <Link
+            href="/dashboard/unmatched"
+            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+          >
+            Unmatched inbox
+          </Link>
+        </div>
+
+        <p className="mt-3 text-xs text-zinc-400">
+          Auto-ack is currently{" "}
+          <span className="font-medium text-zinc-600">
+            {autoAckOn ? "on" : "off"}
+          </span>{" "}
+          for this workspace.
+        </p>
+      </section>
+
+      {error && (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-10 flex flex-col gap-10">
         {categories.map(([category, categoryServices]) => (
           <section key={category}>
-            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
+            <h2 className="mb-4 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
               {category}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -91,25 +180,31 @@ export function AutomationClient({
                     onToggle={() => toggleService(service)}
                   />
                   {service.id === "email-auto-ack" && (
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 px-0.5">
                       <Link
                         href="/dashboard/templates"
-                        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
+                        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
                       >
                         Edit reply template
                       </Link>
                       <Link
                         href="/dashboard/email-rules"
-                        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
+                        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
                       >
                         Email rules
+                      </Link>
+                      <Link
+                        href="/dashboard/unmatched"
+                        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+                      >
+                        Unmatched
                       </Link>
                     </div>
                   )}
                   {service.id === "sms-reminders" && (
                     <Link
                       href="/dashboard/integrations"
-                      className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
+                      className="px-0.5 text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
                     >
                       Twilio settings / test SMS
                     </Link>
