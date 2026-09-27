@@ -1,11 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Login-first invite:
- * User must already be signed in. We only join them to the org.
+ * Login-first invite: user must already be signed in.
  */
 export async function joinWithInvite(token: string) {
   const supabase = await createClient();
@@ -26,12 +26,16 @@ export async function joinWithInvite(token: string) {
     .eq("token", trimmedToken)
     .maybeSingle();
 
-  if (inviteError || !invite) throw new Error("Invite not found");
+  if (inviteError || !invite) {
+    throw new Error("This invite link is not valid.");
+  }
   if (invite.status === "accepted") {
-    throw new Error("This invite was already used.");
+    throw new Error(
+      "This invite was already used. Sign in and open My orgs to find the workspace.",
+    );
   }
   if (invite.status === "revoked") {
-    throw new Error("This invite was revoked.");
+    throw new Error("This invite was cancelled. Ask the owner for a new link.");
   }
   if (invite.status !== "pending") {
     throw new Error("This invite is no longer valid.");
@@ -42,7 +46,7 @@ export async function joinWithInvite(token: string) {
 
   if (inviteEmail !== userEmail) {
     throw new Error(
-      `This invite is for ${invite.email}. You are signed in as ${user.email}. Sign out and sign in with the invited email.`,
+      `This invite is for ${invite.email}. You are signed in as ${user.email}. Sign out, then sign in with the invited email.`,
     );
   }
 
@@ -81,6 +85,16 @@ export async function joinWithInvite(token: string) {
     .from("invites")
     .update({ status: "accepted" })
     .eq("id", invite.id);
+
+  // Same cookie My orgs uses — land in the invited workspace
+  const jar = await cookies();
+  jar.set("jns_active_org", invite.organization_id, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 
   return { organizationId: invite.organization_id };
 }
