@@ -21,16 +21,16 @@ export function AccountTypeClient() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
+    <div className="flex min-h-full items-center justify-center bg-[#0B132B] px-6 py-16">
       <div className="w-full max-w-lg">
         <div className="mb-8">
           <BrandMark />
-          <p className="mt-4 text-sm text-zinc-500">Almost ready</p>
+          <p className="mt-4 text-sm text-[#94A3B8]">Almost ready</p>
         </div>
 
         <div className="jns-card p-6">
-          <h1 className="text-lg font-semibold text-zinc-900">How will you use JNS?</h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
+          <h1 className="text-lg font-semibold text-white">How will you use JNS?</h1>
+          <p className="mt-2 text-sm leading-6 text-[#94A3B8]">
             This sets up the right workspace. You can still run the same tools
             either way.
           </p>
@@ -40,11 +40,11 @@ export function AccountTypeClient() {
               type="button"
               disabled={isPending}
               onClick={() => choose("individual")}
-              className="rounded-lg border border-zinc-200 p-4 text-left transition hover:bg-zinc-50 disabled:opacity-60"
+              className="rounded-lg border border-[#1e2a4a] p-4 text-left transition hover:bg-[#111e3a] disabled:opacity-60"
             >
-              <User className="h-4 w-4 text-zinc-400" />
-              <p className="mt-3 text-sm font-medium text-zinc-900">Individual</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">
+              <User className="h-4 w-4 text-[#2563EB]" />
+              <p className="mt-3 text-sm font-medium text-white">Individual</p>
+              <p className="mt-1 text-xs leading-5 text-[#94A3B8]">
                 Solo use — we create a personal workspace for you.
               </p>
             </button>
@@ -53,18 +53,18 @@ export function AccountTypeClient() {
               type="button"
               disabled={isPending}
               onClick={() => choose("business")}
-              className="rounded-lg border border-zinc-200 p-4 text-left transition hover:bg-zinc-50 disabled:opacity-60"
+              className="rounded-lg border border-[#1e2a4a] p-4 text-left transition hover:bg-[#111e3a] disabled:opacity-60"
             >
-              <Building2 className="h-4 w-4 text-zinc-400" />
-              <p className="mt-3 text-sm font-medium text-zinc-900">Business</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">
+              <Building2 className="h-4 w-4 text-[#2563EB]" />
+              <p className="mt-3 text-sm font-medium text-white">Business</p>
+              <p className="mt-1 text-xs leading-5 text-[#94A3B8]">
                 Company or team — name your business next.
               </p>
             </button>
           </div>
 
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-          {isPending && <p className="mt-4 text-xs text-zinc-500">Setting up…</p>}
+          {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
+          {isPending && <p className="mt-4 text-xs text-[#94A3B8]">Setting up…</p>}
         </div>
       </div>
     </div>

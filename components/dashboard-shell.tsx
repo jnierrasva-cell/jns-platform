@@ -73,11 +73,11 @@ export function DashboardShell({
   }
 
   return (
-    <div className="flex min-h-full bg-zinc-50 text-zinc-900">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white">
-        <div className="border-b border-zinc-200 px-4 py-4">
+    <div className="flex min-h-full bg-[#0B132B] text-[#F1F5F9]">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-[#1e2a4a] bg-[#080f22]">
+        <div className="border-b border-[#1e2a4a] px-4 py-4">
           <BrandMark href="/dashboard" />
-          <p className="mt-2 truncate px-0.5 text-xs text-zinc-500">{orgName}</p>
+          <p className="mt-2 truncate px-0.5 text-xs text-[#64748B]">{orgName}</p>
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 p-2">
@@ -90,35 +90,35 @@ export function DashboardShell({
                 href={item.href}
                 className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
                   active
-                    ? "bg-zinc-100 font-medium text-zinc-900"
-                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                    ? "border-l-2 border-[#2563EB] bg-[#1e2a4a] pl-[9px] font-medium text-white"
+                    : "text-[#94A3B8] hover:bg-[#111e3a] hover:text-white"
                 }`}
               >
                 <Icon
                   size={16}
-                  className={active ? "text-zinc-900" : "text-zinc-400"}
+                  className={active ? "text-[#2563EB]" : "text-[#64748B]"}
                 />
                 {item.label}
               </Link>
             );
           })}
 
-          <div className="my-2 border-t border-zinc-200" />
+          <div className="my-2 border-t border-[#1e2a4a]" />
 
           <Link
             href="/dashboard/orgs"
             className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
               pathname.startsWith("/dashboard/orgs")
-                ? "bg-zinc-100 font-medium text-zinc-900"
-                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                ? "border-l-2 border-[#2563EB] bg-[#1e2a4a] pl-[9px] font-medium text-white"
+                : "text-[#94A3B8] hover:bg-[#111e3a] hover:text-white"
             }`}
           >
             <Building2
               size={16}
               className={
                 pathname.startsWith("/dashboard/orgs")
-                  ? "text-zinc-900"
-                  : "text-zinc-400"
+                  ? "text-[#2563EB]"
+                  : "text-[#64748B]"
               }
             />
             My orgs
@@ -129,24 +129,24 @@ export function DashboardShell({
               href="/admin"
               className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
                 pathname.startsWith("/admin")
-                  ? "bg-zinc-100 font-medium text-zinc-900"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  ? "border-l-2 border-[#2563EB] bg-[#1e2a4a] pl-[9px] font-medium text-white"
+                  : "text-[#94A3B8] hover:bg-[#111e3a] hover:text-white"
               }`}
             >
-              <Shield size={16} className="text-zinc-400" />
+              <Shield size={16} className="text-[#64748B]" />
               JNS Admin
             </Link>
           )}
         </nav>
 
-        <div className="border-t border-zinc-200 p-2">
-          <p className="truncate px-2.5 text-xs text-zinc-500">{userEmail}</p>
+        <div className="border-t border-[#1e2a4a] p-2">
+          <p className="truncate px-2.5 text-xs text-[#64748B]">{userEmail}</p>
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900"
+            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-[#94A3B8] transition hover:bg-[#111e3a] hover:text-white"
           >
-            <LogOut size={16} className="text-zinc-400" />
+            <LogOut size={16} className="text-[#64748B]" />
             Sign out
           </button>
         </div>
