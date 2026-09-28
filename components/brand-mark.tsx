@@ -1,6 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+/**
+ * Official mark from public/jns-logo.png (brand kit).
+ * inverted = for dark backgrounds (login left panel).
+ */
 export function BrandMark({
   href = "/",
   className,
@@ -11,29 +16,34 @@ export function BrandMark({
   inverted?: boolean;
 }) {
   const mark = (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <span
+    <span className={cn("inline-flex items-center", className)}>
+      <Image
+        src="/jns-logo.png"
+        alt="JNS"
+        width={120}
+        height={36}
+        priority
         className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-md text-[13px] font-semibold",
-          inverted ? "bg-white text-zinc-900" : "bg-zinc-900 text-white",
+          "h-8 w-auto object-contain object-left",
+          // Soft lighten on dark panels if the logo is dark
+          inverted && "brightness-0 invert",
         )}
-      >
-        J
-      </span>
-      <span
-        className={cn(
-          "text-[15px] font-semibold tracking-tight",
-          inverted ? "text-zinc-900" : "text-zinc-900",
-        )}
-      >
-        JNS
-      </span>
+      />
     </span>
   );
 
-  if (!href) return mark;
+  if (href === null || href === undefined) {
+    // href omitted → still link home via default; null = no link
+  }
+
+  if (href === null) return mark;
+
   return (
-    <Link href={href} className="inline-flex" aria-label="JNS home">
+    <Link
+      href={href || "/"}
+      className="inline-flex items-center"
+      aria-label="JNS home"
+    >
       {mark}
     </Link>
   );
