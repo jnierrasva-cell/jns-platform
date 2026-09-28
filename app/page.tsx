@@ -27,16 +27,18 @@ const features = [
 
 function ProductPreview() {
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_24px_60px_-28px_rgba(24,24,27,0.35)]">
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_24px_60px_-28px_rgba(11,19,43,0.45)]">
       <div className="flex border-b border-zinc-200">
-        <div className="hidden w-44 shrink-0 border-r border-zinc-200 bg-zinc-50 p-3 sm:block">
-          <p className="px-2 text-[11px] font-medium text-zinc-400">Workspace</p>
+        <div className="hidden w-44 shrink-0 border-r border-[#1e2a4a] bg-[#0B132B] p-3 sm:block">
+          <p className="px-2 text-[11px] font-medium text-slate-500">Workspace</p>
           <div className="mt-3 space-y-1">
             {["Overview", "Contacts", "Bookings", "Automation"].map((item, i) => (
               <div
                 key={item}
                 className={`rounded-md px-2 py-1.5 text-[13px] ${
-                  i === 0 ? "bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500"
+                  i === 0
+                    ? "bg-[#111e3a] font-medium text-white"
+                    : "text-slate-400"
                 }`}
               >
                 {item}
@@ -60,8 +62,13 @@ function ProductPreview() {
               ["4", "Booked"],
               ["2", "Automations"],
             ].map(([value, label]) => (
-              <div key={label} className="rounded-md border border-zinc-200 px-3 py-2.5">
-                <p className="text-lg font-semibold tracking-tight text-zinc-900">{value}</p>
+              <div
+                key={label}
+                className="rounded-md border border-zinc-200 px-3 py-2.5"
+              >
+                <p className="text-lg font-semibold tracking-tight text-zinc-900">
+                  {value}
+                </p>
                 <p className="text-[11px] text-zinc-500">{label}</p>
               </div>
             ))}
@@ -78,7 +85,7 @@ function ProductPreview() {
                   i > 0 ? "border-t border-zinc-100" : ""
                 }`}
               >
-                <span className="font-medium text-zinc-800">{title}</span>
+                <span className="font-medium text-zinc-900">{title}</span>
                 <span className="text-zinc-500">{meta}</span>
               </div>
             ))}
@@ -92,22 +99,32 @@ function ProductPreview() {
 export default function LandingPage() {
   return (
     <div className="min-h-full bg-zinc-50">
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-50/90 backdrop-blur">
+      {/* Navy bar — same as dashboard sidebar so logo reads clearly */}
+      <header className="sticky top-0 z-40 border-b border-[#1e2a4a] bg-[#0B132B]">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
           <BrandMark />
-          <nav className="hidden items-center gap-6 text-sm text-zinc-600 md:flex" aria-label="Main">
-            <a href="#product" className="hover:text-zinc-900">
+          <nav
+            className="hidden items-center gap-6 text-sm text-slate-400 md:flex"
+            aria-label="Main"
+          >
+            <a href="#product" className="hover:text-white">
               Product
             </a>
-            <a href="#how" className="hover:text-zinc-900">
+            <a href="#how" className="hover:text-white">
               How it works
             </a>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login" className="hidden px-3 py-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-900 sm:inline">
+            <Link
+              href="/login"
+              className="hidden px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white sm:inline"
+            >
               Sign in
             </Link>
-            <Link href="/login" className="jns-btn h-8 px-3">
+            <Link
+              href="/login"
+              className="inline-flex h-8 items-center rounded-lg bg-white px-3 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
+            >
               Get started
             </Link>
           </div>
@@ -117,7 +134,9 @@ export default function LandingPage() {
       <main>
         <section className="mx-auto grid max-w-5xl gap-12 px-5 pb-16 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:pt-20">
           <div>
-            <p className="text-sm text-zinc-500">For studios, coaches, and service teams</p>
+            <p className="text-sm font-medium text-sky-700/80">
+              For studios, coaches, and service teams
+            </p>
             <h1 className="mt-3 max-w-lg text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-zinc-900 sm:text-5xl">
               Run the front of the business in one place.
             </h1>
@@ -126,11 +145,17 @@ export default function LandingPage() {
               automations that follow them — without another stack of tabs.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/login" className="jns-btn h-10 px-4">
+              <Link
+                href="/login"
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0B132B] px-4 text-sm font-medium text-white hover:bg-[#111e3a]"
+              >
                 Sign in
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <a href="#product" className="jns-btn-secondary h-10 px-4">
+              <a
+                href="#product"
+                className="inline-flex h-10 items-center rounded-lg border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+              >
                 See what’s included
               </a>
             </div>
@@ -144,15 +169,18 @@ export default function LandingPage() {
               What you actually use day to day
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
-              Built around the work of getting someone from inquiry to booked to
-              customer — then staying in touch.
+              Built for the path from inquiry to booked to customer — then
+              staying in touch.
             </p>
             <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-zinc-200 bg-zinc-200 sm:grid-cols-2">
               {features.map((feature) => {
                 const Icon = feature.icon;
                 return (
                   <article key={feature.title} className="bg-white p-6">
-                    <Icon className="h-4 w-4 text-zinc-400" aria-hidden="true" />
+                    <Icon
+                      className="h-4 w-4 text-sky-600"
+                      aria-hidden="true"
+                    />
                     <h3 className="mt-4 text-sm font-semibold text-zinc-900">
                       {feature.title}
                     </h3>
@@ -172,37 +200,55 @@ export default function LandingPage() {
           </h2>
           <ol className="mt-8 grid gap-8 md:grid-cols-3">
             {[
-              ["1", "Create a workspace", "Sign in, name the business, and invite the people who need access."],
-              ["2", "Connect accounts", "Link Google, SMS, and class software so data isn’t copied by hand."],
-              ["3", "Turn on the boring work", "Enable the automations you want — replies, reminders, routing."],
+              [
+                "1",
+                "Create a workspace",
+                "Sign in, name the business, and invite the people who need access.",
+              ],
+              [
+                "2",
+                "Connect accounts",
+                "Link Google, SMS, and class software so data isn’t copied by hand.",
+              ],
+              [
+                "3",
+                "Turn on the boring work",
+                "Enable the automations you want — replies, reminders, routing.",
+              ],
             ].map(([n, title, body]) => (
               <li key={n}>
-                <p className="text-xs font-medium text-zinc-400">{n}</p>
-                <h3 className="mt-2 text-sm font-semibold text-zinc-900">{title}</h3>
+                <p className="text-xs font-medium text-sky-700">{n}</p>
+                <h3 className="mt-2 text-sm font-semibold text-zinc-900">
+                  {title}
+                </h3>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">{body}</p>
               </li>
             ))}
           </ol>
         </section>
 
-        <section className="border-t border-zinc-200 bg-white">
+        <section className="border-t border-[#1e2a4a] bg-[#0B132B]">
           <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-6 px-5 py-14 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
+              <h2 className="text-xl font-semibold tracking-tight text-white">
                 Ready when you are
               </h2>
-              <p className="mt-1 text-sm text-zinc-600">
-                Use your existing JNS account, or create one from the sign-in page.
+              <p className="mt-1 text-sm text-slate-400">
+                Use your existing JNS account, or create one from the sign-in
+                page.
               </p>
             </div>
-            <Link href="/login" className="jns-btn h-10 px-4">
+            <Link
+              href="/login"
+              className="inline-flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
+            >
               Go to sign in
             </Link>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-zinc-200 px-5 py-8">
+      <footer className="border-t border-zinc-200 bg-zinc-50 px-5 py-8">
         <div className="mx-auto flex max-w-5xl flex-col gap-1 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Journey Network Systems</p>
           <p>Contacts, bookings, forms, and automations.</p>
