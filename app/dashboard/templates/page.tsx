@@ -3,6 +3,30 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveOrg } from "@/lib/org/active";
 import { TemplateClient } from "@/components/template-client";
 
+const DEFAULTS = [
+  {
+    template_key: "gmail_auto_ack",
+    label: "Email auto-ack",
+    subject: "Thanks for reaching out!",
+    body: `Hi {{first_name}},
+
+Thanks for getting in touch! We've received your message and someone from our team will follow up shortly.
+
+Talk soon,
+{{business_name}}`,
+  },
+  {
+    template_key: "form_thanks",
+    label: "Form thank-you",
+    subject: "We received your form",
+    body: `Hi {{first_name}},
+
+Thanks for submitting the form. We'll review it and get back to you soon.
+
+{{business_name}}`,
+  },
+];
+
 export default async function TemplatesPage() {
   const supabase = await createClient();
   const {
@@ -20,26 +44,35 @@ export default async function TemplatesPage() {
 
   const orgId = active.organizationId;
 
-  const { data: template } = await supabase
+  const { data: rows } = await supabase
     .from("email_templates")
-    .select("subject, body")
+    .select("template_key, subject, body, updated_at")
     .eq("organization_id", orgId)
-    .eq("template_key", "gmail_auto_ack")
-    .maybeSingle();
+    .order("template_key");
 
-  return (
-    <TemplateClient
-      orgId={orgId}
-      initialSubject={template?.subject ?? "Thanks for reaching out!"}
-      initialBody={
-        template?.body ??
-        `Hi {{first_name}},
+  const byKey = new Map((rows ?? []).map((r) => [r.template_key, r]));
 
-Thanks for getting in touch! We've received your message and someone from our team will follow up with you shortly.
+  const templates = DEFAULTS.map((d) => {
+    const saved = byKey.get(d.template_key);
+    return {
+      template_key: d.template_key,
+      label: d.label,
+      subject: saved?.subject ?? d.subject,
+      body: saved?.body ?? d.body,
+    };
+  });
 
-Talk soon,
-{{business_name}}`
-      }
-    />
-  );
+  // Extra custom templates beyond defaults
+  for (const r of rows ?? []) {
+    if (!DEFAULTS.some((d) => d.template_key === r.template_key)) {
+      templates.push({
+        template_key: r.template_key,
+        label: r.template_key,
+        subject: r.subject,
+        body: r.body,
+      });
+    }
+  }
+
+  return <TemplateClient orgId={orgId} templates={templates} />;
 }
