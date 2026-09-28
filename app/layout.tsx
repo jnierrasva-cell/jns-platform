@@ -13,12 +13,18 @@ export const metadata: Metadata = {
     "Manage contacts, bookings, forms, and automations in one workspace.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body
-  className="flex min-h-full flex-col bg-[#0B132B] font-sans text-[#F1F5F9]"
-  suppressHydrationWarning>
+        className="flex min-h-full flex-col bg-[#0B132B] font-sans text-[#F1F5F9]"
+        suppressHydrationWarning
+      >
+        {children}
       </body>
     </html>
   );
