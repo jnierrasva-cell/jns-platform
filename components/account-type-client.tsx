@@ -12,11 +12,13 @@ export function AccountTypeClient() {
   function choose(type: "individual" | "business") {
     setError(null);
     startTransition(async () => {
-      try {
-        await setAccountType(type);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
+      const result = await setAccountType(type);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      // Full navigation avoids React #441 from server redirect()
+      window.location.href = result.next;
     });
   }
 
@@ -28,8 +30,10 @@ export function AccountTypeClient() {
           <p className="mt-4 text-sm text-zinc-500">Almost ready</p>
         </div>
 
-        <div className="jns-card p-6">
-          <h1 className="text-lg font-semibold text-zinc-900">How will you use JNS?</h1>
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h1 className="text-lg font-semibold text-zinc-900">
+            How will you use JNS?
+          </h1>
           <p className="mt-2 text-sm leading-6 text-zinc-500">
             This sets up the right workspace. You can still run the same tools
             either way.
@@ -63,8 +67,14 @@ export function AccountTypeClient() {
             </button>
           </div>
 
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-          {isPending && <p className="mt-4 text-xs text-zinc-500">Setting up…</p>}
+          {error && (
+            <p className="mt-4 text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          )}
+          {isPending && (
+            <p className="mt-4 text-xs text-zinc-500">Setting up…</p>
+          )}
         </div>
       </div>
     </div>
