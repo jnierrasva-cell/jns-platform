@@ -1,17 +1,17 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function setAccountType(type: "individual" | "business") {
+export async function setAccountType(
+  type: "individual" | "business",
+): Promise<{ ok: true; next: string } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("Not authenticated");
-  if (type !== "individual" && type !== "business") {
-    throw new Error("Invalid account type");
+  if (!user) {
+    return { ok: false, error: "Not authenticated" };
   }
 
   const { error } = await supabase
@@ -22,13 +22,15 @@ export async function setAccountType(type: "individual" | "business") {
     })
     .eq("id", user.id);
 
-  if (error) throw new Error(error.message);
-
-  if (type === "business") {
-    redirect("/onboarding/setup-business");
+  if (error) {
+    return { ok: false, error: error.message };
   }
 
-  // Individual: create a personal workspace automatically
+  if (type === "business") {
+    return { ok: true, next: "/onboarding/setup-business" };
+  }
+
+  // Individual: create a personal workspace
   const emailPrefix =
     user.email?.split("@")[0]?.replace(/[^a-zA-Z0-9]/g, " ") || "Personal";
   const workspaceName = `${emailPrefix} workspace`.trim();
@@ -39,8 +41,16 @@ export async function setAccountType(type: "individual" | "business") {
   );
 
   if (orgError || !orgId) {
-    throw new Error(orgError?.message ?? "Could not create workspace");
+    return {
+      ok: false,
+      error: orgError?.message ?? "Could not create workspace",
+    };
   }
 
-  redirect("/dashboard");
+  await supabase
+    .from("profiles")
+    .update({ active_organization_id: orgId })
+    .eq("id", user.id);
+
+  return { ok: true, next: "/dashboard" };
 }
