@@ -3,16 +3,17 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * jns-logo1.png = dark navy mark (for light UI)
- * inverted = white treatment for dark panels (login left)
+ * Official mark: public/jns-logo1.png
+ * On dark UI we invert so the mark reads as light (no white box).
  */
 export function BrandMark({
   href = "/",
   className,
-  inverted = false,
+  inverted = true,
 }: {
   href?: string | null;
   className?: string;
+  /** true = light mark for dark backgrounds (default for brand dark theme) */
   inverted?: boolean;
 }) {
   const mark = (
