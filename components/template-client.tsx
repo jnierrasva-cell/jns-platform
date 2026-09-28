@@ -5,34 +5,67 @@ import Link from "next/link";
 import {
   saveEmailTemplate,
   sendTestAutoAck,
+  deleteEmailTemplate,
 } from "@/app/dashboard/templates/actions";
+
+type Template = {
+  template_key: string;
+  label: string;
+  subject: string;
+  body: string;
+};
 
 export function TemplateClient({
   orgId,
-  initialSubject,
-  initialBody,
+  templates: initial,
 }: {
   orgId: string;
-  initialSubject: string;
-  initialBody: string;
+  templates: Template[];
 }) {
-  const [subject, setSubject] = useState(initialSubject);
-  const [body, setBody] = useState(initialBody);
+  const [list, setList] = useState(initial);
+  const [activeKey, setActiveKey] = useState(
+    initial[0]?.template_key ?? "gmail_auto_ack",
+  );
+  const active = list.find((t) => t.template_key === activeKey) ?? list[0];
+
+  const [subject, setSubject] = useState(active?.subject ?? "");
+  const [body, setBody] = useState(active?.body ?? "");
   const [testEmail, setTestEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isTesting, startTest] = useTransition();
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const [newKey, setNewKey] = useState("");
+
+  function selectTemplate(key: string) {
+    const t = list.find((x) => x.template_key === key);
+    if (!t) return;
+    setActiveKey(key);
+    setSubject(t.subject);
+    setBody(t.body);
+    setSaved(false);
+    setError(null);
+    setTestResult(null);
+  }
+
+  function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSaved(false);
-    setTestResult(null);
     startTransition(async () => {
       try {
-        await saveEmailTemplate(orgId, subject, body);
+        await saveEmailTemplate({
+          organizationId: orgId,
+          templateKey: activeKey,
+          subject,
+          body,
+        });
+        setList((prev) =>
+          prev.map((t) =>
+            t.template_key === activeKey ? { ...t, subject, body } : t,
+          ),
+        );
         setSaved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save");
@@ -40,149 +73,191 @@ export function TemplateClient({
     });
   }
 
-  function handleTestSend(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    setTestResult(null);
-    startTest(async () => {
+  function handleAdd() {
+    const key = newKey.trim().toLowerCase().replace(/\s+/g, "_");
+    if (!key) return;
+    if (list.some((t) => t.template_key === key)) {
+      setError("That template key already exists");
+      return;
+    }
+    const t = {
+      template_key: key,
+      label: key,
+      subject: "Subject",
+      body: `Hi {{first_name}},\n\n\n{{business_name}}`,
+    };
+    setList((prev) => [...prev, t]);
+    setNewKey("");
+    setActiveKey(key);
+    setSubject(t.subject);
+    setBody(t.body);
+  }
+
+  function handleDelete() {
+    if (activeKey === "gmail_auto_ack") return;
+    if (!window.confirm(`Delete template “${activeKey}”?`)) return;
+    startTransition(async () => {
       try {
-        const result = await sendTestAutoAck(orgId, testEmail);
-        setTestResult(`Sent. Gmail message id: ${result.messageId}`);
+        await deleteEmailTemplate(orgId, activeKey);
+        const next = list.filter((t) => t.template_key !== activeKey);
+        setList(next);
+        const first = next[0];
+        if (first) selectTemplate(first.template_key);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Test send failed");
+        setError(err instanceof Error ? err.message : "Could not delete");
       }
     });
   }
 
-  const previewSubject = subject.replace(/{{first_name}}/g, "Sam");
-  const previewBody = body
-    .replace(/{{first_name}}/g, "Sam")
-    .replace(/{{business_name}}/g, "Your Business");
+  function handleTest(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setTestResult(null);
+    startTransition(async () => {
+      try {
+        const result = await sendTestAutoAck(orgId, testEmail, activeKey);
+        setTestResult(`Sent. Gmail id: ${result.messageId}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Test failed");
+      }
+    });
+  }
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-          Auto-Acknowledgment
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+          Templates
         </span>
         <Link
           href="/dashboard/automation"
-          className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-600"
+          className="text-xs text-zinc-600 underline underline-offset-2"
         >
-          ← Back to Automation
+          ← Automation
         </Link>
       </div>
-
       <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
-        Reply template
+        Email templates
       </h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-        This is the exact message sent automatically when a new email comes in.
-        Use{" "}
-        <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-zinc-700">
-          {"{{first_name}}"}
-        </code>{" "}
-        and{" "}
-        <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-zinc-700">
-          {"{{business_name}}"}
-        </code>{" "}
-        to personalize it.
+      <p className="mt-1 text-sm text-zinc-500">
+        Use <code className="text-xs">{"{{first_name}}"}</code> and{" "}
+        <code className="text-xs">{"{{business_name}}"}</code>. Rules can pick
+        which template to send.
       </p>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Editor */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-5 rounded-xl border border-zinc-200 bg-white p-6"
+      <div className="mt-6 flex flex-wrap gap-2">
+        {list.map((t) => (
+          <button
+            key={t.template_key}
+            type="button"
+            onClick={() => selectTemplate(t.template_key)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              activeKey === t.template_key
+                ? "bg-[#0B132B] text-white"
+                : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <div>
+          <label className="text-xs text-zinc-500">New template key</label>
+          <input
+            value={newKey}
+            onChange={(e) => setNewKey(e.target.value)}
+            placeholder="booking_confirm"
+            className="mt-1 block rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm hover:bg-zinc-50"
         >
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="subject" className="text-sm font-medium text-zinc-700">
-              Subject
-            </label>
+          Add
+        </button>
+      </div>
+
+      {error && (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <p className="mt-4 text-sm text-emerald-600">Saved.</p>
+      )}
+      {testResult && (
+        <p className="mt-2 text-sm text-zinc-600">{testResult}</p>
+      )}
+
+      {active && (
+        <form onSubmit={handleSave} className="mt-6 space-y-4">
+          <p className="text-xs text-zinc-400">
+            Key: <code>{activeKey}</code>
+          </p>
+          <div>
+            <label className="text-sm text-zinc-700">Subject</label>
             <input
-              id="subject"
-              type="text"
-              required
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              required
             />
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="body" className="text-sm font-medium text-zinc-700">
-              Message
-            </label>
+          <div>
+            <label className="text-sm text-zinc-700">Body</label>
             <textarea
-              id="body"
-              required
-              rows={10}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              rows={10}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm"
+              required
             />
           </div>
-
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          {saved && <p className="text-sm text-emerald-600">Template saved.</p>}
-          {testResult && <p className="text-sm text-emerald-600">{testResult}</p>}
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className="mt-1 rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 hover:shadow-[#2563EB]/40 disabled:opacity-60"
-          >
-            {isPending ? "Saving…" : "Save template"}
-          </button>
-        </form>
-
-        {/* Preview + test send */}
-        <div className="flex flex-col gap-6">
-          <div className="rounded-xl border border-zinc-200 bg-white p-6">
-            <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-              Preview
-            </span>
-            <div className="mt-4 rounded-lg border border-zinc-200 bg-[#0B132B]/50 p-4">
-              <p className="text-xs text-zinc-500">Subject</p>
-              <p className="mb-4 text-sm font-medium text-zinc-900">
-                {previewSubject}
-              </p>
-              <p className="text-xs text-zinc-500">Body</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">
-                {previewBody}
-              </p>
-            </div>
-          </div>
-
-          <form
-            onSubmit={handleTestSend}
-            className="rounded-xl border border-zinc-200 bg-white p-6"
-          >
-            <h2 className="text-sm font-medium text-zinc-900">Send test reply</h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Uses your saved template and connected Gmail. Turn on
-              Auto-Acknowledgment in Automation first.
-            </p>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <input
-                type="email"
-                required
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                placeholder="you@email.com"
-                className="flex-1 rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-              />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+            >
+              {isPending ? "Saving…" : "Save template"}
+            </button>
+            {activeKey !== "gmail_auto_ack" && (
               <button
-                type="submit"
-                disabled={isTesting}
-                className="rounded-lg border border-[#2563EB]/40 bg-zinc-900/15 px-4 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-zinc-900/25 disabled:opacity-60"
+                type="button"
+                disabled={isPending}
+                onClick={handleDelete}
+                className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
               >
-                {isTesting ? "Sending…" : "Send test"}
+                Delete
               </button>
-            </div>
-          </form>
+            )}
+          </div>
+        </form>
+      )}
+
+      <form onSubmit={handleTest} className="mt-8 flex flex-wrap items-end gap-2">
+        <div>
+          <label className="text-sm text-zinc-700">Test send to</label>
+          <input
+            type="email"
+            required
+            value={testEmail}
+            onChange={(e) => setTestEmail(e.target.value)}
+            className="mt-1 block rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+          />
         </div>
-      </div>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm hover:bg-zinc-50 disabled:opacity-60"
+        >
+          Send test
+        </button>
+      </form>
     </div>
   );
 }
