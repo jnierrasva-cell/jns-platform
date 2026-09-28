@@ -16,7 +16,6 @@ type Mode = "signin" | "signup" | "forgot";
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
-  // Only same-origin relative paths (block open redirects)
   if (!raw.startsWith("/") || raw.startsWith("//")) return null;
   return raw;
 }
@@ -39,7 +38,6 @@ function LoginForm() {
     const qEmail = searchParams.get("email");
     if (qEmail) setEmail(qEmail.trim());
 
-    // Invited users should land on signup first
     if (searchParams.get("next")?.includes("/invite/")) {
       setMode("signup");
     }
@@ -93,7 +91,6 @@ function LoginForm() {
         return;
       }
 
-      // signup
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email: email.trim(),
@@ -106,12 +103,10 @@ function LoginForm() {
       }
 
       if (signUpData.session) {
-        // Invited → back to invite link; otherwise normal onboarding
         afterAuthRedirect("/onboarding/account-type");
         return;
       }
 
-      // No session → try sign-in (confirm email off) or show confirm message
       const { data: signInData, error: signInError } =
         await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -140,36 +135,42 @@ function LoginForm() {
 
   return (
     <main className="flex min-h-full flex-col lg:flex-row">
-      <section className="hidden w-full max-w-md flex-col justify-between bg-zinc-900 px-10 py-12 text-white lg:flex">
-        <BrandMark inverted href="/" />
+      {/* Navy brand panel */}
+      <section className="relative flex w-full flex-col justify-between bg-[#0B132B] px-8 py-10 text-white lg:max-w-md lg:px-10 lg:py-12">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <BrandMark href="/" />
+          <p className="mt-8 text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+            Journey Network Systems
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
             Run the business from one workspace
           </h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-400">
+          <p className="mt-3 text-sm leading-6 text-slate-400">
             Contacts, bookings, automations, and team access — without juggling
             five tools.
           </p>
           <ul className="mt-8 space-y-3">
             {workspaceBenefits.map((item) => (
-              <li key={item} className="flex gap-2 text-sm text-zinc-300">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" />
+              <li
+                key={item}
+                className="flex gap-2.5 text-sm leading-5 text-slate-300"
+              >
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
                 {item}
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-xs text-zinc-500">JNS · Private pilot</p>
+        <p className="mt-10 text-xs text-slate-500 lg:mt-0">
+          JNS · Private pilot
+        </p>
       </section>
 
+      {/* Light form panel */}
       <section className="flex flex-1 items-center justify-center bg-zinc-50 px-6 py-16">
         <div className="w-full max-w-sm">
-          <div className="mb-8 lg:hidden">
-            <BrandMark href="/" />
-          </div>
-
           {nextPath?.startsWith("/invite/") && (
-            <p className="mb-4 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+            <p className="mb-4 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-900">
               After you create your account, you’ll return to the invite to join
               the workspace.
             </p>
@@ -182,8 +183,8 @@ function LoginForm() {
                 onClick={() => chooseMode("signin")}
                 className={
                   mode === "signin"
-                    ? "font-medium text-zinc-900"
-                    : "text-zinc-500"
+                    ? "font-medium text-[#0B132B]"
+                    : "text-zinc-500 hover:text-zinc-800"
                 }
               >
                 Sign in
@@ -193,8 +194,8 @@ function LoginForm() {
                 onClick={() => chooseMode("signup")}
                 className={
                   mode === "signup"
-                    ? "font-medium text-zinc-900"
-                    : "text-zinc-500"
+                    ? "font-medium text-[#0B132B]"
+                    : "text-zinc-500 hover:text-zinc-800"
                 }
               >
                 Create account
@@ -220,7 +221,7 @@ function LoginForm() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
                   />
                 </div>
 
@@ -236,7 +237,7 @@ function LoginForm() {
                       }
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
                     />
                   </div>
                 )}
@@ -250,7 +251,7 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                  className="w-full rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
                 >
                   {loading
                     ? "Please wait…"
@@ -265,7 +266,7 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => chooseMode("forgot")}
-                    className="text-xs text-zinc-500 underline"
+                    className="text-xs text-zinc-500 underline hover:text-zinc-800"
                   >
                     Forgot password?
                   </button>
@@ -275,7 +276,7 @@ function LoginForm() {
           </div>
 
           <p className="mt-6 text-center text-xs text-zinc-400">
-            <Link href="/" className="underline">
+            <Link href="/" className="underline hover:text-zinc-600">
               Back to home
             </Link>
           </p>
