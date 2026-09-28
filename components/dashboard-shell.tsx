@@ -73,11 +73,11 @@ export function DashboardShell({
   }
 
   return (
-    <div className="flex min-h-full bg-[#0B132B] text-[#F1F5F9]">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-[#1e2a4a] bg-[#080f22]">
+    <div className="flex min-h-full bg-zinc-50 text-zinc-900">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-[#1e2a4a] bg-[#0B132B]">
         <div className="border-b border-[#1e2a4a] px-4 py-4">
-          <BrandMark href="/dashboard" inverted />
-          <p className="mt-2 truncate px-0.5 text-xs text-[#64748B]">{orgName}</p>
+          <BrandMark href="/dashboard" />
+          <p className="mt-2 truncate px-0.5 text-xs text-slate-400">{orgName}</p>
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 p-2">
@@ -91,12 +91,12 @@ export function DashboardShell({
                 className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
                   active
                     ? "bg-[#111e3a] font-medium text-white"
-                    : "text-[#94A3B8] hover:bg-[#111e3a] hover:text-white"
+                    : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
                 }`}
               >
                 <Icon
                   size={16}
-                  className={active ? "text-[#3B82F6]" : "text-[#64748B]"}
+                  className={active ? "text-sky-400" : "text-slate-500"}
                 />
                 {item.label}
               </Link>
@@ -110,15 +110,15 @@ export function DashboardShell({
             className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
               pathname.startsWith("/dashboard/orgs")
                 ? "bg-[#111e3a] font-medium text-white"
-                : "text-[#94A3B8] hover:bg-[#111e3a] hover:text-white"
+                : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
             }`}
           >
             <Building2
               size={16}
               className={
                 pathname.startsWith("/dashboard/orgs")
-                  ? "text-[#3B82F6]"
-                  : "text-[#64748B]"
+                  ? "text-sky-400"
+                  : "text-slate-500"
               }
             />
             My orgs
@@ -130,29 +130,29 @@ export function DashboardShell({
               className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
                 pathname.startsWith("/admin")
                   ? "bg-[#111e3a] font-medium text-white"
-                  : "text-[#94A3B8] hover:bg-[#111e3a] hover:text-white"
+                  : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
               }`}
             >
-              <Shield size={16} className="text-[#64748B]" />
+              <Shield size={16} className="text-slate-500" />
               JNS Admin
             </Link>
           )}
         </nav>
 
         <div className="border-t border-[#1e2a4a] p-2">
-          <p className="truncate px-2.5 text-xs text-[#64748B]">{userEmail}</p>
+          <p className="truncate px-2.5 text-xs text-slate-500">{userEmail}</p>
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-[#94A3B8] transition hover:bg-[#111e3a] hover:text-white"
+            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-slate-400 transition hover:bg-[#111e3a] hover:text-white"
           >
-            <LogOut size={16} className="text-[#64748B]" />
+            <LogOut size={16} className="text-slate-500" />
             Sign out
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-[#0B132B]">
+      <main className="flex-1 overflow-y-auto bg-zinc-50">
         <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
       </main>
     </div>
