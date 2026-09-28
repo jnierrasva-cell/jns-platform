@@ -8,6 +8,8 @@ type SendAutoAckInput = {
   threadId?: string;
   inReplyToMessageId?: string;
   firstName?: string;
+  /** Defaults to gmail_auto_ack */
+  templateKey?: string;
 };
 
 function applyTemplate(
@@ -27,14 +29,14 @@ function toBase64Url(str: string) {
     .replace(/=+$/, "");
 }
 
-/**
- * Sends the org's saved gmail_auto_ack template to a recipient via Gmail API.
- * Logs the result into email_activity.
- */
+function domainOf(email: string) {
+  return email.toLowerCase().split("@")[1] ?? "";
+}
+
 export async function sendAutoAck(input: SendAutoAckInput) {
   const supabase = createAdminClient();
+  const templateKey = input.templateKey?.trim() || "gmail_auto_ack";
 
-  // 1. Confirm automation is enabled
   const { data: automation } = await supabase
     .from("org_automations")
     .select("is_enabled")
@@ -46,19 +48,38 @@ export async function sendAutoAck(input: SendAutoAckInput) {
     return { skipped: true, reason: "automation_disabled" as const };
   }
 
-  // 2. Load template
+  // Optional exclude domains (newsletter, no-reply, etc.)
+  const { data: settingsRow } = await supabase
+    .from("org_automation_settings")
+    .select("settings")
+    .eq("organization_id", input.organizationId)
+    .eq("service_key", "email-auto-ack")
+    .maybeSingle();
+
+  const settings = (settingsRow?.settings ?? {}) as {
+    exclude_domains?: string[];
+  };
+  const exclude = (settings.exclude_domains ?? []).map((d) =>
+    d.toLowerCase().replace(/^@/, "").trim(),
+  );
+  const toDomain = domainOf(input.toEmail);
+  if (exclude.some((d) => d && toDomain === d)) {
+    return { skipped: true, reason: "excluded_domain" as const };
+  }
+
   const { data: template, error: templateError } = await supabase
     .from("email_templates")
     .select("subject, body")
     .eq("organization_id", input.organizationId)
-    .eq("template_key", "gmail_auto_ack")
+    .eq("template_key", templateKey)
     .maybeSingle();
 
   if (templateError || !template) {
-    throw new Error("No auto-ack template found for this organization");
+    throw new Error(
+      `No template "${templateKey}" found for this organization. Save it under Templates first.`,
+    );
   }
 
-  // 3. Business name (from org)
   const { data: org } = await supabase
     .from("organizations")
     .select("name")
@@ -77,83 +98,71 @@ export async function sendAutoAck(input: SendAutoAckInput) {
     business_name: businessName,
   });
 
-  // 4. Valid access token
-  const { accessToken, connectedEmail } = await getValidGoogleAccessToken(
-    input.organizationId,
-  );
+  const accessToken = await getValidGoogleAccessToken(input.organizationId);
 
-  if (!connectedEmail) {
-    throw new Error("Connected Google account has no email");
+  const { data: connection } = await supabase
+    .from("connections")
+    .select("connected_email")
+    .eq("organization_id", input.organizationId)
+    .eq("provider", "google")
+    .maybeSingle();
+
+  if (!connection?.connected_email) {
+    throw new Error("Google is not connected for this organization");
   }
 
-  // 5. Build raw RFC 2822 message
-  const headers = [
-    `From: ${connectedEmail}`,
+  const rawMessage = [
+    `From: ${connection.connected_email}`,
     `To: ${input.toEmail}`,
     `Subject: ${subject}`,
     "MIME-Version: 1.0",
     'Content-Type: text/plain; charset="UTF-8"',
-  ];
+    input.inReplyToMessageId
+      ? `In-Reply-To: ${input.inReplyToMessageId}`
+      : null,
+    input.inReplyToMessageId
+      ? `References: ${input.inReplyToMessageId}`
+      : null,
+    "",
+    body,
+  ]
+    .filter(Boolean)
+    .join("\r\n");
 
-  if (input.inReplyToMessageId) {
-    headers.push(`In-Reply-To: ${input.inReplyToMessageId}`);
-    headers.push(`References: ${input.inReplyToMessageId}`);
-  }
+  const endpoint = input.threadId
+    ? `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`
+    : `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
 
-  const rawMessage = `${headers.join("\r\n")}\r\n\r\n${body}`;
-  const raw = toBase64Url(rawMessage);
-
-  const payload: { raw: string; threadId?: string } = { raw };
-  if (input.threadId) payload.threadId = input.threadId;
-
-  // 6. Send via Gmail API
-  const sendRes = await fetch(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      raw: toBase64Url(rawMessage),
+      threadId: input.threadId || undefined,
+    }),
+  });
 
-  if (!sendRes.ok) {
-    const errText = await sendRes.text();
-
-    await supabase.from("email_activity").insert({
-      organization_id: input.organizationId,
-      service_key: "email-auto-ack",
-      direction: "outbound",
-      to_email: input.toEmail,
-      from_email: connectedEmail,
-      subject,
-      status: "failed",
-      error_message: errText,
-    });
-
+  if (!res.ok) {
+    const errText = await res.text();
     throw new Error(`Gmail send failed: ${errText}`);
   }
 
-  const sent = await sendRes.json();
+  const json = (await res.json()) as { id?: string };
 
-  // 7. Log success
   await supabase.from("email_activity").insert({
     organization_id: input.organizationId,
     service_key: "email-auto-ack",
     direction: "outbound",
-    gmail_message_id: sent.id ?? null,
-    gmail_thread_id: sent.threadId ?? input.threadId ?? null,
+    gmail_message_id: json.id ?? null,
+    gmail_thread_id: input.threadId ?? null,
+    from_email: connection.connected_email,
     to_email: input.toEmail,
-    from_email: connectedEmail,
     subject,
     status: "sent",
   });
 
-  return {
-    skipped: false as const,
-    messageId: sent.id as string,
-    threadId: sent.threadId as string | undefined,
-  };
+  return { skipped: false as const, messageId: json.id ?? null };
 }
