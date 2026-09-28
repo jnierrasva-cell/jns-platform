@@ -3,8 +3,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * Official mark from public/jns-logo.png (brand kit).
- * inverted = for dark backgrounds (login left panel).
+ * jns-logo1.png = dark navy mark (for light UI)
+ * inverted = white treatment for dark panels (login left)
  */
 export function BrandMark({
   href = "/",
@@ -16,25 +16,19 @@ export function BrandMark({
   inverted?: boolean;
 }) {
   const mark = (
-    <span className={cn("inline-flex items-center", className)}>
-      <Image
-        src="/jns-logo.png"
-        alt="JNS"
-        width={120}
-        height={36}
-        priority
-        className={cn(
-          "h-8 w-auto object-contain object-left",
-          // Soft lighten on dark panels if the logo is dark
-          inverted && "brightness-0 invert",
-        )}
-      />
-    </span>
+    <Image
+      src="/jns-logo1.png"
+      alt="JNS"
+      width={140}
+      height={40}
+      priority
+      className={cn(
+        "h-8 w-auto object-contain object-left",
+        inverted && "brightness-0 invert",
+        className,
+      )}
+    />
   );
-
-  if (href === null || href === undefined) {
-    // href omitted → still link home via default; null = no link
-  }
 
   if (href === null) return mark;
 
