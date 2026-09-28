@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function setAccountType(
   type: "individual" | "business",
@@ -14,7 +15,9 @@ export async function setAccountType(
     return { ok: false, error: "Not authenticated" };
   }
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+
+  const { error: profileError } = await admin
     .from("profiles")
     .update({
       account_type: type,
@@ -22,19 +25,20 @@ export async function setAccountType(
     })
     .eq("id", user.id);
 
-  if (error) {
-    return { ok: false, error: error.message };
+  if (profileError) {
+    return { ok: false, error: profileError.message };
   }
 
   if (type === "business") {
     return { ok: true, next: "/onboarding/setup-business" };
   }
 
-  // Individual: create a personal workspace
+  // Individual: personal workspace via SECURITY DEFINER RPC
   const emailPrefix =
     user.email?.split("@")[0]?.replace(/[^a-zA-Z0-9]/g, " ") || "Personal";
   const workspaceName = `${emailPrefix} workspace`.trim();
 
+  // RPC still runs as the user for auth.uid(); admin is not needed for rpc call
   const { data: orgId, error: orgError } = await supabase.rpc(
     "create_organization_with_ceo",
     { business_name: workspaceName },
@@ -47,9 +51,9 @@ export async function setAccountType(
     };
   }
 
-  await supabase
+  await admin
     .from("profiles")
-    .update({ active_organization_id: orgId })
+    .update({ active_organization_id: orgId as string })
     .eq("id", user.id);
 
   return { ok: true, next: "/dashboard" };
