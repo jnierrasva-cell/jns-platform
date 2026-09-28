@@ -126,9 +126,9 @@ export function DashboardShell({
 
           {isPlatformAdmin && (
             <Link
-              href="/admin"
+              href="/dashboard/admin"
               className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
-                pathname.startsWith("/admin")
+                pathname.startsWith("/dashboard/admin")
                   ? "bg-[#111e3a] font-medium text-white"
                   : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
               }`}
