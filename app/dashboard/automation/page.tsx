@@ -26,11 +26,23 @@ export default async function AutomationPage() {
     .filter((a) => a.is_enabled)
     .map((a) => a.service_key);
 
+  const { data: settingsRows } = await supabase
+    .from("org_automation_settings")
+    .select("service_key, settings")
+    .eq("organization_id", orgId);
+
+  const settingsByKey: Record<string, Record<string, unknown>> = {};
+  for (const row of settingsRows ?? []) {
+    settingsByKey[row.service_key] =
+      (row.settings as Record<string, unknown>) ?? {};
+  }
+
   return (
     <AutomationClient
       organizationId={orgId}
       services={mockServices}
       initialEnabledKeys={enabledKeys}
+      initialSettings={settingsByKey}
     />
   );
 }
