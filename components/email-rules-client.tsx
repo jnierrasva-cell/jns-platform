@@ -190,7 +190,10 @@ export function EmailRulesClient({
                 onChange={(e) => setTemplateKey(e.target.value)}
                 className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
               >
-                {templateKeys.map((k) => (
+                {(templateKeys.length > 0
+                  ? templateKeys
+                  : ["gmail_auto_ack"]
+                ).map((k) => (
                   <option key={k} value={k}>
                     {k}
                   </option>
