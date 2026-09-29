@@ -31,6 +31,7 @@ export async function createEmailRule(input: {
   onlyNewContact?: boolean;
   action: "auto_ack" | "skip" | "tag_only";
   tag?: string;
+  templateKey?: string;
 }) {
   const supabase = await requireOrgMembership(input.organizationId);
 
@@ -46,6 +47,10 @@ export async function createEmailRule(input: {
     only_new_contact: Boolean(input.onlyNewContact),
     action: input.action,
     tag: input.tag?.trim() || null,
+    template_key:
+      input.action === "auto_ack"
+        ? input.templateKey?.trim() || "gmail_auto_ack"
+        : null,
     is_enabled: true,
   });
 
@@ -97,11 +102,7 @@ export async function deleteEmailRule(ruleId: string) {
   if (!rule) throw new Error("Rule not found");
   await requireOrgMembership(rule.organization_id);
 
-  const { error } = await supabase
-    .from("email_rules")
-    .delete()
-    .eq("id", ruleId);
-
+  const { error } = await supabase.from("email_rules").delete().eq("id", ruleId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/email-rules");
 }
