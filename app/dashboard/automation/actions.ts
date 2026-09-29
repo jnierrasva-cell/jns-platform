@@ -4,16 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { startGmailWatch, stopGmailWatch } from "@/lib/google/watch";
 
-export async function setAutomationEnabled(
-  organizationId: string,
-  serviceKey: string,
-  isEnabled: boolean,
-) {
+async function requireMember(organizationId: string) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) throw new Error("Not authenticated");
 
   const { data: membership } = await supabase
@@ -24,8 +19,16 @@ export async function setAutomationEnabled(
     .maybeSingle();
 
   if (!membership) throw new Error("Not a member of this organization");
+  return supabase;
+}
 
-  // SMS requires Twilio
+export async function setAutomationEnabled(
+  organizationId: string,
+  serviceKey: string,
+  isEnabled: boolean,
+) {
+  const supabase = await requireMember(organizationId);
+
   if (serviceKey === "sms-reminders" && isEnabled) {
     const { data: twilio } = await supabase
       .from("twilio_connections")
@@ -35,12 +38,11 @@ export async function setAutomationEnabled(
 
     if (!twilio) {
       throw new Error(
-        "Connect Twilio in Integrations before enabling SMS Reminders.",
+        "Connect Twilio in Integrations before enabling SMS reminders.",
       );
     }
   }
 
-  // Email auto-ack requires Google (watch will also fail without it)
   if (serviceKey === "email-auto-ack" && isEnabled) {
     const { data: google } = await supabase
       .from("connections")
@@ -51,9 +53,18 @@ export async function setAutomationEnabled(
 
     if (!google) {
       throw new Error(
-        "Connect Google in Integrations before enabling Auto-Acknowledgment.",
+        "Connect Google in Integrations before enabling inquiry auto-reply.",
       );
     }
+  }
+
+  // Block enabling coming-soon keys
+  if (
+    serviceKey === "email-follow-up" ||
+    serviceKey === "form-thanks" ||
+    serviceKey === "lead-intake-sorter"
+  ) {
+    throw new Error("This system is not available yet.");
   }
 
   const { error } = await supabase.from("org_automations").upsert(
@@ -70,11 +81,8 @@ export async function setAutomationEnabled(
 
   if (serviceKey === "email-auto-ack") {
     try {
-      if (isEnabled) {
-        await startGmailWatch(organizationId);
-      } else {
-        await stopGmailWatch(organizationId);
-      }
+      if (isEnabled) await startGmailWatch(organizationId);
+      else await stopGmailWatch(organizationId);
     } catch (watchErr) {
       throw new Error(
         watchErr instanceof Error
@@ -86,4 +94,25 @@ export async function setAutomationEnabled(
 
   revalidatePath("/dashboard/automation");
   revalidatePath("/dashboard");
+}
+
+export async function saveAutomationSettings(input: {
+  organizationId: string;
+  serviceKey: string;
+  settings: Record<string, unknown>;
+}) {
+  const supabase = await requireMember(input.organizationId);
+
+  const { error } = await supabase.from("org_automation_settings").upsert(
+    {
+      organization_id: input.organizationId,
+      service_key: input.serviceKey,
+      settings: input.settings,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "organization_id,service_key" },
+  );
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/automation");
 }
