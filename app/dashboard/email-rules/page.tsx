@@ -19,13 +19,27 @@ export default async function EmailRulesPage() {
   const { data: rules } = await supabase
     .from("email_rules")
     .select(
-      "id, name, is_enabled, priority, from_email, from_domain, subject_contains, only_new_contact, action, tag, created_at",
+      "id, name, is_enabled, priority, from_email, from_domain, subject_contains, only_new_contact, action, tag, template_key, created_at",
     )
     .eq("organization_id", orgId)
     .order("priority", { ascending: true })
     .order("created_at", { ascending: true });
 
+  const { data: templates } = await supabase
+    .from("email_templates")
+    .select("template_key")
+    .eq("organization_id", orgId);
+
+  const templateKeys = [
+    "gmail_auto_ack",
+    ...new Set((templates ?? []).map((t) => t.template_key)),
+  ];
+
   return (
-    <EmailRulesClient organizationId={orgId} rules={rules ?? []} />
+    <EmailRulesClient
+      organizationId={orgId}
+      rules={rules ?? []}
+      templateKeys={templateKeys}
+    />
   );
 }
