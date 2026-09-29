@@ -127,10 +127,10 @@ export default function LandingPage() {
               Sign in
             </Link>
             <Link
-              href="/login"
+              href="/get-started"
               className="inline-flex h-8 items-center rounded-lg bg-white px-3 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
             >
-              Sign in
+              Get started
             </Link>
           </div>
         </div>
@@ -152,10 +152,10 @@ export default function LandingPage() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                href="/login"
+                href="/get-started"
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0B132B] px-4 text-sm font-medium text-white hover:bg-[#111e3a]"
               >
-                Sign in
+                Get started
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a
@@ -248,10 +248,10 @@ export default function LandingPage() {
               </p>
             </div>
             <Link
-              href="/login"
+              href="/get-started"
               className="inline-flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
             >
-              Go to sign in
+              Get started
             </Link>
           </div>
         </section>
