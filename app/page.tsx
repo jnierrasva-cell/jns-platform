@@ -6,7 +6,7 @@ const features = [
   {
     icon: Users,
     title: "Contacts under your rules",
-    body: "Pipeline, notes, and history on each person. Email rules and unmatched keep junk from becoming “leads.”",
+    body: "Pipeline, notes, and history on each person. Email rules and unmatched keep junk from becoming "leads."",
   },
   {
     icon: CalendarDays,
@@ -127,10 +127,10 @@ export default function LandingPage() {
               Sign in
             </Link>
             <Link
-              href="/get-started"
+              href="/login"
               className="inline-flex h-8 items-center rounded-lg bg-white px-3 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
             >
-              Get started
+              Sign in
             </Link>
           </div>
         </div>
@@ -152,17 +152,17 @@ export default function LandingPage() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
-                href="/get-started"
+                href="/login"
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0B132B] px-4 text-sm font-medium text-white hover:bg-[#111e3a]"
               >
-                Get started
+                Sign in
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a
                 href="#product"
                 className="inline-flex h-10 items-center rounded-lg border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
               >
-                See what’s included
+                See what's included
               </a>
             </div>
             <p className="mt-4 text-xs text-zinc-400">
@@ -217,7 +217,7 @@ export default function LandingPage() {
               [
                 "2",
                 "Connect what you already use",
-                "Link Google, SMS, and class software so data isn’t retyped by hand.",
+                "Link Google, SMS, and class software so data isn't retyped by hand.",
               ],
               [
                 "3",
@@ -248,10 +248,10 @@ export default function LandingPage() {
               </p>
             </div>
             <Link
-              href="/get-started"
+              href="/login"
               className="inline-flex h-10 items-center rounded-lg bg-white px-4 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
             >
-              Get started
+              Go to sign in
             </Link>
           </div>
         </section>
