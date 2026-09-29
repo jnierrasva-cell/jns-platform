@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "JNS — Operations software for service businesses",
+  title: "JNS — One workspace for clients, bookings, and follow-up",
   description:
-    "Manage contacts, bookings, forms, and automations in one workspace.",
+    "Journey Network Systems is the operating workspace for service businesses and the people who run them. Contacts under your rules, bookings on the calendar, connected tools — private pilot.",
 };
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body
-        className="flex min-h-full flex-col bg-[#0B132B] font-sans text-[#F1F5F9]"
+        className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900"
         suppressHydrationWarning
       >
         {children}
