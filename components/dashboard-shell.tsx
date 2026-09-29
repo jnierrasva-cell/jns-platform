@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -17,9 +18,13 @@ import {
   Kanban,
   Building2,
   BookOpen,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
+
+const STORAGE_KEY = "jns_sidebar_collapsed";
 
 type NavItem = {
   label: string;
@@ -43,6 +48,31 @@ export function DashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
+  const [collapsed, setCollapsed] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "1") setCollapsed(true);
+    } catch {
+      // ignore
+    }
+    setReady(true);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -72,15 +102,62 @@ export function DashboardShell({
     return pathname.startsWith(href);
   }
 
+  const linkClass = (active: boolean) =>
+    `flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
+      collapsed ? "justify-center px-2" : ""
+    } ${
+      active
+        ? "bg-[#111e3a] font-medium text-white"
+        : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
+    }`;
+
   return (
     <div className="flex min-h-full bg-zinc-50 text-zinc-900">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-[#1e2a4a] bg-[#0B132B]">
-        <div className="border-b border-[#1e2a4a] px-4 py-4">
-          <BrandMark href="/dashboard" />
-          <p className="mt-2 truncate px-0.5 text-xs text-slate-400">{orgName}</p>
+      <aside
+        className={`flex shrink-0 flex-col border-r border-[#1e2a4a] bg-[#0B132B] transition-[width] duration-200 ease-out ${
+          collapsed ? "w-[4.25rem]" : "w-56"
+        } ${ready ? "" : "opacity-0"}`}
+      >
+        <div
+          className={`border-b border-[#1e2a4a] ${collapsed ? "px-2 py-3" : "px-4 py-4"}`}
+        >
+          {collapsed ? (
+            <Link
+              href="/dashboard"
+              className="flex items-center justify-center py-1"
+              aria-label="JNS home"
+              title="JNS"
+            >
+              <span className="text-sm font-semibold tracking-tight text-white">
+                JNS
+              </span>
+            </Link>
+          ) : (
+            <>
+              <BrandMark href="/dashboard" />
+              <p className="mt-2 truncate px-0.5 text-xs text-slate-400">
+                {orgName}
+              </p>
+            </>
+          )}
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 p-2">
+        <div className={`border-b border-[#1e2a4a] p-2 ${collapsed ? "" : ""}`}>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="flex w-full items-center justify-center gap-2 rounded-md px-2 py-2 text-slate-400 transition hover:bg-[#111e3a] hover:text-white"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand" : "Collapse"}
+          >
+            {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+            {!collapsed && (
+              <span className="text-[12px]">Collapse</span>
+            )}
+          </button>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
           {navItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
@@ -88,17 +165,14 @@ export function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
-                  active
-                    ? "bg-[#111e3a] font-medium text-white"
-                    : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
-                }`}
+                className={linkClass(active)}
+                title={collapsed ? item.label : undefined}
               >
                 <Icon
                   size={16}
-                  className={active ? "text-sky-400" : "text-slate-500"}
+                  className={`shrink-0 ${active ? "text-sky-400" : "text-slate-500"}`}
                 />
-                {item.label}
+                {!collapsed && item.label}
               </Link>
             );
           })}
@@ -107,52 +181,49 @@ export function DashboardShell({
 
           <Link
             href="/dashboard/orgs"
-            className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
-              pathname.startsWith("/dashboard/orgs")
-                ? "bg-[#111e3a] font-medium text-white"
-                : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
-            }`}
+            className={linkClass(pathname.startsWith("/dashboard/orgs"))}
+            title={collapsed ? "My orgs" : undefined}
           >
             <Building2
               size={16}
-              className={
+              className={`shrink-0 ${
                 pathname.startsWith("/dashboard/orgs")
                   ? "text-sky-400"
                   : "text-slate-500"
-              }
+              }`}
             />
-            My orgs
+            {!collapsed && "My orgs"}
           </Link>
 
           {isPlatformAdmin && (
             <Link
               href="/dashboard/admin"
-              className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
-                pathname.startsWith("/dashboard/admin")
-                  ? "bg-[#111e3a] font-medium text-white"
-                  : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
-              }`}
+              className={linkClass(pathname.startsWith("/dashboard/admin"))}
+              title={collapsed ? "JNS Admin" : undefined}
             >
-              <Shield size={16} className="text-slate-500" />
-              JNS Admin
+              <Shield size={16} className="shrink-0 text-slate-500" />
+              {!collapsed && "JNS Admin"}
             </Link>
           )}
         </nav>
 
         <div className="border-t border-[#1e2a4a] p-2">
-          <p className="truncate px-2.5 text-xs text-slate-500">{userEmail}</p>
+          {!collapsed && (
+            <p className="truncate px-2.5 text-xs text-slate-500">{userEmail}</p>
+          )}
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-slate-400 transition hover:bg-[#111e3a] hover:text-white"
+            className={linkClass(false)}
+            title={collapsed ? "Sign out" : undefined}
           >
-            <LogOut size={16} className="text-slate-500" />
-            Sign out
+            <LogOut size={16} className="shrink-0 text-slate-500" />
+            {!collapsed && "Sign out"}
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-zinc-50">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-zinc-50">
         <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
       </main>
     </div>
