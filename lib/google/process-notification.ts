@@ -192,6 +192,7 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       isNewContact,
       matched: matchedRule?.name ?? null,
       action: matchedRule?.action ?? null,
+      templateKey: matchedRule?.template_key ?? null,
     });
 
     // --- Unknown sender, no rule → unmatched inbox (NOT a contact) ---
@@ -268,13 +269,14 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       continue;
     }
 
-    // action === auto_ack
+    // action === auto_ack — use the rule's template when set
     const sendResult = await sendAutoAck({
       organizationId,
       toEmail: fromEmail,
       threadId: msg.threadId,
       inReplyToMessageId: messageIdHeader,
       firstName,
+      templateKey: matchedRule.template_key ?? "gmail_auto_ack",
     });
 
     if (!sendResult.skipped && sendResult.messageId) {
