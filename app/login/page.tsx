@@ -7,9 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
 
 const workspaceBenefits = [
-  "Contacts and pipeline in one list",
-  "Bookings, forms, and follow-up on the same record",
-  "Automations that run on your connected accounts",
+  "Contacts under your rules — not every email as a lead",
+  "Bookings and intake on the same workspace",
+  "Follow-up on accounts you connect (Google, SMS, and more)",
 ];
 
 type Mode = "signin" | "signup" | "forgot";
@@ -135,7 +135,6 @@ function LoginForm() {
 
   return (
     <main className="flex min-h-full flex-col lg:flex-row">
-      {/* Navy brand panel */}
       <section className="relative flex w-full flex-col justify-between bg-[#0B132B] px-8 py-10 text-white lg:max-w-md lg:px-10 lg:py-12">
         <div>
           <BrandMark href="/" />
@@ -143,11 +142,11 @@ function LoginForm() {
             Journey Network Systems
           </p>
           <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-            Run the business from one workspace
+            One workspace for clients, bookings, and follow-up
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            Contacts, bookings, automations, and team access — without juggling
-            five tools.
+            For service businesses and the people who run them — with rules so
+            the system stays clean.
           </p>
           <ul className="mt-8 space-y-3">
             {workspaceBenefits.map((item) => (
@@ -166,7 +165,6 @@ function LoginForm() {
         </p>
       </section>
 
-      {/* Light form panel */}
       <section className="flex flex-1 items-center justify-center bg-zinc-50 px-6 py-16">
         <div className="w-full max-w-sm">
           {nextPath?.startsWith("/invite/") && (
