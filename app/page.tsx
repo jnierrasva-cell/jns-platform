@@ -6,7 +6,7 @@ const features = [
   {
     icon: Users,
     title: "Contacts under your rules",
-    body: "Pipeline, notes, and history on each person. Email rules and unmatched keep junk from becoming "leads."",
+    body: "Pipeline, notes, and history on each person. Email rules and unmatched keep junk from becoming leads.",
   },
   {
     icon: CalendarDays,
