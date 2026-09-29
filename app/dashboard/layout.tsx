@@ -28,21 +28,25 @@ export default async function DashboardLayout({
 
   const hasMembership = (memberships?.length ?? 0) > 0;
 
+  // Best-effort approve / seed active org — never throw the page
   if (profile) {
-    await supabase
-      .from("profiles")
-      .update({
-        status: "approved",
-        account_type: profile.account_type ?? "individual",
-        active_organization_id:
-          profile.active_organization_id ??
-          memberships?.[0]?.organization_id ??
-          null,
-      })
-      .eq("id", user.id);
+    try {
+      await supabase
+        .from("profiles")
+        .update({
+          status: "approved",
+          account_type: profile.account_type ?? "individual",
+          active_organization_id:
+            profile.active_organization_id ??
+            memberships?.[0]?.organization_id ??
+            null,
+        })
+        .eq("id", user.id);
+    } catch {
+      // ignore
+    }
   }
 
-  // Not in any org yet → onboarding (NOT login)
   if (!hasMembership) {
     if (profile?.account_type === "business") {
       redirect("/onboarding/setup-business");
@@ -53,23 +57,26 @@ export default async function DashboardLayout({
   let active = await getActiveOrg();
 
   if (!active && memberships?.[0]) {
-    await supabase
-      .from("profiles")
-      .update({
-        active_organization_id: memberships[0].organization_id,
-        account_type: profile?.account_type ?? "individual",
-        status: "approved",
-      })
-      .eq("id", user.id);
+    try {
+      await supabase
+        .from("profiles")
+        .update({
+          active_organization_id: memberships[0].organization_id,
+          account_type: profile?.account_type ?? "individual",
+          status: "approved",
+        })
+        .eq("id", user.id);
+    } catch {
+      // ignore
+    }
     active = await getActiveOrg();
   }
 
-  // Still no active org but user is logged in → onboarding, never /login
   if (!active) {
     redirect("/onboarding/account-type");
   }
 
- const isPlatformAdmin =
+  const isPlatformAdmin =
     profile?.role === "super_admin" ||
     user.email?.toLowerCase() === "j.nierras.va@gmail.com";
   const isOrgManager = active.role === "ceo" || active.role === "admin";
