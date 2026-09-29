@@ -4,22 +4,46 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import type { Service } from "@/lib/mock-services";
 import { ServiceCard } from "@/components/service-card";
-import { setAutomationEnabled } from "@/app/dashboard/automation/actions";
+import {
+  setAutomationEnabled,
+  saveAutomationSettings,
+} from "@/app/dashboard/automation/actions";
+
+const DEFAULT_SMS_MESSAGE =
+  'Hi {{first_name}}, reminder: "{{title}}" is scheduled for {{when}}. Reply if you need to reschedule.';
 
 export function AutomationClient({
   organizationId,
   services,
   initialEnabledKeys,
+  initialSettings,
 }: {
   organizationId: string;
   services: Service[];
   initialEnabledKeys: string[];
+  initialSettings: Record<string, Record<string, unknown>>;
 }) {
   const [enabledKeys, setEnabledKeys] = useState<Set<string>>(
     () => new Set(initialEnabledKeys),
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const smsSettings = initialSettings["sms-reminders"] ?? {};
+  const emailSettings = initialSettings["email-auto-ack"] ?? {};
+
+  const [hoursBefore, setHoursBefore] = useState(
+    String(Number(smsSettings.hours_before) || 24),
+  );
+  const [smsMessage, setSmsMessage] = useState(
+    String(smsSettings.message || DEFAULT_SMS_MESSAGE),
+  );
+  const [excludeDomains, setExcludeDomains] = useState(
+    Array.isArray(emailSettings.exclude_domains)
+      ? (emailSettings.exclude_domains as string[]).join(", ")
+      : "",
+  );
+  const [settingsSaved, setSettingsSaved] = useState<string | null>(null);
 
   function toggleService(service: Service) {
     if (service.status === "coming_soon") return;
@@ -49,6 +73,51 @@ export function AutomationClient({
     });
   }
 
+  function saveSmsSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSettingsSaved(null);
+    const hours = Math.min(72, Math.max(1, Number(hoursBefore) || 24));
+    startTransition(async () => {
+      try {
+        await saveAutomationSettings({
+          organizationId,
+          serviceKey: "sms-reminders",
+          settings: {
+            hours_before: hours,
+            message: smsMessage.trim() || DEFAULT_SMS_MESSAGE,
+          },
+        });
+        setHoursBefore(String(hours));
+        setSettingsSaved("SMS reminder settings saved.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not save");
+      }
+    });
+  }
+
+  function saveEmailSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSettingsSaved(null);
+    const domains = excludeDomains
+      .split(/[,\s]+/)
+      .map((d) => d.toLowerCase().replace(/^@/, "").trim())
+      .filter(Boolean);
+    startTransition(async () => {
+      try {
+        await saveAutomationSettings({
+          organizationId,
+          serviceKey: "email-auto-ack",
+          settings: { exclude_domains: domains },
+        });
+        setSettingsSaved("Email auto-reply settings saved.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not save");
+      }
+    });
+  }
+
   const categories = useMemo(() => {
     const map = new Map<string, Service[]>();
     for (const service of services) {
@@ -64,7 +133,6 @@ export function AutomationClient({
   ).length;
   const availableCount = services.filter((s) => s.status !== "coming_soon")
     .length;
-  const autoAckOn = enabledKeys.has("email-auto-ack");
 
   return (
     <div>
@@ -72,97 +140,55 @@ export function AutomationClient({
         Automation
       </span>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-        Your systems
+        Follow-up under your control
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        {activeCount} of {availableCount} systems on
-        {isPending ? " · Saving…" : ""}. Coming soon items stay off until
-        ready.
+      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+        Turn on the jobs you need. Configure templates, rules, and messages —
+        no flowchart required. {activeCount} of {availableCount} live systems
+        on
+        {isPending ? " · Saving…" : ""}.
       </p>
 
-      {/* Email path — the product story */}
       <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
         <h2 className="text-sm font-medium text-zinc-900">
-          How inbound email works
+          How this stays simple
         </h2>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-600">
           <li>
-            <strong className="text-zinc-800">Connect Google</strong> under{" "}
-            <Link
-              href="/dashboard/integrations"
-              className="underline underline-offset-2"
-            >
+            Connect Google (and Twilio for SMS) under{" "}
+            <Link href="/dashboard/integrations" className="underline">
               Integrations
-            </Link>{" "}
-            so we can read new mail for this workspace.
+            </Link>
+            .
           </li>
           <li>
-            <strong className="text-zinc-800">Turn on Auto-Acknowledgment</strong>{" "}
-            below when you want instant replies.
-          </li>
-          <li>
-            <strong className="text-zinc-800">Edit the reply template</strong>{" "}
-            and set{" "}
-            <Link
-              href="/dashboard/email-rules"
-              className="underline underline-offset-2"
-            >
-              Email rules
+            Write{" "}
+            <Link href="/dashboard/templates" className="underline">
+              templates
+            </Link>
+            , then set{" "}
+            <Link href="/dashboard/email-rules" className="underline">
+              email rules
             </Link>{" "}
-            so only the right senders become contacts (newsletters stay out).
+            so only the right mail gets a reply or becomes a contact.
           </li>
           <li>
             Check{" "}
-            <Link
-              href="/dashboard/unmatched"
-              className="underline underline-offset-2"
-            >
+            <Link href="/dashboard/unmatched" className="underline">
               Unmatched
             </Link>{" "}
-            for messages that didn&apos;t match a rule — attach or ignore.
+            for everything else — nothing silent, nothing spammy.
           </li>
         </ol>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/dashboard/integrations"
-            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-          >
-            Integrations
-          </Link>
-          <Link
-            href="/dashboard/templates"
-            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-          >
-            Reply template
-          </Link>
-          <Link
-            href="/dashboard/email-rules"
-            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-          >
-            Email rules
-          </Link>
-          <Link
-            href="/dashboard/unmatched"
-            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-          >
-            Unmatched inbox
-          </Link>
-        </div>
-
-        <p className="mt-3 text-xs text-zinc-400">
-          Auto-ack is currently{" "}
-          <span className="font-medium text-zinc-600">
-            {autoAckOn ? "on" : "off"}
-          </span>{" "}
-          for this workspace.
-        </p>
       </section>
 
       {error && (
         <p className="mt-4 text-sm text-red-600" role="alert">
           {error}
         </p>
+      )}
+      {settingsSaved && (
+        <p className="mt-4 text-sm text-emerald-600">{settingsSaved}</p>
       )}
 
       <div className="mt-10 flex flex-col gap-10">
@@ -185,7 +211,7 @@ export function AutomationClient({
                         href="/dashboard/templates"
                         className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
                       >
-                        Edit reply template
+                        Templates
                       </Link>
                       <Link
                         href="/dashboard/email-rules"
@@ -206,7 +232,7 @@ export function AutomationClient({
                       href="/dashboard/integrations"
                       className="px-0.5 text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
                     >
-                      Twilio settings / test SMS
+                      Twilio in Integrations
                     </Link>
                   )}
                 </div>
@@ -215,6 +241,79 @@ export function AutomationClient({
           </section>
         ))}
       </div>
+
+      {/* Email settings */}
+      <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="text-sm font-medium text-zinc-900">
+          Inquiry auto-reply — settings
+        </h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Domains listed here never get an auto-reply (newsletters, no-reply,
+          etc.).
+        </p>
+        <form onSubmit={saveEmailSettings} className="mt-4 space-y-3">
+          <div>
+            <label className="text-sm text-zinc-700">
+              Exclude domains (comma-separated)
+            </label>
+            <input
+              value={excludeDomains}
+              onChange={(e) => setExcludeDomains(e.target.value)}
+              placeholder="noreply.com, mailchimp.com"
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+          >
+            Save email settings
+          </button>
+        </form>
+      </section>
+
+      {/* SMS settings */}
+      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="text-sm font-medium text-zinc-900">
+          Booking SMS reminders — settings
+        </h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Use {"{{first_name}}"}, {"{{title}}"}, {"{{when}}"}. Reminders send
+          once per booking.
+        </p>
+        <form onSubmit={saveSmsSettings} className="mt-4 space-y-3">
+          <div>
+            <label className="text-sm text-zinc-700">
+              Hours before appointment
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={72}
+              value={hoursBefore}
+              onChange={(e) => setHoursBefore(e.target.value)}
+              className="mt-1 w-32 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-zinc-700">Message</label>
+            <textarea
+              value={smsMessage}
+              onChange={(e) => setSmsMessage(e.target.value)}
+              rows={4}
+              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+          >
+            Save SMS settings
+          </button>
+        </form>
+      </section>
     </div>
   );
 }
