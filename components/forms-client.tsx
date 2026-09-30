@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   createIntakeForm,
   updateIntakeForm,
+  exportFormSubmissionsCsv,
 } from "@/app/dashboard/forms/actions";
 
 type FormRow = {
@@ -46,7 +46,6 @@ export function FormsClient({
   forms: FormRow[];
   submissions: Submission[];
 }) {
-  const router = useRouter();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -135,6 +134,31 @@ export function FormsClient({
     });
   }
 
+  function exportForm(form: FormRow) {
+    setError(null);
+    startTransition(async () => {
+      const result = await exportFormSubmissionsCsv({
+        organizationId,
+        formId: form.id,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const blob = new Blob([result.csv], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  }
+
   return (
     <div>
       <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
@@ -143,16 +167,16 @@ export function FormsClient({
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
         Intake forms
       </h1>
-        <p className="mt-1 max-w-xl text-sm text-zinc-500">
+      <p className="mt-1 max-w-xl text-sm text-zinc-500">
         Create a form, copy the public link, and review submissions. Export any
         form’s responses as CSV.
       </p>
       <p className="mt-3 max-w-xl rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-        <span className="font-medium">FYI:</span> This page loads the{" "}
-        <span className="font-medium">latest 50 submissions</span> for the
-        workspace. <span className="font-medium">Export CSV</span> uses that
-        same set, filtered to each form—not the full history if a form has more
-        than 50 responses overall.
+        <span className="font-medium">FYI:</span> The list below shows the{" "}
+        <span className="font-medium">latest 50</span> submissions for speed.{" "}
+        <span className="font-medium">Export CSV</span> downloads{" "}
+        <span className="font-medium">all responses for that form</span> from
+        the database.
       </p>
 
       <form
@@ -195,85 +219,101 @@ export function FormsClient({
             </p>
           ) : (
             <ul className="divide-y divide-zinc-100">
-              {forms.map((form) => (
-                <li key={form.id} className="px-4 py-4">
-                  {editingId === form.id ? (
-                    <div className="flex flex-col gap-3">
-                      <input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
-                      />
-                      <textarea
-                        value={editSuccess}
-                        onChange={(e) => setEditSuccess(e.target.value)}
-                        rows={2}
-                        placeholder="Success message after submit"
-                        className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => handleSaveEdit(form.id)}
-                          className="rounded-lg bg-[#0B132B] px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingId(null)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-600"
-                        >
-                          Cancel
-                        </button>
+              {forms.map((form) => {
+                const count = submissions.filter(
+                  (s) => s.form_id === form.id,
+                ).length;
+                return (
+                  <li key={form.id} className="px-4 py-4">
+                    {editingId === form.id ? (
+                      <div className="flex flex-col gap-3">
+                        <input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+                        />
+                        <textarea
+                          value={editSuccess}
+                          onChange={(e) => setEditSuccess(e.target.value)}
+                          rows={2}
+                          placeholder="Success message after submit"
+                          className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => handleSaveEdit(form.id)}
+                            className="rounded-lg bg-[#0B132B] px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(null)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="font-medium text-zinc-900">{form.name}</p>
-                        <p className="text-xs text-zinc-500">
-                          /forms/{orgSlug}/{form.slug} ·{" "}
-                          {form.is_published ? "Published" : "Unpublished"}
-                        </p>
+                    ) : (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium text-zinc-900">
+                            {form.name}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            /forms/{orgSlug}/{form.slug} ·{" "}
+                            {form.is_published ? "Published" : "Unpublished"} ·{" "}
+                            {count} in recent list
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <a
+                            href={publicUrl(form.slug)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          >
+                            Open
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => copyLink(form)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          >
+                            {copiedId === form.id ? "Copied" : "Copy link"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => exportForm(form)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+                          >
+                            Export CSV
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => startEdit(form)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => togglePublish(form)}
+                            className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+                          >
+                            {form.is_published ? "Unpublish" : "Publish"}
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <a
-                          href={publicUrl(form.slug)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-                        >
-                          Open
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => copyLink(form)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-                        >
-                          {copiedId === form.id ? "Copied" : "Copy link"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => startEdit(form)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => togglePublish(form)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
-                        >
-                          {form.is_published ? "Unpublish" : "Publish"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -283,6 +323,10 @@ export function FormsClient({
         <h2 className="text-sm font-medium text-zinc-900">
           Recent submissions
         </h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Latest 50 for this workspace. Use Export CSV on a form for the full
+          history of that form.
+        </p>
         <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {submissions.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-zinc-500">
