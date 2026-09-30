@@ -44,7 +44,6 @@ export async function createIntakeForm(input: {
     let slug = slugify(name) || "form";
     slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
-    // Service role avoids triggers/policies that hit auth.users
     const admin = createAdminClient();
     const { error } = await admin.from("intake_forms").insert({
       organization_id: input.organizationId,
@@ -114,11 +113,13 @@ export async function updateIntakeForm(input: {
   }
 }
 
-
 export async function exportFormSubmissionsCsv(input: {
   organizationId: string;
   formId: string;
-}): Promise<{ ok: true; csv: string; filename: string } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; csv: string; filename: string }
+  | { ok: false; error: string }
+> {
   try {
     await requireOrgMember(input.organizationId);
     const admin = createAdminClient();
@@ -176,6 +177,66 @@ export async function exportFormSubmissionsCsv(input: {
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Export failed",
+    };
+  }
+}
+
+export async function getSubmissionContactPreview(input: {
+  organizationId: string;
+  contactId: string;
+}): Promise<
+  | {
+      ok: true;
+      contact: {
+        id: string;
+        email: string | null;
+        first_name: string | null;
+        last_name: string | null;
+        phone: string | null;
+        status: string | null;
+        source: string | null;
+        tags: string[] | null;
+        created_at: string;
+      };
+      notes: { id: string; body: string; created_at: string }[];
+    }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireOrgMember(input.organizationId);
+    const admin = createAdminClient();
+
+    const { data: contact, error } = await admin
+      .from("contacts")
+      .select(
+        "id, email, first_name, last_name, phone, status, source, tags, created_at",
+      )
+      .eq("id", input.contactId)
+      .eq("organization_id", input.organizationId)
+      .maybeSingle();
+
+    if (error) return { ok: false, error: error.message };
+    if (!contact) return { ok: false, error: "Contact not found" };
+
+    const { data: notes } = await admin
+      .from("contact_notes")
+      .select("id, body, created_at")
+      .eq("contact_id", contact.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    return {
+      ok: true,
+      contact: {
+        ...contact,
+        tags: Array.isArray(contact.tags) ? contact.tags : null,
+      },
+      notes: notes ?? [],
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not load contact",
     };
   }
 }
