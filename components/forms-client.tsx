@@ -54,6 +54,7 @@ export function FormsClient({
   const [editSuccess, setEditSuccess] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [openSubmissionId, setOpenSubmissionId] = useState<string | null>(null);
 
   function publicUrl(slug: string) {
     if (typeof window !== "undefined") {
@@ -89,7 +90,6 @@ export function FormsClient({
         return;
       }
       setNewName("");
-      // Hard reload so the new row is always visible
       window.location.href = "/dashboard/forms";
     });
   }
@@ -115,7 +115,7 @@ export function FormsClient({
         return;
       }
       setEditingId(null);
-      router.refresh();
+      window.location.href = "/dashboard/forms";
     });
   }
 
@@ -131,7 +131,7 @@ export function FormsClient({
         setError(result.error);
         return;
       }
-      router.refresh();
+      window.location.href = "/dashboard/forms";
     });
   }
 
@@ -282,48 +282,61 @@ export function FormsClient({
               No submissions yet. Share a form link to start capturing leads.
             </p>
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-zinc-100 text-xs text-zinc-500">
-                <tr>
-                  <th className="px-4 py-3">When</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Form</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-b border-zinc-50 last:border-0"
-                  >
-                    <td className="px-4 py-3 text-zinc-500">
-                      {new Date(s.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-zinc-900">
-                      {s.name ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-600">
-                      {s.email ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-500">{formName(s)}</td>
-                    <td className="px-4 py-3 text-right">
-                      {s.contact_id ? (
-                        <Link
-                          href={`/dashboard/contacts/${s.contact_id}`}
-                          className="text-xs text-zinc-700 underline underline-offset-2"
+            <ul className="divide-y divide-zinc-100">
+              {submissions.map((s) => {
+                const open = openSubmissionId === s.id;
+                return (
+                  <li key={s.id} className="px-4 py-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-zinc-900">
+                          {s.name ?? "—"}
+                          <span className="ml-2 text-xs font-normal text-zinc-500">
+                            {formName(s)}
+                          </span>
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {new Date(s.created_at).toLocaleString()}
+                          {s.email ? ` · ${s.email}` : ""}
+                          {s.phone ? ` · ${s.phone}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenSubmissionId(open ? null : s.id)
+                          }
+                          className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
                         >
-                          Contact
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {open ? "Hide" : "View"}
+                        </button>
+                        {s.contact_id && (
+                          <Link
+                            href={`/dashboard/contacts/${s.contact_id}`}
+                            className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                          >
+                            Contact
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                    {open && (
+                      <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50 p-3 text-sm text-zinc-800">
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                          Message
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap leading-6">
+                          {s.message?.trim()
+                            ? s.message
+                            : "No message was included with this submission."}
+                        </p>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       </section>
