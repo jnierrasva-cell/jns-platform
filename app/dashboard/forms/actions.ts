@@ -33,26 +33,34 @@ function slugify(input: string) {
 export async function createIntakeForm(input: {
   organizationId: string;
   name: string;
-}) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { supabase } = await requireOrgMember(input.organizationId);
 
-  const name = input.name.trim();
-  if (!name) throw new Error("Form name is required");
+    const name = input.name.trim();
+    if (!name) return { ok: false, error: "Form name is required" };
 
-  let slug = slugify(name) || "form";
-  // ensure unique-ish slug
-  slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+    let slug = slugify(name) || "form";
+    slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
-  const { error } = await supabase.from("intake_forms").insert({
-    organization_id: input.organizationId,
-    name,
-    slug,
-    is_published: true,
-  });
+    const { error } = await supabase.from("intake_forms").insert({
+      organization_id: input.organizationId,
+      name,
+      slug,
+      is_published: true,
+      success_message: "Thanks — we received your submission and will be in touch.",
+    });
 
-  if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
 
-  revalidatePath("/dashboard/forms");
+    revalidatePath("/dashboard/forms");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not create form",
+    };
+  }
 }
 
 export async function updateIntakeForm(input: {
@@ -61,34 +69,42 @@ export async function updateIntakeForm(input: {
   name?: string;
   successMessage?: string;
   isPublished?: boolean;
-}) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { supabase } = await requireOrgMember(input.organizationId);
 
-  const updates: Record<string, string | boolean> = {
-    updated_at: new Date().toISOString(),
-  };
+    const updates: Record<string, string | boolean> = {
+      updated_at: new Date().toISOString(),
+    };
 
-  if (input.name !== undefined) {
-    const name = input.name.trim();
-    if (!name) throw new Error("Form name is required");
-    updates.name = name;
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      if (!name) return { ok: false, error: "Form name is required" };
+      updates.name = name;
+    }
+
+    if (input.successMessage !== undefined) {
+      updates.success_message = input.successMessage.trim();
+    }
+
+    if (input.isPublished !== undefined) {
+      updates.is_published = input.isPublished;
+    }
+
+    const { error } = await supabase
+      .from("intake_forms")
+      .update(updates)
+      .eq("id", input.formId)
+      .eq("organization_id", input.organizationId);
+
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/dashboard/forms");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not update form",
+    };
   }
-
-  if (input.successMessage !== undefined) {
-    updates.success_message = input.successMessage.trim();
-  }
-
-  if (input.isPublished !== undefined) {
-    updates.is_published = input.isPublished;
-  }
-
-  const { error } = await supabase
-    .from("intake_forms")
-    .update(updates)
-    .eq("id", input.formId)
-    .eq("organization_id", input.organizationId);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/dashboard/forms");
 }
