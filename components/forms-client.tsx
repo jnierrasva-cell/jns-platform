@@ -143,9 +143,16 @@ export function FormsClient({
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
         Intake forms
       </h1>
-      <p className="mt-1 max-w-xl text-sm text-zinc-500">
-        Create a form, copy the public link, and review submissions. Each
-        submission can become a contact in your workspace.
+        <p className="mt-1 max-w-xl text-sm text-zinc-500">
+        Create a form, copy the public link, and review submissions. Export any
+        form’s responses as CSV.
+      </p>
+      <p className="mt-3 max-w-xl rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+        <span className="font-medium">FYI:</span> This page loads the{" "}
+        <span className="font-medium">latest 50 submissions</span> for the
+        workspace. <span className="font-medium">Export CSV</span> uses that
+        same set, filtered to each form—not the full history if a form has more
+        than 50 responses overall.
       </p>
 
       <form
