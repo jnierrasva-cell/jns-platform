@@ -13,6 +13,7 @@ async function sendIntakeAutoAck(input: {
   toEmail: string;
   toName: string;
   businessName: string;
+  contactId: string;
 }) {
   try {
     const { accessToken } = await getValidGoogleAccessToken(
@@ -55,7 +56,7 @@ async function sendIntakeAutoAck(input: {
       .replace(/\//g, "_")
       .replace(/=+$/, "");
 
-    await fetch(
+    const sendRes = await fetch(
       "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
       {
         method: "POST",
@@ -66,6 +67,33 @@ async function sendIntakeAutoAck(input: {
         body: JSON.stringify({ raw: encoded }),
       },
     );
+
+    const admin = createAdminClient();
+    if (sendRes.ok) {
+      const sent = await sendRes.json().catch(() => ({}));
+      await admin.from("email_activity").insert({
+        organization_id: input.organizationId,
+        contact_id: input.contactId,
+        service_key: "intake_form_ack",
+        direction: "outbound",
+        from_email: fromEmail,
+        to_email: input.toEmail,
+        subject,
+        status: "sent",
+        gmail_message_id: sent.id ?? null,
+      });
+    } else {
+      await admin.from("email_activity").insert({
+        organization_id: input.organizationId,
+        contact_id: input.contactId,
+        service_key: "intake_form_ack",
+        direction: "outbound",
+        from_email: fromEmail,
+        to_email: input.toEmail,
+        subject,
+        status: "failed",
+      });
+    }
   } catch (err) {
     console.error("[intake-auto-ack]", err);
   }
@@ -144,7 +172,6 @@ export async function submitIntakeForm(input: {
     })
     .eq("id", contactId);
 
-  // New leads → first pipeline stage (only if unassigned)
   const firstStageId = await getFirstPipelineStageId(input.organizationId);
   await assignContactPipelineStage({
     contactId,
@@ -152,6 +179,16 @@ export async function submitIntakeForm(input: {
     stageId: firstStageId,
     onlyIfEmpty: true,
   });
+
+  // Message lives on the contact as a note (readable in CRM)
+  if (message) {
+    await supabase.from("contact_notes").insert({
+      organization_id: input.organizationId,
+      contact_id: contactId,
+      body: `Intake form “${form.name}”:\n\n${message}`,
+      created_by: null,
+    });
+  }
 
   const { error } = await supabase.from("intake_submissions").insert({
     form_id: input.formId,
@@ -178,6 +215,7 @@ export async function submitIntakeForm(input: {
     toEmail: email,
     toName: name,
     businessName,
+    contactId,
   });
 
   return { ok: true as const, contactId };
