@@ -89,7 +89,8 @@ export function FormsClient({
         return;
       }
       setNewName("");
-      router.refresh();
+      // Hard reload so the new row is always visible
+      window.location.href = "/dashboard/forms";
     });
   }
 
