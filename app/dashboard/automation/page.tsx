@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { AutomationClient } from "@/components/automation-client";
 import { mockServices } from "@/lib/mock-services";
@@ -37,12 +38,39 @@ export default async function AutomationPage() {
       (row.settings as Record<string, unknown>) ?? {};
   }
 
+  let recentActivity: {
+    id: string;
+    service_key: string | null;
+    direction: string | null;
+    status: string | null;
+    subject: string | null;
+    to_email: string | null;
+    from_email: string | null;
+    created_at: string;
+  }[] = [];
+
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("email_activity")
+      .select(
+        "id, service_key, direction, status, subject, to_email, from_email, created_at",
+      )
+      .eq("organization_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    recentActivity = data ?? [];
+  } catch {
+    recentActivity = [];
+  }
+
   return (
     <AutomationClient
       organizationId={orgId}
       services={mockServices}
       initialEnabledKeys={enabledKeys}
       initialSettings={settingsByKey}
+      recentActivity={recentActivity}
     />
   );
 }
