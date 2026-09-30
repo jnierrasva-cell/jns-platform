@@ -119,7 +119,7 @@ export default function LandingPage() {
               How it works
             </a>
           </nav>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
             <Link
               href="/login"
               className="hidden px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white sm:inline"
@@ -130,7 +130,7 @@ export default function LandingPage() {
               href="/login"
               className="inline-flex h-8 items-center rounded-lg bg-white px-3 text-sm font-medium text-[#0B132B] hover:bg-slate-100"
             >
-              Sign in
+              Get started
             </Link>
           </div>
         </div>
