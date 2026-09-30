@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createIntakeForm,
   updateIntakeForm,
@@ -31,7 +32,7 @@ type Submission = {
 function formName(s: Submission) {
   const f = s.intake_forms;
   if (!f) return "Form";
-  return Array.isArray(f) ? f[0]?.name ?? "Form" : f.name;
+  return Array.isArray(f) ? (f[0]?.name ?? "Form") : f.name;
 }
 
 export function FormsClient({
@@ -45,6 +46,7 @@ export function FormsClient({
   forms: FormRow[];
   submissions: Submission[];
 }) {
+  const router = useRouter();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -74,77 +76,83 @@ export function FormsClient({
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const name = newName.trim();
+    if (!name) {
+      setError("Form name is required");
+      return;
+    }
+
     startTransition(async () => {
-      try {
-        await createIntakeForm({ organizationId, name: newName });
-        setNewName("");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not create form");
+      const result = await createIntakeForm({ organizationId, name });
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      setNewName("");
+      router.refresh();
     });
   }
 
   function startEdit(form: FormRow) {
     setEditingId(form.id);
     setEditName(form.name);
-    setEditSuccess(form.success_message);
+    setEditSuccess(form.success_message ?? "");
     setError(null);
   }
 
   function handleSaveEdit(formId: string) {
     setError(null);
     startTransition(async () => {
-      try {
-        await updateIntakeForm({
-          organizationId,
-          formId,
-          name: editName,
-          successMessage: editSuccess,
-        });
-        setEditingId(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not save");
+      const result = await updateIntakeForm({
+        organizationId,
+        formId,
+        name: editName,
+        successMessage: editSuccess,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      setEditingId(null);
+      router.refresh();
     });
   }
 
   function togglePublish(form: FormRow) {
     setError(null);
     startTransition(async () => {
-      try {
-        await updateIntakeForm({
-          organizationId,
-          formId: form.id,
-          isPublished: !form.is_published,
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not update");
+      const result = await updateIntakeForm({
+        organizationId,
+        formId: form.id,
+        isPublished: !form.is_published,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      router.refresh();
     });
   }
 
   return (
-    <div className="pb-4">
-      <div className="border-b border-zinc-200 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-          Lead capture
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-          Intake forms
-        </h1>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-          Create forms, copy the public link, and review submissions. Each
-          submission becomes a contact in your CRM.
-        </p>
-      </div>
+    <div>
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+        Lead capture
+      </span>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+        Intake forms
+      </h1>
+      <p className="mt-1 max-w-xl text-sm text-zinc-500">
+        Create a form, copy the public link, and review submissions. Each
+        submission can become a contact in your workspace.
+      </p>
 
-      {/* Create */}
       <form
         onSubmit={handleCreate}
-        className="mt-8 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
+        className="mt-8 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 sm:flex-row sm:items-end"
       >
         <div className="flex-1">
-          <label className="text-sm font-medium text-slate-200">
+          <label className="text-sm font-medium text-zinc-700">
             New form name
           </label>
           <input
@@ -152,32 +160,33 @@ export function FormsClient({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="e.g. Website contact"
-            className="mt-2 w-full rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
+            className="mt-2 w-full rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
           />
         </div>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500 disabled:opacity-60"
+          className="rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
         >
           {isPending ? "Creating…" : "Create form"}
         </button>
       </form>
 
       {error && (
-        <p className="mt-3 text-sm text-red-600">{error}</p>
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          {error}
+        </p>
       )}
 
-      {/* Forms list */}
       <section className="mt-8">
         <h2 className="text-sm font-medium text-zinc-900">Your forms</h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {forms.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-slate-400">
+            <p className="px-4 py-10 text-center text-sm text-zinc-500">
               No forms yet. Create one above.
             </p>
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-zinc-100">
               {forms.map((form) => (
                 <li key={form.id} className="px-4 py-4">
                   {editingId === form.id ? (
@@ -185,28 +194,28 @@ export function FormsClient({
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                        className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
                       />
                       <textarea
                         value={editSuccess}
                         onChange={(e) => setEditSuccess(e.target.value)}
                         rows={2}
                         placeholder="Success message after submit"
-                        className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                        className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
                       />
                       <div className="flex gap-2">
                         <button
                           type="button"
                           disabled={isPending}
                           onClick={() => handleSaveEdit(form.id)}
-                          className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
+                          className="rounded-lg bg-[#0B132B] px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
                         >
                           Save
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-slate-300"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-600"
                         >
                           Cancel
                         </button>
@@ -216,18 +225,9 @@ export function FormsClient({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="font-medium text-zinc-900">{form.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          /forms/{orgSlug}/{form.slug}
-                          {" · "}
-                          <span
-                            className={
-                              form.is_published
-                                ? "text-emerald-700"
-                                : "text-amber-300"
-                            }
-                          >
-                            {form.is_published ? "Published" : "Unpublished"}
-                          </span>
+                        <p className="text-xs text-zinc-500">
+                          /forms/{orgSlug}/{form.slug} ·{" "}
+                          {form.is_published ? "Published" : "Unpublished"}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -235,21 +235,21 @@ export function FormsClient({
                           href={publicUrl(form.slug)}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-zinc-300 hover:text-zinc-900"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
                         >
                           Open
                         </a>
                         <button
                           type="button"
                           onClick={() => copyLink(form)}
-                          className="rounded-lg border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-100 transition hover:bg-blue-500/20"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
                         >
                           {copiedId === form.id ? "Copied" : "Copy link"}
                         </button>
                         <button
                           type="button"
                           onClick={() => startEdit(form)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-slate-300 transition hover:text-zinc-900"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
                         >
                           Edit
                         </button>
@@ -257,7 +257,7 @@ export function FormsClient({
                           type="button"
                           disabled={isPending}
                           onClick={() => togglePublish(form)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-slate-300 transition hover:text-zinc-900"
+                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
                         >
                           {form.is_published ? "Unpublish" : "Publish"}
                         </button>
@@ -271,17 +271,18 @@ export function FormsClient({
         </div>
       </section>
 
-      {/* Submissions */}
       <section className="mt-10">
-        <h2 className="text-sm font-medium text-zinc-900">Recent submissions</h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
+        <h2 className="text-sm font-medium text-zinc-900">
+          Recent submissions
+        </h2>
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {submissions.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-slate-400">
+            <p className="px-4 py-10 text-center text-sm text-zinc-500">
               No submissions yet. Share a form link to start capturing leads.
             </p>
           ) : (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-zinc-100 text-xs text-zinc-500">
                 <tr>
                   <th className="px-4 py-3">When</th>
                   <th className="px-4 py-3">Name</th>
@@ -294,23 +295,23 @@ export function FormsClient({
                 {submissions.map((s) => (
                   <tr
                     key={s.id}
-                    className="border-b border-white/5 last:border-0"
+                    className="border-b border-zinc-50 last:border-0"
                   >
-                    <td className="px-4 py-3 text-slate-400">
+                    <td className="px-4 py-3 text-zinc-500">
                       {new Date(s.created_at).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 font-medium text-zinc-900">
                       {s.name ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-slate-300">
+                    <td className="px-4 py-3 text-zinc-600">
                       {s.email ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-slate-400">{formName(s)}</td>
+                    <td className="px-4 py-3 text-zinc-500">{formName(s)}</td>
                     <td className="px-4 py-3 text-right">
                       {s.contact_id ? (
                         <Link
                           href={`/dashboard/contacts/${s.contact_id}`}
-                          className="text-xs text-cyan-700 underline underline-offset-2 hover:text-cyan-800"
+                          className="text-xs text-zinc-700 underline underline-offset-2"
                         >
                           Contact
                         </Link>
