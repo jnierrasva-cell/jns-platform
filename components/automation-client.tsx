@@ -12,16 +12,29 @@ import {
 const DEFAULT_SMS_MESSAGE =
   'Hi {{first_name}}, reminder: "{{title}}" is scheduled for {{when}}. Reply if you need to reschedule.';
 
+type ActivityRow = {
+  id: string;
+  service_key: string | null;
+  direction: string | null;
+  status: string | null;
+  subject: string | null;
+  to_email: string | null;
+  from_email: string | null;
+  created_at: string;
+};
+
 export function AutomationClient({
   organizationId,
   services,
   initialEnabledKeys,
   initialSettings,
+  recentActivity = [],
 }: {
   organizationId: string;
   services: Service[];
   initialEnabledKeys: string[];
   initialSettings: Record<string, Record<string, unknown>>;
+  recentActivity?: ActivityRow[];
 }) {
   const [enabledKeys, setEnabledKeys] = useState<Set<string>>(
     () => new Set(initialEnabledKeys),
@@ -144,8 +157,7 @@ export function AutomationClient({
       </h1>
       <p className="mt-1 max-w-2xl text-sm text-zinc-500">
         Turn on the jobs you need. Configure templates, rules, and messages —
-        no flowchart required. {activeCount} of {availableCount} live systems
-        on
+        no flowchart required. {activeCount} of {availableCount} live systems on
         {isPending ? " · Saving…" : ""}.
       </p>
 
@@ -242,7 +254,6 @@ export function AutomationClient({
         ))}
       </div>
 
-      {/* Email settings */}
       <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
         <h2 className="text-sm font-medium text-zinc-900">
           Inquiry auto-reply — settings
@@ -273,7 +284,6 @@ export function AutomationClient({
         </form>
       </section>
 
-      {/* SMS settings */}
       <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
         <h2 className="text-sm font-medium text-zinc-900">
           Booking SMS reminders — settings
@@ -313,6 +323,45 @@ export function AutomationClient({
             Save SMS settings
           </button>
         </form>
+      </section>
+
+      <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="text-sm font-medium text-zinc-900">
+          Recent email activity
+        </h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          What the workspace logged (auto-reply, form thank-you, outbound). Open
+          a contact for the same trail on their record.
+        </p>
+        {recentActivity.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            No activity yet. After Google is connected and a rule or form fires,
+            rows appear here.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-zinc-100">
+            {recentActivity.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium text-zinc-900">
+                    {row.subject || row.service_key || "Email event"}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {row.direction ?? "—"} · {row.status ?? "—"}
+                    {row.to_email ? ` · to ${row.to_email}` : ""}
+                    {row.from_email ? ` · from ${row.from_email}` : ""}
+                  </p>
+                </div>
+                <p className="shrink-0 text-xs text-zinc-400">
+                  {new Date(row.created_at).toLocaleString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
