@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireOrgMember(organizationId: string) {
   const supabase = await createClient();
@@ -35,7 +36,7 @@ export async function createIntakeForm(input: {
   name: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    const { supabase } = await requireOrgMember(input.organizationId);
+    await requireOrgMember(input.organizationId);
 
     const name = input.name.trim();
     if (!name) return { ok: false, error: "Form name is required" };
@@ -43,12 +44,15 @@ export async function createIntakeForm(input: {
     let slug = slugify(name) || "form";
     slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
-    const { error } = await supabase.from("intake_forms").insert({
+    // Service role avoids triggers/policies that hit auth.users
+    const admin = createAdminClient();
+    const { error } = await admin.from("intake_forms").insert({
       organization_id: input.organizationId,
       name,
       slug,
       is_published: true,
-      success_message: "Thanks — we received your submission and will be in touch.",
+      success_message:
+        "Thanks — we received your submission and will be in touch.",
     });
 
     if (error) return { ok: false, error: error.message };
@@ -71,7 +75,7 @@ export async function updateIntakeForm(input: {
   isPublished?: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    const { supabase } = await requireOrgMember(input.organizationId);
+    await requireOrgMember(input.organizationId);
 
     const updates: Record<string, string | boolean> = {
       updated_at: new Date().toISOString(),
@@ -91,7 +95,8 @@ export async function updateIntakeForm(input: {
       updates.is_published = input.isPublished;
     }
 
-    const { error } = await supabase
+    const admin = createAdminClient();
+    const { error } = await admin
       .from("intake_forms")
       .update(updates)
       .eq("id", input.formId)
