@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { syncArketaLocationById } from "@/lib/arketa/sync";
+import {
+  syncArketaLocationById,
+  clearAndResyncArketaLocation,
+} from "@/lib/arketa/sync";
 
 const ARKETA_BASE =
   "https://us-central1-sutra-prod.cloudfunctions.net/partnerApi/v0";
@@ -31,7 +34,6 @@ async function requireOrgManager(organizationId: string) {
   return { supabase, user };
 }
 
-/** Lines like: Jane Smith = jane@studio.com */
 function parseInstructorMap(text?: string): Record<string, string> {
   const map: Record<string, string> = {};
   if (!text?.trim()) return map;
@@ -46,7 +48,6 @@ function parseInstructorMap(text?: string): Record<string, string> {
   return map;
 }
 
-/** Verify Partner ID + API key against the real classes endpoint. */
 async function verifyArketaCredentials(
   partnerId: string,
   apiKey: string,
@@ -258,6 +259,9 @@ export async function syncArketaLocation(
       ok: false,
       error: err instanceof Error ? err.message : "Sync failed",
     };
+  }
+}
+
 export async function clearAndResyncArketaLocationAction(
   organizationId: string,
   locationId: string,
@@ -286,9 +290,6 @@ export async function clearAndResyncArketaLocationAction(
 
     if (!loc) return { ok: false, error: "Location not found" };
 
-    const { clearAndResyncArketaLocation } = await import(
-      "@/lib/arketa/sync"
-    );
     const result = await clearAndResyncArketaLocation(locationId);
     revalidatePath("/dashboard/integrations");
 
