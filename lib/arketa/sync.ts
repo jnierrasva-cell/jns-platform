@@ -7,6 +7,8 @@ import {
   createGoogleCalendarEvent,
   updateGoogleCalendarEvent,
   deleteGoogleCalendarEvent,
+  findGoogleEventByArketaClassId,
+  deleteJnsArketaEventsInWindow,
 } from "@/lib/google/calendar";
 
 export type SyncLocationResult = {
@@ -19,7 +21,6 @@ export type SyncLocationResult = {
   error?: string;
 };
 
-/** Manual Sync now: keep the window short so Vercel does not time out. */
 const SYNC_DAYS_BACK = 1;
 const SYNC_DAYS_FORWARD = 21;
 const MAX_CLASSES_PER_RUN = 80;
@@ -161,7 +162,36 @@ export async function syncArketaLocationById(
       seen.add(cls.id);
 
       const inactive = Boolean(cls.canceled || cls.deleted);
-      const mapped = mapByClassId.get(cls.id);
+      let mapped = mapByClassId.get(cls.id) ?? null;
+
+      // Recover map if event exists on Google but row was lost
+      if (!mapped) {
+        const existingId = await findGoogleEventByArketaClassId({
+          organizationId: loc.organization_id,
+          calendarId,
+          arketaClassId: cls.id,
+        });
+        if (existingId) {
+          const { data: inserted } = await admin
+            .from("arketa_class_events")
+            .insert({
+              organization_id: loc.organization_id,
+              arketa_location_id: loc.id,
+              arketa_class_id: cls.id,
+              google_event_id: existingId,
+              google_calendar_id: calendarId,
+              last_start_at: cls.start_time ?? null,
+              last_title: cls.name ?? null,
+              updated_at: new Date().toISOString(),
+            })
+            .select("id, arketa_class_id, google_event_id")
+            .maybeSingle();
+          if (inserted) {
+            mapped = inserted;
+            mapByClassId.set(cls.id, inserted);
+          }
+        }
+      }
 
       if (inactive) {
         if (mapped) {
@@ -210,6 +240,7 @@ export async function syncArketaLocationById(
           endsAt,
           description,
           attendeeEmails: guestEmails,
+          arketaClassId: cls.id,
         });
         if (!upd.ok) {
           if (!firstGoogleError && upd.error) firstGoogleError = upd.error;
@@ -235,6 +266,7 @@ export async function syncArketaLocationById(
           endsAt,
           description,
           attendeeEmails: guestEmails,
+          arketaClassId: cls.id,
         });
         if (!created.eventId) {
           if (!firstGoogleError && created.error) {
@@ -303,6 +335,77 @@ export async function syncArketaLocationById(
 
     return { ...base, error: message };
   }
+}
+
+/**
+ * Wipe JNS Arketa events on the calendar + mapping rows, then sync once.
+ * Use once to clear old duplicates before the tag system.
+ */
+export async function clearAndResyncArketaLocation(
+  arketaLocationId: string,
+): Promise<SyncLocationResult & { cleaned: number }> {
+  const admin = createAdminClient();
+
+  const { data: loc } = await admin
+    .from("arketa_locations")
+    .select("id, organization_id, label, google_calendar_id")
+    .eq("id", arketaLocationId)
+    .single();
+
+  if (!loc?.google_calendar_id) {
+    return {
+      locationId: arketaLocationId,
+      label: loc?.label ?? "?",
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      skipped: 0,
+      cleaned: 0,
+      error: "Location or calendar missing",
+    };
+  }
+
+  const now = new Date();
+  const windowStart = new Date(
+    now.getTime() - SYNC_DAYS_BACK * 24 * 60 * 60 * 1000,
+  );
+  const windowEnd = new Date(
+    now.getTime() + SYNC_DAYS_FORWARD * 24 * 60 * 60 * 1000,
+  );
+
+  // Delete mapped Google events
+  const { data: maps } = await admin
+    .from("arketa_class_events")
+    .select("id, google_event_id")
+    .eq("arketa_location_id", loc.id);
+
+  for (const m of maps ?? []) {
+    await deleteGoogleCalendarEvent({
+      organizationId: loc.organization_id,
+      calendarId: loc.google_calendar_id,
+      eventId: m.google_event_id,
+    });
+  }
+
+  await admin
+    .from("arketa_class_events")
+    .delete()
+    .eq("arketa_location_id", loc.id);
+
+  // Delete unmapped old duplicates (description or tag)
+  const cleaned = await deleteJnsArketaEventsInWindow({
+    organizationId: loc.organization_id,
+    calendarId: loc.google_calendar_id,
+    timeMinIso: windowStart.toISOString(),
+    timeMaxIso: windowEnd.toISOString(),
+  });
+
+  const result = await syncArketaLocationById(arketaLocationId);
+  return {
+    ...result,
+    cleaned: cleaned.deleted,
+    error: result.error || cleaned.error,
+  };
 }
 
 export async function syncAllArketaLocations() {
