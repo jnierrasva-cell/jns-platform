@@ -5,12 +5,19 @@ export type ArketaClass = {
   id: string;
   name: string;
   start_time: string;
-  duration: number; // minutes
+  duration: number;
   location_id?: string;
   canceled?: boolean;
   deleted?: boolean;
   instructor_name?: string | null;
   description?: string | null;
+  /** Not in official docs — capture if API sends them */
+  instructor_email?: string | null;
+  instructor_emails?: string[] | null;
+  instructors?: Array<{
+    name?: string;
+    email?: string;
+  }> | null;
 };
 
 type ListClassesResponse = {
@@ -24,7 +31,7 @@ type ListClassesResponse = {
 export async function fetchArketaClasses(input: {
   partnerId: string;
   apiKey: string;
-  startDate: string; // YYYY-MM-DD or ISO
+  startDate: string;
   endDate: string;
 }): Promise<ArketaClass[]> {
   const all: ArketaClass[] = [];
@@ -64,4 +71,32 @@ export async function fetchArketaClasses(input: {
   } while (startAfter && guard < 50);
 
   return all;
+}
+
+/** Resolve guest emails: API fields first, then name→email map. */
+export function resolveInstructorEmails(
+  cls: ArketaClass,
+  nameToEmail: Record<string, string>,
+): string[] {
+  const emails = new Set<string>();
+
+  const push = (raw?: string | null) => {
+    const e = raw?.trim().toLowerCase();
+    if (e && e.includes("@")) emails.add(e);
+  };
+
+  push(cls.instructor_email);
+  for (const e of cls.instructor_emails ?? []) push(e);
+  for (const inst of cls.instructors ?? []) push(inst.email);
+
+  const name = cls.instructor_name?.trim();
+  if (name) {
+    const key = name.toLowerCase();
+    if (nameToEmail[key]) push(nameToEmail[key]);
+    // also try without extra spaces
+    const compact = key.replace(/\s+/g, " ");
+    if (nameToEmail[compact]) push(nameToEmail[compact]);
+  }
+
+  return Array.from(emails);
 }
