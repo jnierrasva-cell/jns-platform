@@ -56,12 +56,11 @@ export function ArketaConnectCard({
         apiKey,
         googleCalendarId: calendarId,
       });
-      if (!result.ok) {
+      if (result.ok) {
+        window.location.href = "/dashboard/integrations";
+      } else {
         setError(result.error);
-        return;
       }
-      // Avoid React #441 from revalidate + transition — hard refresh
-      window.location.href = "/dashboard/integrations";
     });
   }
 
@@ -70,11 +69,11 @@ export function ArketaConnectCard({
     setSuccess(null);
     startTransition(async () => {
       const result = await deleteArketaLocation(organizationId, id);
-      if (!result.ok) {
+      if (result.ok) {
+        window.location.href = "/dashboard/integrations";
+      } else {
         setError(result.error);
-        return;
       }
-      window.location.href = "/dashboard/integrations";
     });
   }
 
@@ -83,11 +82,11 @@ export function ArketaConnectCard({
     setSuccess(null);
     startTransition(async () => {
       const result = await testArketaLocation(organizationId, id);
-      if (!result.ok) {
+      if (result.ok) {
+        setSuccess(result.message);
+      } else {
         setError(result.error);
-        return;
       }
-      setSuccess(result.message);
     });
   }
 
@@ -96,13 +95,13 @@ export function ArketaConnectCard({
     setSuccess(null);
     startTransition(async () => {
       const result = await syncArketaLocation(organizationId, id);
-      if (!result.ok) {
+      if (result.ok) {
+        setSuccess(
+          `${result.label}: created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
+        );
+      } else {
         setError(result.error);
-        return;
       }
-      setSuccess(
-        `${result.label}: created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
-      );
     });
   }
 
