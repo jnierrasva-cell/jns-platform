@@ -49,19 +49,19 @@ export function ArketaConnectCard({
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      try {
-        await saveArketaLocation({
-          organizationId,
-          label,
-          partnerId,
-          apiKey,
-          googleCalendarId: calendarId,
-        });
-        setSuccess("Location saved and credentials verified.");
-        resetForm();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not save");
+      const result = await saveArketaLocation({
+        organizationId,
+        label,
+        partnerId,
+        apiKey,
+        googleCalendarId: calendarId,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      // Avoid React #441 from revalidate + transition — hard refresh
+      window.location.href = "/dashboard/integrations";
     });
   }
 
@@ -69,12 +69,12 @@ export function ArketaConnectCard({
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      try {
-        await deleteArketaLocation(organizationId, id);
-        setSuccess("Location removed.");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not delete");
+      const result = await deleteArketaLocation(organizationId, id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      window.location.href = "/dashboard/integrations";
     });
   }
 
@@ -82,12 +82,12 @@ export function ArketaConnectCard({
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      try {
-        const result = await testArketaLocation(organizationId, id);
-        setSuccess(result.message);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Test failed");
+      const result = await testArketaLocation(organizationId, id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      setSuccess(result.message);
     });
   }
 
@@ -95,14 +95,14 @@ export function ArketaConnectCard({
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      try {
-        const result = await syncArketaLocation(organizationId, id);
-        setSuccess(
-          `${result.label}: created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Sync failed");
+      const result = await syncArketaLocation(organizationId, id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      setSuccess(
+        `${result.label}: created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
+      );
     });
   }
 
@@ -112,9 +112,7 @@ export function ArketaConnectCard({
     <div className="rounded-xl border border-zinc-200 bg-white p-6 lg:col-span-2">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-zinc-900">
-            Arketa
-          </h2>
+          <h2 className="text-base font-semibold text-zinc-900">Arketa</h2>
           <p className="mt-1 text-sm text-zinc-500">
             Sync class schedules from Arketa into Google Calendar (one-way).
             Each location uses its own Partner API credentials and calendar.
@@ -140,7 +138,9 @@ export function ArketaConnectCard({
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">{loc.label}</p>
+                  <p className="text-sm font-medium text-zinc-900">
+                    {loc.label}
+                  </p>
                   <p className="mt-1 text-xs text-zinc-500">
                     Partner ID: {loc.partner_id}
                   </p>
@@ -155,32 +155,34 @@ export function ArketaConnectCard({
                     {loc.last_synced_at
                       ? new Date(loc.last_synced_at).toLocaleString()
                       : "Never"}
-                    {loc.last_sync_status ? ` · ${loc.last_sync_status}` : ""}
+                    {loc.last_sync_status
+                      ? ` · ${loc.last_sync_status}`
+                      : ""}
                   </p>
                 </div>
                 {canManage && (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleTest(loc.id)}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+                    >
+                      Test
+                    </button>
                     <button
                       type="button"
                       disabled={isPending || !loc.google_calendar_id}
                       onClick={() => handleSync(loc.id)}
-                      className="text-xs font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-700 disabled:opacity-40"
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
                     >
                       Sync now
                     </button>
                     <button
                       type="button"
                       disabled={isPending}
-                      onClick={() => handleTest(loc.id)}
-                      className="text-xs text-cyan-700 underline underline-offset-2 hover:text-cyan-800 disabled:opacity-50"
-                    >
-                      Test API
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isPending}
                       onClick={() => handleDelete(loc.id)}
-                      className="text-xs text-red-600 underline underline-offset-2 hover:text-red-600 disabled:opacity-50"
+                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
                     >
                       Remove
                     </button>
@@ -198,7 +200,7 @@ export function ArketaConnectCard({
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
             >
               Add Arketa location
             </button>
@@ -209,14 +211,14 @@ export function ArketaConnectCard({
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="Label (e.g. Upland)"
-                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
                 required
                 value={partnerId}
                 onChange={(e) => setPartnerId(e.target.value)}
                 placeholder="Partner ID"
-                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
                 required
@@ -224,13 +226,13 @@ export function ArketaConnectCard({
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="API key"
-                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
                 value={calendarId}
                 onChange={(e) => setCalendarId(e.target.value)}
                 placeholder="Google Calendar ID"
-                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <div className="flex flex-wrap gap-3">
                 <button
@@ -258,8 +260,14 @@ export function ArketaConnectCard({
         </p>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      {success && <p className="mt-3 text-sm text-emerald-600">{success}</p>}
+      {error && (
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p className="mt-3 text-sm text-emerald-600">{success}</p>
+      )}
     </div>
   );
 }
