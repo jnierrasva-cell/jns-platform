@@ -7,8 +7,9 @@ type CreateCalendarEventInput = {
   startsAt: string;
   endsAt?: string | null;
   description?: string | null;
+  /** @deprecated use attendeeEmails */
   attendeeEmail?: string | null;
-  /** Defaults to "primary" */
+  attendeeEmails?: string[] | null;
   calendarId?: string;
 };
 
@@ -16,6 +17,23 @@ function calendarEventsUrl(calendarId: string, eventId?: string) {
   const cal = encodeURIComponent(calendarId || "primary");
   const base = `https://www.googleapis.com/calendar/v3/calendars/${cal}/events`;
   return eventId ? `${base}/${encodeURIComponent(eventId)}` : base;
+}
+
+function collectAttendees(input: {
+  attendeeEmail?: string | null;
+  attendeeEmails?: string[] | null;
+}) {
+  const set = new Set<string>();
+  if (input.attendeeEmail?.includes("@")) {
+    set.add(input.attendeeEmail.trim().toLowerCase());
+  }
+  for (const e of input.attendeeEmails ?? []) {
+    if (e?.includes("@")) set.add(e.trim().toLowerCase());
+  }
+  return Array.from(set).map((email) => ({
+    email,
+    responseStatus: "needsAction" as const,
+  }));
 }
 
 export async function createGoogleCalendarEvent(
@@ -39,6 +57,8 @@ export async function createGoogleCalendarEvent(
       return { eventId: null, error: "Invalid end time" };
     }
 
+    const attendees = collectAttendees(input);
+
     const body: Record<string, unknown> = {
       summary: input.title,
       description: input.description ?? undefined,
@@ -52,19 +72,12 @@ export async function createGoogleCalendarEvent(
       },
     };
 
-    if (input.attendeeEmail) {
-      body.attendees = [
-        {
-          email: input.attendeeEmail,
-          responseStatus: "needsAction",
-        },
-      ];
+    if (attendees.length > 0) {
+      body.attendees = attendees;
     }
 
-    const url = new URL(
-      calendarEventsUrl(input.calendarId || "primary"),
-    );
-    if (input.attendeeEmail) {
+    const url = new URL(calendarEventsUrl(input.calendarId || "primary"));
+    if (attendees.length > 0) {
       url.searchParams.set("sendUpdates", "all");
     }
 
@@ -103,6 +116,7 @@ export async function updateGoogleCalendarEvent(input: {
   startsAt: string;
   endsAt: string;
   description?: string | null;
+  attendeeEmails?: string[] | null;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     const { accessToken } = await getValidGoogleAccessToken(
@@ -115,22 +129,35 @@ export async function updateGoogleCalendarEvent(input: {
       return { ok: false, error: "Invalid time" };
     }
 
-    const res = await fetch(
+    const attendees = collectAttendees({
+      attendeeEmails: input.attendeeEmails,
+    });
+
+    const body: Record<string, unknown> = {
+      summary: input.title,
+      description: input.description ?? undefined,
+      start: { dateTime: start.toISOString(), timeZone: "UTC" },
+      end: { dateTime: end.toISOString(), timeZone: "UTC" },
+    };
+    if (attendees.length > 0) {
+      body.attendees = attendees;
+    }
+
+    const url = new URL(
       calendarEventsUrl(input.calendarId, input.eventId),
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          summary: input.title,
-          description: input.description ?? undefined,
-          start: { dateTime: start.toISOString(), timeZone: "UTC" },
-          end: { dateTime: end.toISOString(), timeZone: "UTC" },
-        }),
-      },
     );
+    if (attendees.length > 0) {
+      url.searchParams.set("sendUpdates", "all");
+    }
+
+    const res = await fetch(url.toString(), {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!res.ok) {
       const text = await res.text();
@@ -163,7 +190,6 @@ export async function deleteGoogleCalendarEvent(input: {
       },
     );
 
-    // 410 Gone / 404 = already deleted
     if (!res.ok && res.status !== 404 && res.status !== 410) {
       const text = await res.text();
       return { ok: false, error: `Google ${res.status}: ${text.slice(0, 200)}` };
