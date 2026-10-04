@@ -16,13 +16,20 @@ export type SyncLocationResult = {
   error?: string;
 };
 
+/** Manual Sync now: keep the window short so Vercel does not time out. */
+const SYNC_DAYS_BACK = 1;
+const SYNC_DAYS_FORWARD = 21;
+const MAX_CLASSES_PER_RUN = 80;
+
 function toDateParam(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
 function classEndIso(startIso: string, durationMinutes: number) {
   const start = new Date(startIso);
-  const end = new Date(start.getTime() + (durationMinutes || 60) * 60 * 1000);
+  const end = new Date(
+    start.getTime() + (durationMinutes || 60) * 60 * 1000,
+  );
   return end.toISOString();
 }
 
@@ -76,16 +83,49 @@ export async function syncArketaLocationById(
 
   const calendarId = loc.google_calendar_id.trim();
   const now = new Date();
-  const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const windowEnd = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+  const windowStart = new Date(
+    now.getTime() - SYNC_DAYS_BACK * 24 * 60 * 60 * 1000,
+  );
+  const windowEnd = new Date(
+    now.getTime() + SYNC_DAYS_FORWARD * 24 * 60 * 60 * 1000,
+  );
+
+  let firstGoogleError: string | null = null;
 
   try {
-    const classes = await fetchArketaClasses({
+    // Confirm Google is connected for this org before looping classes
+    try {
+      const { getValidGoogleAccessToken } = await import(
+        "@/lib/google/token"
+      );
+      await getValidGoogleAccessToken(loc.organization_id);
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Google is not connected for this workspace";
+      await admin
+        .from("arketa_locations")
+        .update({
+          last_sync_status: "error",
+          last_sync_error: msg.slice(0, 500),
+          last_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", loc.id);
+      return { ...base, error: msg };
+    }
+
+    let classes = await fetchArketaClasses({
       partnerId: loc.partner_id,
       apiKey: loc.api_key,
       startDate: toDateParam(windowStart),
       endDate: toDateParam(windowEnd),
     });
+
+    if (classes.length > MAX_CLASSES_PER_RUN) {
+      classes = classes.slice(0, MAX_CLASSES_PER_RUN);
+    }
 
     const { data: existingMaps } = await admin
       .from("arketa_class_events")
@@ -126,6 +166,11 @@ export async function syncArketaLocationById(
         continue;
       }
 
+      if (!cls.start_time) {
+        base.skipped += 1;
+        continue;
+      }
+
       const title = cls.name || "Class";
       const startsAt = cls.start_time;
       const endsAt = classEndIso(cls.start_time, cls.duration);
@@ -148,6 +193,7 @@ export async function syncArketaLocationById(
           description,
         });
         if (!upd.ok) {
+          if (!firstGoogleError && upd.error) firstGoogleError = upd.error;
           base.skipped += 1;
           continue;
         }
@@ -171,6 +217,9 @@ export async function syncArketaLocationById(
           description,
         });
         if (!created.eventId) {
+          if (!firstGoogleError && created.error) {
+            firstGoogleError = created.error;
+          }
           base.skipped += 1;
           continue;
         }
@@ -188,9 +237,12 @@ export async function syncArketaLocationById(
       }
     }
 
-    // Mapped classes no longer returned in window → remove from Google
+    // Only remove maps that were in this window and disappeared (not the whole history)
     for (const [classId, mapped] of mapByClassId) {
       if (seen.has(classId)) continue;
+      // Skip aggressive deletes when we capped the class list
+      if (classes.length >= MAX_CLASSES_PER_RUN) continue;
+
       await deleteGoogleCalendarEvent({
         organizationId: loc.organization_id,
         calendarId,
@@ -200,15 +252,23 @@ export async function syncArketaLocationById(
       base.deleted += 1;
     }
 
+    const statusNote = firstGoogleError
+      ? `partial: ${firstGoogleError}`.slice(0, 500)
+      : null;
+
     await admin
       .from("arketa_locations")
       .update({
         last_synced_at: new Date().toISOString(),
-        last_sync_status: "ok",
-        last_sync_error: null,
+        last_sync_status: firstGoogleError ? "error" : "ok",
+        last_sync_error: statusNote,
         updated_at: new Date().toISOString(),
       })
       .eq("id", loc.id);
+
+    if (firstGoogleError && base.created === 0 && base.updated === 0) {
+      return { ...base, error: firstGoogleError };
+    }
 
     return base;
   } catch (err) {
