@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { disconnectGoogle } from "@/app/dashboard/integrations/actions";
 import { TwilioConnectCard } from "@/components/twilio-connect-card";
@@ -19,20 +20,23 @@ export default async function IntegrationsPage() {
   const orgId = active.organizationId;
   const canManage = active.role === "ceo" || active.role === "admin";
 
-  const { data: googleConnection } = await supabase
+  // Admin reads after membership check — avoids empty lists when RLS hides rows
+  const admin = createAdminClient();
+
+  const { data: googleConnection } = await admin
     .from("connections")
     .select("connected_email")
     .eq("organization_id", orgId)
     .eq("provider", "google")
     .maybeSingle();
 
-  const { data: twilio } = await supabase
+  const { data: twilio } = await admin
     .from("twilio_connections")
     .select("from_number")
     .eq("organization_id", orgId)
     .maybeSingle();
 
-  const { data: arketaLocations } = await supabase
+  const { data: arketaLocations } = await admin
     .from("arketa_locations")
     .select(
       "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status",
