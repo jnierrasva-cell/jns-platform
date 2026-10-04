@@ -31,6 +31,21 @@ async function requireOrgManager(organizationId: string) {
   return { supabase, user };
 }
 
+/** Lines like: Jane Smith = jane@studio.com */
+function parseInstructorMap(text?: string): Record<string, string> {
+  const map: Record<string, string> = {};
+  if (!text?.trim()) return map;
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const m = trimmed.match(/^(.+?)\s*[=:]\s*(\S+@\S+)\s*$/);
+    if (m) {
+      map[m[1].trim().toLowerCase()] = m[2].trim().toLowerCase();
+    }
+  }
+  return map;
+}
+
 /** Verify Partner ID + API key against the real classes endpoint. */
 async function verifyArketaCredentials(
   partnerId: string,
@@ -57,7 +72,6 @@ async function verifyArketaCredentials(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    // Strip HTML so the UI stays readable
     const clean = text
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
@@ -82,6 +96,7 @@ export async function saveArketaLocation(input: {
   partnerId: string;
   apiKey: string;
   googleCalendarId?: string;
+  instructorEmailMapText?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await requireOrgManager(input.organizationId);
@@ -90,6 +105,9 @@ export async function saveArketaLocation(input: {
     const partnerId = input.partnerId.trim();
     const apiKey = input.apiKey.trim();
     const googleCalendarId = input.googleCalendarId?.trim() || null;
+    const instructor_email_map = parseInstructorMap(
+      input.instructorEmailMapText,
+    );
 
     if (!label) return { ok: false, error: "Label is required" };
     if (!partnerId) return { ok: false, error: "Partner ID is required" };
@@ -104,6 +122,7 @@ export async function saveArketaLocation(input: {
       partner_id: partnerId,
       api_key: apiKey,
       google_calendar_id: googleCalendarId,
+      instructor_email_map,
       updated_at: new Date().toISOString(),
     };
 
