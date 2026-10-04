@@ -31,26 +31,48 @@ async function requireOrgManager(organizationId: string) {
   return { supabase, user };
 }
 
-async function verifyArketaCredentials(partnerId: string, apiKey: string) {
-  const res = await fetch(
-    `${ARKETA_BASE}/locations?partnerId=${encodeURIComponent(partnerId)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "X-API-Key": apiKey,
-      },
-      cache: "no-store",
-    },
+/** Verify Partner ID + API key against the real classes endpoint. */
+async function verifyArketaCredentials(
+  partnerId: string,
+  apiKey: string,
+): Promise<{ classCount: number }> {
+  const start = new Date();
+  const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const startDate = start.toISOString().slice(0, 10);
+  const endDate = end.toISOString().slice(0, 10);
+
+  const url = new URL(
+    `${ARKETA_BASE}/${encodeURIComponent(partnerId)}/classes`,
   );
+  url.searchParams.set("start_date", startDate);
+  url.searchParams.set("end_date", endDate);
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "X-API-Key": apiKey,
+    },
+    cache: "no-store",
+  });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    // Strip HTML so the UI stays readable
+    const clean = text
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160);
     throw new Error(
-      `Arketa rejected these credentials (${res.status}). Check Partner ID and API key. ${text.slice(0, 120)}`,
+      `Arketa rejected these credentials (${res.status}). Check Partner ID and API key.${clean ? ` ${clean}` : ""}`,
     );
   }
 
-  return res.json().catch(() => ({}));
+  const json = (await res.json().catch(() => ({}))) as {
+    items?: unknown[];
+  };
+  const classCount = Array.isArray(json.items) ? json.items.length : 0;
+  return { classCount };
 }
 
 export async function saveArketaLocation(input: {
@@ -136,10 +158,7 @@ export async function deleteArketaLocation(
 export async function testArketaLocation(
   organizationId: string,
   locationId: string,
-): Promise<
-  | { ok: true; message: string }
-  | { ok: false; error: string }
-> {
+): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
   try {
     await requireOrgManager(organizationId);
     const admin = createAdminClient();
@@ -153,12 +172,14 @@ export async function testArketaLocation(
 
     if (error || !data) return { ok: false, error: "Location not found" };
 
-    const json = await verifyArketaCredentials(data.partner_id, data.api_key);
-    const count = Array.isArray(json?.items) ? json.items.length : 0;
+    const { classCount } = await verifyArketaCredentials(
+      data.partner_id,
+      data.api_key,
+    );
 
     return {
       ok: true,
-      message: `Credentials work. Arketa returned ${count} location(s).`,
+      message: `Credentials work for “${data.label}”. Arketa returned ${classCount} class(es) in the next 7 days.`,
     };
   } catch (err) {
     return {
