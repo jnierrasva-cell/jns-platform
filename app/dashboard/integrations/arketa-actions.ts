@@ -258,5 +258,57 @@ export async function syncArketaLocation(
       ok: false,
       error: err instanceof Error ? err.message : "Sync failed",
     };
+export async function clearAndResyncArketaLocationAction(
+  organizationId: string,
+  locationId: string,
+): Promise<
+  | {
+      ok: true;
+      label: string;
+      created: number;
+      updated: number;
+      deleted: number;
+      skipped: number;
+      cleaned: number;
+    }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireOrgManager(organizationId);
+    const admin = createAdminClient();
+
+    const { data: loc } = await admin
+      .from("arketa_locations")
+      .select("id")
+      .eq("id", locationId)
+      .eq("organization_id", organizationId)
+      .maybeSingle();
+
+    if (!loc) return { ok: false, error: "Location not found" };
+
+    const { clearAndResyncArketaLocation } = await import(
+      "@/lib/arketa/sync"
+    );
+    const result = await clearAndResyncArketaLocation(locationId);
+    revalidatePath("/dashboard/integrations");
+
+    if (result.error && result.created === 0 && result.updated === 0) {
+      return { ok: false, error: `${result.label}: ${result.error}` };
+    }
+
+    return {
+      ok: true,
+      label: result.label,
+      created: result.created,
+      updated: result.updated,
+      deleted: result.deleted,
+      skipped: result.skipped,
+      cleaned: result.cleaned,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Clear & resync failed",
+    };
   }
 }
