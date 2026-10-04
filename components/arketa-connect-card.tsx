@@ -35,12 +35,14 @@ export function ArketaConnectCard({
   const [partnerId, setPartnerId] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [calendarId, setCalendarId] = useState("");
+  const [instructorMap, setInstructorMap] = useState("");
 
   function resetForm() {
     setLabel("");
     setPartnerId("");
     setApiKey("");
     setCalendarId("");
+    setInstructorMap("");
     setShowForm(false);
   }
 
@@ -55,6 +57,7 @@ export function ArketaConnectCard({
         partnerId,
         apiKey,
         googleCalendarId: calendarId,
+        instructorEmailMapText: instructorMap,
       });
       if (result.ok) {
         window.location.href = "/dashboard/integrations";
@@ -115,6 +118,7 @@ export function ArketaConnectCard({
           <p className="mt-1 text-sm text-zinc-500">
             Sync class schedules from Arketa into Google Calendar (one-way).
             Each location uses its own Partner API credentials and calendar.
+            Optional instructor name → email map sends Google invites.
           </p>
         </div>
         <span
@@ -233,6 +237,24 @@ export function ArketaConnectCard({
                 placeholder="Google Calendar ID"
                 className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
+              <div>
+                <label className="text-xs font-medium text-zinc-600">
+                  Instructor emails (optional)
+                </label>
+                <p className="mt-0.5 text-[11px] text-zinc-500">
+                  One per line: Name = email@studio.com — matches Arketa
+                  instructor_name so Google can send invites.
+                </p>
+                <textarea
+                  value={instructorMap}
+                  onChange={(e) => setInstructorMap(e.target.value)}
+                  rows={3}
+                  placeholder={
+                    "Jane Smith = jane@studio.com\nJohn Doe = john@studio.com"
+                  }
+                  className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                />
+              </div>
               <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
