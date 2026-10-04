@@ -6,6 +6,7 @@ import {
   deleteArketaLocation,
   testArketaLocation,
   syncArketaLocation,
+  clearAndResyncArketaLocationAction,
 } from "@/app/dashboard/integrations/arketa-actions";
 
 export type ArketaLocationRow = {
@@ -108,6 +109,31 @@ export function ArketaConnectCard({
     });
   }
 
+  function handleClearResync(id: string) {
+    setError(null);
+    setSuccess(null);
+    if (
+      !window.confirm(
+        "Clear old JNS/Arketa events on this calendar (next ~3 weeks), then sync once. Continue?",
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await clearAndResyncArketaLocationAction(
+        organizationId,
+        id,
+      );
+      if (result.ok) {
+        setSuccess(
+          `${result.label}: cleaned ${result.cleaned}, created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
+        );
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
   const connected = locations.length > 0;
 
   return (
@@ -180,6 +206,14 @@ export function ArketaConnectCard({
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
                     >
                       Sync now
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isPending || !loc.google_calendar_id}
+                      onClick={() => handleClearResync(loc.id)}
+                      className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
+                    >
+                      Clear & resync
                     </button>
                     <button
                       type="button"
