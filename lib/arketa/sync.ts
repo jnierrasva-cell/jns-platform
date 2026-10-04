@@ -1,5 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchArketaClasses } from "@/lib/arketa/client";
+import {
+  fetchArketaClasses,
+  resolveInstructorEmails,
+} from "@/lib/arketa/client";
 import {
   createGoogleCalendarEvent,
   updateGoogleCalendarEvent,
@@ -33,6 +36,17 @@ function classEndIso(startIso: string, durationMinutes: number) {
   return end.toISOString();
 }
 
+function buildNameToEmailMap(raw: unknown): Record<string, string> {
+  const nameToEmail: Record<string, string> = {};
+  if (!raw || typeof raw !== "object") return nameToEmail;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === "string" && v.includes("@")) {
+      nameToEmail[k.trim().toLowerCase()] = v.trim().toLowerCase();
+    }
+  }
+  return nameToEmail;
+}
+
 export async function syncArketaLocationById(
   arketaLocationId: string,
 ): Promise<SyncLocationResult> {
@@ -41,7 +55,7 @@ export async function syncArketaLocationById(
   const { data: loc, error } = await admin
     .from("arketa_locations")
     .select(
-      "id, organization_id, label, partner_id, api_key, google_calendar_id",
+      "id, organization_id, label, partner_id, api_key, google_calendar_id, instructor_email_map",
     )
     .eq("id", arketaLocationId)
     .single();
@@ -54,7 +68,7 @@ export async function syncArketaLocationById(
       updated: 0,
       deleted: 0,
       skipped: 0,
-      error: "Location not found",
+      error: error?.message || "Location not found",
     };
   }
 
@@ -82,6 +96,8 @@ export async function syncArketaLocationById(
   }
 
   const calendarId = loc.google_calendar_id.trim();
+  const nameToEmail = buildNameToEmailMap(loc.instructor_email_map);
+
   const now = new Date();
   const windowStart = new Date(
     now.getTime() - SYNC_DAYS_BACK * 24 * 60 * 60 * 1000,
@@ -93,7 +109,6 @@ export async function syncArketaLocationById(
   let firstGoogleError: string | null = null;
 
   try {
-    // Confirm Google is connected for this org before looping classes
     try {
       const { getValidGoogleAccessToken } = await import(
         "@/lib/google/token"
@@ -174,8 +189,11 @@ export async function syncArketaLocationById(
       const title = cls.name || "Class";
       const startsAt = cls.start_time;
       const endsAt = classEndIso(cls.start_time, cls.duration);
+      const guestEmails = resolveInstructorEmails(cls, nameToEmail);
+
       const description = [
         cls.instructor_name ? `Instructor: ${cls.instructor_name}` : null,
+        guestEmails.length ? `Notified: ${guestEmails.join(", ")}` : null,
         "Synced from Arketa via JNS",
         cls.description?.slice(0, 500) || null,
       ]
@@ -191,6 +209,7 @@ export async function syncArketaLocationById(
           startsAt,
           endsAt,
           description,
+          attendeeEmails: guestEmails,
         });
         if (!upd.ok) {
           if (!firstGoogleError && upd.error) firstGoogleError = upd.error;
@@ -215,6 +234,7 @@ export async function syncArketaLocationById(
           startsAt,
           endsAt,
           description,
+          attendeeEmails: guestEmails,
         });
         if (!created.eventId) {
           if (!firstGoogleError && created.error) {
@@ -237,10 +257,8 @@ export async function syncArketaLocationById(
       }
     }
 
-    // Only remove maps that were in this window and disappeared (not the whole history)
     for (const [classId, mapped] of mapByClassId) {
       if (seen.has(classId)) continue;
-      // Skip aggressive deletes when we capped the class list
       if (classes.length >= MAX_CLASSES_PER_RUN) continue;
 
       await deleteGoogleCalendarEvent({
