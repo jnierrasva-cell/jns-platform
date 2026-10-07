@@ -134,133 +134,127 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-full flex-col lg:flex-row">
-      <section className="relative flex w-full flex-col justify-between bg-[#0B132B] px-8 py-10 text-white lg:max-w-md lg:px-10 lg:py-12">
-        <div>
-          <BrandMark href="/" />
-          <p className="mt-8 text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+    <main className="flex min-h-screen w-full max-w-[100vw] items-center justify-center overflow-x-hidden bg-zinc-50 px-4 py-8 sm:px-6 sm:py-10">
+      <div className="w-full max-w-md">
+        {/* Brand + short pitch — centered, no side dead space */}
+        <div className="mb-6 rounded-xl border border-[#1e2a4a] bg-[#0B132B] px-5 py-6 text-center sm:px-6 sm:py-7">
+          <div className="flex justify-center">
+            <BrandMark href="/" className="h-9 w-auto" />
+          </div>
+          <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
             Journey Network Systems
           </p>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+          <h1 className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
             One workspace for clients, bookings, and follow-up
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            For service businesses and the people who run them — with rules so
-            the system stays clean.
-          </p>
-          <ul className="mt-8 space-y-3">
+          <ul className="mt-4 space-y-2 text-left">
             {workspaceBenefits.map((item) => (
               <li
                 key={item}
-                className="flex gap-2.5 text-sm leading-5 text-slate-300"
+                className="flex gap-2.5 text-xs leading-5 text-slate-300 sm:text-sm"
               >
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
                 {item}
               </li>
             ))}
           </ul>
         </div>
-        <p className="mt-10 text-xs text-slate-500 lg:mt-0">
-          JNS · Private pilot
-        </p>
-      </section>
 
-      <section className="flex flex-1 items-center justify-center bg-zinc-50 px-6 py-16">
-        <div className="w-full max-w-sm">
-          {nextPath?.startsWith("/invite/") && (
-            <p className="mb-4 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-900">
-              After you create your account, you’ll return to the invite to join
-              the workspace.
+        {nextPath?.startsWith("/invite/") && (
+          <p className="mb-4 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-center text-xs text-sky-900">
+            After you create your account, you’ll return to the invite to join
+            the workspace.
+          </p>
+        )}
+
+        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex justify-center gap-6 text-sm">
+            <button
+              type="button"
+              onClick={() => chooseMode("signin")}
+              className={
+                mode === "signin"
+                  ? "font-medium text-[#0B132B]"
+                  : "text-zinc-500 hover:text-zinc-800"
+              }
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseMode("signup")}
+              className={
+                mode === "signup"
+                  ? "font-medium text-[#0B132B]"
+                  : "text-zinc-500 hover:text-zinc-800"
+              }
+            >
+              Create account
+            </button>
+          </div>
+
+          {confirmSent ? (
+            <p className="mt-6 text-center text-sm text-zinc-600">
+              Check your email to confirm, or turn off Confirm email in Supabase
+              Auth so signup can sign you in immediately.
             </p>
-          )}
+          ) : resetSent ? (
+            <p className="mt-6 text-center text-sm text-zinc-600">
+              If that email exists, a reset link was sent.
+            </p>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="text-sm text-zinc-700">Email</label>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
+                />
+              </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="flex gap-4 text-sm">
-              <button
-                type="button"
-                onClick={() => chooseMode("signin")}
-                className={
-                  mode === "signin"
-                    ? "font-medium text-[#0B132B]"
-                    : "text-zinc-500 hover:text-zinc-800"
-                }
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                onClick={() => chooseMode("signup")}
-                className={
-                  mode === "signup"
-                    ? "font-medium text-[#0B132B]"
-                    : "text-zinc-500 hover:text-zinc-800"
-                }
-              >
-                Create account
-              </button>
-            </div>
-
-            {confirmSent ? (
-              <p className="mt-6 text-sm text-zinc-600">
-                Check your email to confirm, or turn off Confirm email in
-                Supabase Auth so signup can sign you in immediately.
-              </p>
-            ) : resetSent ? (
-              <p className="mt-6 text-sm text-zinc-600">
-                If that email exists, a reset link was sent.
-              </p>
-            ) : (
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {mode !== "forgot" && (
                 <div>
-                  <label className="text-sm text-zinc-700">Email</label>
+                  <label className="text-sm text-zinc-700">Password</label>
                   <input
-                    type="email"
+                    type="password"
                     required
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
+                    minLength={8}
+                    autoComplete={
+                      mode === "signin" ? "current-password" : "new-password"
+                    }
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
                   />
                 </div>
+              )}
 
-                {mode !== "forgot" && (
-                  <div>
-                    <label className="text-sm text-zinc-700">Password</label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      autoComplete={
-                        mode === "signin" ? "current-password" : "new-password"
-                      }
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
-                    />
-                  </div>
-                )}
+              {error && (
+                <p className="text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+              )}
 
-                {error && (
-                  <p className="text-sm text-red-600" role="alert">
-                    {error}
-                  </p>
-                )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              >
+                {loading
+                  ? "Please wait…"
+                  : mode === "forgot"
+                    ? "Send reset link"
+                    : mode === "signin"
+                      ? "Sign in"
+                      : "Create account"}
+              </button>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
-                >
-                  {loading
-                    ? "Please wait…"
-                    : mode === "forgot"
-                      ? "Send reset link"
-                      : mode === "signin"
-                        ? "Sign in"
-                        : "Create account"}
-                </button>
-
-                {mode === "signin" && (
+              {mode === "signin" && (
+                <div className="text-center">
                   <button
                     type="button"
                     onClick={() => chooseMode("forgot")}
@@ -268,18 +262,32 @@ function LoginForm() {
                   >
                     Forgot password?
                   </button>
-                )}
-              </form>
-            )}
-          </div>
+                </div>
+              )}
 
-          <p className="mt-6 text-center text-xs text-zinc-400">
-            <Link href="/" className="underline hover:text-zinc-600">
-              Back to home
-            </Link>
-          </p>
+              {mode === "forgot" && (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => chooseMode("signin")}
+                    className="text-xs text-zinc-500 underline hover:text-zinc-800"
+                  >
+                    Back to sign in
+                  </button>
+                </div>
+              )}
+            </form>
+          )}
         </div>
-      </section>
+
+        <p className="mt-6 text-center text-xs text-zinc-400">
+          <Link href="/" className="underline hover:text-zinc-600">
+            Back to home
+          </Link>
+          <span className="mx-2 text-zinc-300">·</span>
+          <span>JNS · Private pilot</span>
+        </p>
+      </div>
     </main>
   );
 }
@@ -288,7 +296,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-full items-center justify-center bg-zinc-50 text-sm text-zinc-500">
+        <div className="flex min-h-screen w-full items-center justify-center bg-zinc-50 text-sm text-zinc-500">
           Loading…
         </div>
       }
