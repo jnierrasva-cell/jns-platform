@@ -16,6 +16,8 @@ export type ArketaLocationRow = {
   google_calendar_id: string | null;
   last_synced_at: string | null;
   last_sync_status: string | null;
+  instructor_email_map_text?: string;
+  instructor_count?: number;
 };
 
 export function ArketaConnectCard({
@@ -31,6 +33,7 @@ export function ArketaConnectCard({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [label, setLabel] = useState("");
   const [partnerId, setPartnerId] = useState("");
@@ -44,7 +47,25 @@ export function ArketaConnectCard({
     setApiKey("");
     setCalendarId("");
     setInstructorMap("");
+    setEditingId(null);
     setShowForm(false);
+  }
+
+  function startEdit(loc: ArketaLocationRow) {
+    setEditingId(loc.id);
+    setLabel(loc.label);
+    setPartnerId(loc.partner_id);
+    setApiKey("");
+    setCalendarId(loc.google_calendar_id ?? "");
+    setInstructorMap(loc.instructor_email_map_text ?? "");
+    setShowForm(true);
+    setError(null);
+    setSuccess(null);
+  }
+
+  function startAdd() {
+    resetForm();
+    setShowForm(true);
   }
 
   function handleSave(e: React.FormEvent) {
@@ -54,6 +75,7 @@ export function ArketaConnectCard({
     startTransition(async () => {
       const result = await saveArketaLocation({
         organizationId,
+        id: editingId ?? undefined,
         label,
         partnerId,
         apiKey,
@@ -144,7 +166,7 @@ export function ArketaConnectCard({
           <p className="mt-1 text-sm text-zinc-500">
             Sync class schedules from Arketa into Google Calendar (one-way).
             Each location uses its own Partner API credentials and calendar.
-            Optional instructor name → email map sends Google invites.
+            Use Edit to set instructor name → email so guests get notified.
           </p>
         </div>
         <span
@@ -180,6 +202,12 @@ export function ArketaConnectCard({
                       : "Not set — required for sync"}
                   </p>
                   <p className="mt-0.5 text-xs text-zinc-500">
+                    Instructor emails mapped: {loc.instructor_count ?? 0}
+                    {(loc.instructor_count ?? 0) === 0
+                      ? " — Edit to add guests"
+                      : ""}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
                     Last sync:{" "}
                     {loc.last_synced_at
                       ? new Date(loc.last_synced_at).toLocaleString()
@@ -191,6 +219,14 @@ export function ArketaConnectCard({
                 </div>
                 {canManage && (
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => startEdit(loc)}
+                      className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+                    >
+                      Edit
+                    </button>
                     <button
                       type="button"
                       disabled={isPending}
@@ -236,18 +272,21 @@ export function ArketaConnectCard({
           {!showForm ? (
             <button
               type="button"
-              onClick={() => setShowForm(true)}
+              onClick={startAdd}
               className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
             >
               Add Arketa location
             </button>
           ) : (
             <form onSubmit={handleSave} className="flex flex-col gap-3">
+              <p className="text-sm font-medium text-zinc-800">
+                {editingId ? "Edit location" : "Add location"}
+              </p>
               <input
                 required
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="Label (e.g. Upland)"
+                placeholder="Label (e.g. Rancho)"
                 className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
@@ -258,11 +297,15 @@ export function ArketaConnectCard({
                 className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
-                required
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="API key"
+                placeholder={
+                  editingId
+                    ? "API key (leave blank to keep current)"
+                    : "API key"
+                }
+                required={!editingId}
                 className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
               />
               <input
@@ -273,16 +316,16 @@ export function ArketaConnectCard({
               />
               <div>
                 <label className="text-xs font-medium text-zinc-600">
-                  Instructor emails (optional)
+                  Instructor emails
                 </label>
                 <p className="mt-0.5 text-[11px] text-zinc-500">
-                  One per line: Name = email@studio.com — matches Arketa
-                  instructor_name so Google can send invites.
+                  One per line: Name = email@studio.com — must match Arketa
+                  instructor_name for invites.
                 </p>
                 <textarea
                   value={instructorMap}
                   onChange={(e) => setInstructorMap(e.target.value)}
-                  rows={3}
+                  rows={4}
                   placeholder={
                     "Jane Smith = jane@studio.com\nJohn Doe = john@studio.com"
                   }
@@ -295,7 +338,11 @@ export function ArketaConnectCard({
                   disabled={isPending}
                   className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
                 >
-                  {isPending ? "Verifying…" : "Save location"}
+                  {isPending
+                    ? "Saving…"
+                    : editingId
+                      ? "Save changes"
+                      : "Save location"}
                 </button>
                 <button
                   type="button"
