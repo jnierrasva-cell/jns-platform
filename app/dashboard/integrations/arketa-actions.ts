@@ -104,7 +104,7 @@ export async function saveArketaLocation(input: {
 
     const label = input.label.trim();
     const partnerId = input.partnerId.trim();
-    const apiKey = input.apiKey.trim();
+    let apiKey = input.apiKey.trim();
     const googleCalendarId = input.googleCalendarId?.trim() || null;
     const instructor_email_map = parseInstructorMap(
       input.instructorEmailMapText,
@@ -112,11 +112,27 @@ export async function saveArketaLocation(input: {
 
     if (!label) return { ok: false, error: "Label is required" };
     if (!partnerId) return { ok: false, error: "Partner ID is required" };
+
+    const admin = createAdminClient();
+
+    // Edit: empty API key keeps the existing key
+    if (input.id && !apiKey) {
+      const { data: existing } = await admin
+        .from("arketa_locations")
+        .select("api_key")
+        .eq("id", input.id)
+        .eq("organization_id", input.organizationId)
+        .maybeSingle();
+      if (!existing?.api_key) {
+        return { ok: false, error: "API key is required" };
+      }
+      apiKey = existing.api_key as string;
+    }
+
     if (!apiKey) return { ok: false, error: "API key is required" };
 
     await verifyArketaCredentials(partnerId, apiKey);
 
-    const admin = createAdminClient();
     const row = {
       organization_id: input.organizationId,
       label,
