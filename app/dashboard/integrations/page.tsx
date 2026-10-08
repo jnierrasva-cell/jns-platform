@@ -6,6 +6,14 @@ import { disconnectGoogle } from "@/app/dashboard/integrations/actions";
 import { TwilioConnectCard } from "@/components/twilio-connect-card";
 import { ArketaConnectCard } from "@/components/arketa-connect-card";
 
+function mapToText(raw: unknown): string {
+  if (!raw || typeof raw !== "object") return "";
+  return Object.entries(raw as Record<string, string>)
+    .filter(([, v]) => typeof v === "string" && v.includes("@"))
+    .map(([k, v]) => `${k} = ${v}`)
+    .join("\n");
+}
+
 export default async function IntegrationsPage() {
   const supabase = await createClient();
   const {
@@ -20,7 +28,6 @@ export default async function IntegrationsPage() {
   const orgId = active.organizationId;
   const canManage = active.role === "ceo" || active.role === "admin";
 
-  // Admin reads after membership check — avoids empty lists when RLS hides rows
   const admin = createAdminClient();
 
   const { data: googleConnection } = await admin
@@ -36,13 +43,26 @@ export default async function IntegrationsPage() {
     .eq("organization_id", orgId)
     .maybeSingle();
 
-  const { data: arketaLocations } = await admin
+  const { data: arketaRows } = await admin
     .from("arketa_locations")
     .select(
-      "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status",
+      "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status, instructor_email_map",
     )
     .eq("organization_id", orgId)
     .order("label", { ascending: true });
+
+  const arketaLocations = (arketaRows ?? []).map((row) => ({
+    id: row.id as string,
+    label: row.label as string,
+    partner_id: row.partner_id as string,
+    google_calendar_id: (row.google_calendar_id as string | null) ?? null,
+    last_synced_at: (row.last_synced_at as string | null) ?? null,
+    last_sync_status: (row.last_sync_status as string | null) ?? null,
+    instructor_email_map_text: mapToText(row.instructor_email_map),
+    instructor_count: Object.keys(
+      (row.instructor_email_map as Record<string, string>) || {},
+    ).length,
+  }));
 
   const disconnectGoogleAction = disconnectGoogle.bind(null, orgId);
 
@@ -124,7 +144,7 @@ export default async function IntegrationsPage() {
         <ArketaConnectCard
           organizationId={orgId}
           canManage={canManage}
-          locations={arketaLocations ?? []}
+          locations={arketaLocations}
         />
       </div>
     </div>
