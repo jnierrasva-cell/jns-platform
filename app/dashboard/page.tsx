@@ -163,7 +163,7 @@ export default async function OverviewPage() {
         ? `Connected as ${googleConnection?.connected_email}`
         : "Link the business Gmail this workspace should watch and reply from.",
       href: "/dashboard/integrations",
-      actionLabel: googleConnected ? "Manage" : "Connect",
+      actionLabel: googleConnected ? "Manage" : "Open Integrations",
       done: googleConnected,
       critical: true,
     },
@@ -174,7 +174,7 @@ export default async function OverviewPage() {
         ? "Auto-reply is enabled for this workspace."
         : "Enable Inquiry auto-reply under Automation.",
       href: "/dashboard/automation",
-      actionLabel: autoAckOn ? "Open" : "Enable",
+      actionLabel: autoAckOn ? "Open Automation" : "Open Automation",
       done: autoAckOn,
       critical: true,
     },
@@ -186,7 +186,7 @@ export default async function OverviewPage() {
           ? `${enabledRulesCount} enabled rule${enabledRulesCount === 1 ? "" : "s"}`
           : "Rules decide who gets a reply — so not every message becomes a lead.",
       href: "/dashboard/email-rules",
-      actionLabel: enabledRulesCount > 0 ? "Open" : "Add rule",
+      actionLabel: enabledRulesCount > 0 ? "Open rules" : "Open rules",
       done: enabledRulesCount > 0,
       critical: true,
     },
@@ -198,7 +198,7 @@ export default async function OverviewPage() {
           ? `${templatesCount} template${templatesCount === 1 ? "" : "s"} ready`
           : "Templates are the text auto-reply sends.",
       href: "/dashboard/templates",
-      actionLabel: templatesCount > 0 ? "Open" : "Edit templates",
+      actionLabel: templatesCount > 0 ? "Open templates" : "Open templates",
       done: templatesCount > 0,
       critical: false,
     },
@@ -211,7 +211,7 @@ export default async function OverviewPage() {
           ? `Send a test message to ${googleConnection?.connected_email}, then check Automation activity.`
           : "Connect Google first, then email that inbox once.",
       href: "/dashboard/automation",
-      actionLabel: "View activity",
+      actionLabel: "Open Automation",
       done: recentActivityCount > 0,
       critical: false,
     },
@@ -426,16 +426,16 @@ export default async function OverviewPage() {
                     </p>
                   </div>
                 </div>
-                <Link
+                <a
                   href={step.href}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  className={`relative z-10 shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                     step.done
                       ? "border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900"
                       : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
                   }`}
                 >
                   {step.actionLabel}
-                </Link>
+                </a>
               </li>
             ))}
           </ul>
