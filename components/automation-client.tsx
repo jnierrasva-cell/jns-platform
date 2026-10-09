@@ -195,13 +195,14 @@ export function AutomationClient({
         What actually runs
       </h1>
       <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-        Only live systems are listed here. {activeCount} of {services.length}{" "}
-        on
+        Only live systems are listed here. {activeCount} of {services.length} on
         {isPending ? " · Saving…" : ""}.
       </p>
 
       <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="text-sm font-medium text-zinc-900">Before you switch on</h2>
+        <h2 className="text-sm font-medium text-zinc-900">
+          Before you switch on
+        </h2>
         <p className="mt-1 text-xs text-zinc-500">
           Auto-reply needs Google + rules. SMS needs Twilio. Toggles will error
           if a required connection is missing.
@@ -324,7 +325,8 @@ export function AutomationClient({
             SMS reminder options
           </h2>
           <p className="mt-1 text-xs text-zinc-500">
-            Placeholders: {"{{first_name}}"}, {"{{title}}"}, {"{{when}}"}.
+            Placeholders: first_name, title, when (wrapped in double braces in
+            the message box).
           </p>
           <form onSubmit={saveSmsSettings} className="mt-4 space-y-4">
             <div>
@@ -352,4 +354,49 @@ export function AutomationClient({
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-[#0B132B] px-4 
+              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+            >
+              Save SMS settings
+            </button>
+          </form>
+        </section>
+      )}
+
+      <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
+        <h2 className="text-sm font-medium text-zinc-900">
+          Recent email activity
+        </h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          What this workspace logged recently. Empty until Google is connected
+          and a rule fires.
+        </p>
+        {recentActivity.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">No activity yet.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-zinc-100">
+            {recentActivity.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium text-zinc-900">
+                    {row.subject || row.service_key || "Email event"}
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {row.direction ?? "—"} · {row.status ?? "—"}
+                    {row.to_email ? ` · to ${row.to_email}` : ""}
+                    {row.from_email ? ` · from ${row.from_email}` : ""}
+                  </p>
+                </div>
+                <p className="shrink-0 text-xs text-zinc-400">
+                  {new Date(row.created_at).toLocaleString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
