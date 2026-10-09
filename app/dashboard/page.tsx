@@ -7,8 +7,11 @@ import {
   CalendarDays,
   Contact,
   Inbox,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 
 type OverviewMetric = {
@@ -17,6 +20,16 @@ type OverviewMetric = {
   value: number | string;
   detail: string;
   icon: typeof Zap;
+};
+
+type SetupStep = {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  actionLabel: string;
+  done: boolean;
+  critical: boolean;
 };
 
 export default async function OverviewPage() {
@@ -31,6 +44,9 @@ export default async function OverviewPage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const isManager = active.role === "ceo" || active.role === "admin";
+  const admin = createAdminClient();
+
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -45,44 +61,48 @@ export default async function OverviewPage() {
     stagesRes,
     bookingsRes,
     unmatchedRes,
+    autoAckRes,
+    rulesRes,
+    templatesRes,
+    activityRes,
   ] = await Promise.all([
-    supabase
+    admin
       .from("connections")
       .select("connected_email")
       .eq("organization_id", orgId)
       .eq("provider", "google")
       .maybeSingle(),
-    supabase
+    admin
       .from("twilio_connections")
       .select("id")
       .eq("organization_id", orgId)
       .maybeSingle(),
-    supabase
+    admin
       .from("arketa_locations")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", orgId),
-    supabase
+    admin
       .from("org_members")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", orgId),
-    supabase
+    admin
       .from("org_automations")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", orgId)
       .eq("is_enabled", true),
-    supabase
+    admin
       .from("contacts")
       .select(
         "id, status, first_name, last_name, email, created_at, pipeline_stage_id",
       )
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false }),
-    supabase
+    admin
       .from("pipeline_stages")
       .select("id, name, slug, position, is_won, is_lost")
       .eq("organization_id", orgId)
       .order("position", { ascending: true }),
-    supabase
+    admin
       .from("bookings")
       .select(
         "id, title, starts_at, status, contacts(first_name, last_name, email)",
@@ -93,10 +113,30 @@ export default async function OverviewPage() {
       .lte("starts_at", in7Days.toISOString())
       .order("starts_at", { ascending: true })
       .limit(5),
-    supabase
+    admin
       .from("unmatched_emails")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", orgId),
+    admin
+      .from("org_automations")
+      .select("is_enabled")
+      .eq("organization_id", orgId)
+      .eq("service_key", "email-auto-ack")
+      .maybeSingle(),
+    admin
+      .from("email_rules")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("is_enabled", true),
+    admin
+      .from("email_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId),
+    admin
+      .from("email_activity")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .gte("created_at", weekAgo.toISOString()),
   ]);
 
   const googleConnection = googleRes.data;
@@ -109,20 +149,94 @@ export default async function OverviewPage() {
   const upcomingBookings = bookingsRes.data ?? [];
   const unmatchedCount = unmatchedRes.count ?? 0;
 
+  const googleConnected = Boolean(googleConnection?.connected_email);
+  const autoAckOn = Boolean(autoAckRes.data?.is_enabled);
+  const enabledRulesCount = rulesRes.count ?? 0;
+  const templatesCount = templatesRes.count ?? 0;
+  const recentActivityCount = activityRes.count ?? 0;
+
+  const setupSteps: SetupStep[] = [
+    {
+      id: "google",
+      title: "Connect Google",
+      description: googleConnected
+        ? `Connected as ${googleConnection?.connected_email}`
+        : "Link the business Gmail this workspace should watch and reply from.",
+      href: "/dashboard/integrations",
+      actionLabel: googleConnected ? "Manage" : "Connect",
+      done: googleConnected,
+      critical: true,
+    },
+    {
+      id: "auto-ack",
+      title: "Turn on inquiry auto-reply",
+      description: autoAckOn
+        ? "Auto-reply is enabled for this workspace."
+        : "Enable Inquiry auto-reply under Automation.",
+      href: "/dashboard/automation",
+      actionLabel: autoAckOn ? "Open" : "Enable",
+      done: autoAckOn,
+      critical: true,
+    },
+    {
+      id: "rules",
+      title: "Add at least one email rule",
+      description:
+        enabledRulesCount > 0
+          ? `${enabledRulesCount} enabled rule${enabledRulesCount === 1 ? "" : "s"}`
+          : "Rules decide who gets a reply — so not every message becomes a lead.",
+      href: "/dashboard/email-rules",
+      actionLabel: enabledRulesCount > 0 ? "Open" : "Add rule",
+      done: enabledRulesCount > 0,
+      critical: true,
+    },
+    {
+      id: "template",
+      title: "Confirm a reply template",
+      description:
+        templatesCount > 0
+          ? `${templatesCount} template${templatesCount === 1 ? "" : "s"} ready`
+          : "Templates are the text auto-reply sends.",
+      href: "/dashboard/templates",
+      actionLabel: templatesCount > 0 ? "Open" : "Edit templates",
+      done: templatesCount > 0,
+      critical: false,
+    },
+    {
+      id: "test",
+      title: "Prove it with a real email",
+      description: recentActivityCount > 0
+        ? `${recentActivityCount} email event${recentActivityCount === 1 ? "" : "s"} in the last 7 days`
+        : googleConnected
+          ? `Send a test message to ${googleConnection?.connected_email}, then check Automation activity.`
+          : "Connect Google first, then email that inbox once.",
+      href: "/dashboard/automation",
+      actionLabel: "View activity",
+      done: recentActivityCount > 0,
+      critical: false,
+    },
+  ];
+
+  const criticalRemaining = setupSteps.filter(
+    (s) => s.critical && !s.done,
+  ).length;
+  const allCriticalDone = criticalRemaining === 0;
+  const showSetupCard = isManager;
+
   const integrationsCount =
     (googleConnection ? 1 : 0) +
     (twilioConnection ? 1 : 0) +
     (arketaCount > 0 ? 1 : 0);
 
-  const integrationDetail = [
-    googleConnection ? "Google" : null,
-    twilioConnection ? "SMS" : null,
-    arketaCount > 0 ? `Arketa (${arketaCount})` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ") || "None connected";
+  const integrationDetail =
+    [
+      googleConnection ? "Google" : null,
+      twilioConnection ? "SMS" : null,
+      arketaCount > 0 ? `Arketa (${arketaCount})` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || "None connected";
 
-  // Prefer custom pipeline stages when present
   const stageCounts =
     stages.length > 0
       ? stages.map((s) => ({
@@ -253,6 +367,81 @@ export default async function OverviewPage() {
         </p>
       </div>
 
+      {/* Setup checklist — managers only */}
+      {showSetupCard && (
+        <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-900">
+                {allCriticalDone
+                  ? "Inbox loop is ready"
+                  : "Get the inbox loop working"}
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                {allCriticalDone
+                  ? "Google, auto-reply, and at least one rule are in place. Optional steps still help you prove and polish."
+                  : "Connect the business email, turn on auto-reply, and set one rule so inquiries are handled without junk contacts."}
+              </p>
+            </div>
+            <p className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs text-zinc-600">
+              {allCriticalDone
+                ? "Core setup complete"
+                : `${criticalRemaining} core step${criticalRemaining === 1 ? "" : "s"} left`}
+            </p>
+          </div>
+
+          <ul className="mt-5 space-y-3">
+            {setupSteps.map((step) => (
+              <li
+                key={step.id}
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-100 bg-zinc-50/80 px-3 py-3 sm:flex-nowrap"
+              >
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  {step.done ? (
+                    <CheckCircle2
+                      className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"
+                      aria-hidden
+                    />
+                  ) : (
+                    <Circle
+                      className="mt-0.5 h-5 w-5 shrink-0 text-zinc-300"
+                      aria-hidden
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p
+                      className={`text-sm font-medium ${
+                        step.done ? "text-zinc-700" : "text-zinc-900"
+                      }`}
+                    >
+                      {step.title}
+                      {step.critical && !step.done ? (
+                        <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                          Required
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={step.href}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                    step.done
+                      ? "border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900"
+                      : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
+                  }`}
+                >
+                  {step.actionLabel}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map((m) => {
           const Icon = m.icon;
@@ -280,76 +469,83 @@ export default async function OverviewPage() {
       <section className="mt-6">
         <Link
           href={nextStep.href}
-          className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:bg-zinc-50"
+          className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-zinc-300 hover:bg-zinc-50 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="text-sm font-medium text-zinc-900">{nextStep.title}</p>
-            <p className="mt-0.5 text-xs text-zinc-500">{nextStep.description}</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+              Suggested next
+            </p>
+            <p className="mt-1 text-sm font-semibold text-zinc-900">
+              {nextStep.title}
+            </p>
+            <p className="mt-0.5 text-sm text-zinc-500">
+              {nextStep.description}
+            </p>
           </div>
-          <span className="shrink-0 text-xs font-medium text-zinc-700">
-            {nextStep.action} →
+          <span className="mt-3 inline-flex w-fit rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white sm:mt-0">
+            {nextStep.action}
           </span>
         </Link>
       </section>
 
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
+      {/* Pipeline snapshot */}
+      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
+        <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium text-zinc-900">Pipeline</h2>
           <Link
             href="/dashboard/pipeline"
             className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
           >
-            Open board
+            Open pipeline
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {stageCounts
             ? stageCounts.map((s) => (
-                <Link
+                <div
                   key={s.id}
-                  href="/dashboard/pipeline"
-                  className="rounded-xl border border-zinc-200 bg-white p-4 transition hover:bg-zinc-50"
+                  className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-3"
                 >
-                  <p className="text-xl font-semibold text-zinc-900">{s.count}</p>
-                  <p className="mt-0.5 truncate text-xs text-zinc-500">
-                    {s.name}
+                  <p className="truncate text-xs text-zinc-500">{s.name}</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-900">
+                    {s.count}
                   </p>
-                </Link>
+                </div>
               ))
             : (
-                [
-                  { key: "lead", label: "Leads" },
-                  { key: "booked", label: "Booked" },
-                  { key: "customer", label: "Customers" },
-                  { key: "inactive", label: "Inactive" },
-                ] as const
-              ).map((s) => (
-                <Link
-                  key={s.key}
-                  href="/dashboard/contacts"
-                  className="rounded-xl border border-zinc-200 bg-white p-4 transition hover:bg-zinc-50"
-                >
-                  <p className="text-xl font-semibold text-zinc-900">
-                    {statusPipeline[s.key]}
-                  </p>
-                  <p className="mt-0.5 text-xs text-zinc-500">{s.label}</p>
-                </Link>
-              ))}
+                <>
+                  {(
+                    [
+                      ["Lead", statusPipeline.lead],
+                      ["Booked", statusPipeline.booked],
+                      ["Customer", statusPipeline.customer],
+                      ["Inactive", statusPipeline.inactive],
+                    ] as const
+                  ).map(([name, count]) => (
+                    <div
+                      key={name}
+                      className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-3"
+                    >
+                      <p className="text-xs text-zinc-500">{name}</p>
+                      <p className="mt-1 text-lg font-semibold text-zinc-900">
+                        {count}
+                      </p>
+                    </div>
+                  ))}
+                </>
+              )}
         </div>
-        {contacts.length === 0 && (
-          <p className="mt-3 text-sm text-zinc-500">
-            No contacts in this workspace yet. Add one, import CSV, or share a
-            form.
-          </p>
-        )}
       </section>
 
-      <section className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-zinc-200 bg-white p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-zinc-900">
-              Recent contacts
-            </h2>
+            <div className="flex items-center gap-2">
+              <Contact className="h-4 w-4 text-zinc-400" aria-hidden />
+              <h2 className="text-sm font-medium text-zinc-900">
+                Recent contacts
+              </h2>
+            </div>
             <Link
               href="/dashboard/contacts"
               className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
@@ -366,9 +562,9 @@ export default async function OverviewPage() {
               recentContacts.map((c) => (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 py-2.5"
+                  className="flex items-start justify-between gap-3 py-2.5"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
                       className="text-sm font-medium text-zinc-900 hover:underline"
