@@ -1,4 +1,4 @@
-export type ServiceStatus = "active" | "available" | "coming_soon";
+export type ServiceStatus = "available" | "active";
 
 export type Service = {
   id: string;
@@ -8,12 +8,13 @@ export type Service = {
   status: ServiceStatus;
 };
 
+/** Live automations only — no “coming soon” switches. */
 export const mockServices: Service[] = [
   {
     id: "email-auto-ack",
     name: "Inquiry auto-reply",
     description:
-      "Replies when email rules say so — using your templates. Unmatched mail stays out of contacts until you decide.",
+      "When a matching email rule fires, sends a reply from your connected Google account using a template. Unmatched mail stays out of contacts until you decide.",
     category: "Email",
     status: "available",
   },
@@ -21,24 +22,8 @@ export const mockServices: Service[] = [
     id: "sms-reminders",
     name: "Booking SMS reminders",
     description:
-      "Texts clients before a scheduled booking. Uses your Twilio number and your message.",
+      "Texts clients before a scheduled booking. Requires Twilio in Integrations and a phone on the contact.",
     category: "SMS",
     status: "available",
-  },
-  {
-    id: "email-follow-up",
-    name: "Quiet-lead follow-up",
-    description:
-      "Scheduled check-ins when a lead goes silent. Coming next — not active yet.",
-    category: "Email",
-    status: "coming_soon",
-  },
-  {
-    id: "form-thanks",
-    name: "Form thank-you email",
-    description:
-      "Auto email after a form submit, using a template you choose.",
-    category: "Forms",
-    status: "coming_soon",
   },
 ];

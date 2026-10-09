@@ -16,52 +16,63 @@ export default async function AutomationPage() {
   const active = await getActiveOrg();
   if (!active) redirect("/onboarding/setup-business");
 
-  const orgId = active.organizationId;
-
-  const { data: automations } = await supabase
-    .from("org_automations")
-    .select("service_key, is_enabled")
-    .eq("organization_id", orgId);
-
-  const enabledKeys = (automations ?? [])
-    .filter((a) => a.is_enabled)
-    .map((a) => a.service_key);
-
-  const { data: settingsRows } = await supabase
-    .from("org_automation_settings")
-    .select("service_key, settings")
-    .eq("organization_id", orgId);
-
-  const settingsByKey: Record<string, Record<string, unknown>> = {};
-  for (const row of settingsRows ?? []) {
-    settingsByKey[row.service_key] =
-      (row.settings as Record<string, unknown>) ?? {};
+  if (active.role !== "ceo" && active.role !== "admin") {
+    redirect("/dashboard");
   }
 
-  let recentActivity: {
-    id: string;
-    service_key: string | null;
-    direction: string | null;
-    status: string | null;
-    subject: string | null;
-    to_email: string | null;
-    from_email: string | null;
-    created_at: string;
-  }[] = [];
+  const orgId = active.organizationId;
+  const admin = createAdminClient();
 
-  try {
-    const admin = createAdminClient();
-    const { data } = await admin
+  const [
+    automationsRes,
+    settingsRes,
+    googleRes,
+    twilioRes,
+    rulesRes,
+    activityRes,
+  ] = await Promise.all([
+    admin
+      .from("org_automations")
+      .select("service_key, is_enabled")
+      .eq("organization_id", orgId),
+    admin
+      .from("org_automation_settings")
+      .select("service_key, settings")
+      .eq("organization_id", orgId),
+    admin
+      .from("connections")
+      .select("connected_email")
+      .eq("organization_id", orgId)
+      .eq("provider", "google")
+      .maybeSingle(),
+    admin
+      .from("twilio_connections")
+      .select("from_number")
+      .eq("organization_id", orgId)
+      .maybeSingle(),
+    admin
+      .from("email_rules")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("is_enabled", true),
+    admin
       .from("email_activity")
       .select(
         "id, service_key, direction, status, subject, to_email, from_email, created_at",
       )
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false })
-      .limit(25);
-    recentActivity = data ?? [];
-  } catch {
-    recentActivity = [];
+      .limit(25),
+  ]);
+
+  const enabledKeys = (automationsRes.data ?? [])
+    .filter((a) => a.is_enabled)
+    .map((a) => a.service_key);
+
+  const settingsByKey: Record<string, Record<string, unknown>> = {};
+  for (const row of settingsRes.data ?? []) {
+    settingsByKey[row.service_key] =
+      (row.settings as Record<string, unknown>) ?? {};
   }
 
   return (
@@ -70,7 +81,12 @@ export default async function AutomationPage() {
       services={mockServices}
       initialEnabledKeys={enabledKeys}
       initialSettings={settingsByKey}
-      recentActivity={recentActivity}
+      recentActivity={activityRes.data ?? []}
+      googleConnected={Boolean(googleRes.data?.connected_email)}
+      googleEmail={googleRes.data?.connected_email ?? null}
+      twilioConnected={Boolean(twilioRes.data?.from_number)}
+      twilioFrom={twilioRes.data?.from_number ?? null}
+      enabledRulesCount={rulesRes.count ?? 0}
     />
   );
 }
