@@ -22,6 +22,7 @@ import {
   PanelLeft,
   Menu,
   X,
+  FileText,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -33,6 +34,26 @@ type NavItem = {
   href: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
+
+/** Day-to-day work — every org member */
+const MEMBER_NAV: NavItem[] = [
+  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
+  { label: "Unmatched", href: "/dashboard/unmatched", icon: Inbox },
+  { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
+  { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
+  { label: "Forms", href: "/dashboard/forms", icon: FileInput },
+  { label: "SOPs", href: "/dashboard/sops", icon: BookOpen },
+];
+
+/** Workspace setup & automation — ceo / admin only */
+const MANAGER_NAV: NavItem[] = [
+  { label: "Automation", href: "/dashboard/automation", icon: Zap },
+  { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
+  { label: "Templates", href: "/dashboard/templates", icon: FileText },
+  { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
+  { label: "Team", href: "/dashboard/team", icon: Users },
+];
 
 export function DashboardShell({
   userEmail,
@@ -65,12 +86,10 @@ export function DashboardShell({
     setReady(true);
   }, []);
 
-  // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  // Close mobile drawer on desktop resize
   useEffect(() => {
     function onResize() {
       if (window.innerWidth >= 768) setMobileOpen(false);
@@ -97,29 +116,15 @@ export function DashboardShell({
     router.refresh();
   }
 
-  const navItems: NavItem[] = [
-    { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
-    { label: "Unmatched", href: "/dashboard/unmatched", icon: Inbox },
-    { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
-    { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
-    { label: "Forms", href: "/dashboard/forms", icon: FileInput },
-    { label: "SOPs", href: "/dashboard/sops", icon: BookOpen },
-    { label: "Automation", href: "/dashboard/automation", icon: Zap },
-    { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
-    { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
-  ];
-
-  if (isOrgManager) {
-    navItems.push({ label: "Team", href: "/dashboard/team", icon: Users });
-  }
+  const navItems: NavItem[] = isOrgManager
+    ? [...MEMBER_NAV, ...MANAGER_NAV]
+    : [...MEMBER_NAV];
 
   function isActive(href: string) {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   }
 
-  // Desktop: respect collapsed. Mobile drawer: always show labels.
   const showLabels = mobileOpen || !collapsed;
 
   const linkClass = (active: boolean) =>
@@ -169,7 +174,6 @@ export function DashboardShell({
         )}
       </div>
 
-      {/* Collapse only on desktop */}
       <div className="hidden border-b border-[#1e2a4a] p-2 md:block">
         <button
           type="button"
@@ -257,7 +261,6 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-zinc-50 text-zinc-900">
-      {/* Mobile overlay */}
       {mobileOpen && (
         <button
           type="button"
@@ -267,7 +270,6 @@ export function DashboardShell({
         />
       )}
 
-      {/* Sidebar: drawer on mobile, fixed column on md+ */}
       <aside
         className={[
           "flex flex-col border-r border-[#1e2a4a] bg-[#0B132B]",
@@ -280,9 +282,7 @@ export function DashboardShell({
         {sidebarInner}
       </aside>
 
-      {/* Main column — always full remaining width */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        {/* Mobile top bar */}
         <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-zinc-200 bg-white px-3 md:hidden">
           <button
             type="button"
