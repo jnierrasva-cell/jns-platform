@@ -4,14 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { joinWithInvite } from "./actions";
-
-type InviteInfo = {
-  organization_name: string;
-  role: string;
-  email: string;
-  status: string;
-};
+import { getInviteInfo, joinWithInvite, type InviteInfo } from "./actions";
 
 function roleLabel(role: string) {
   if (role === "ceo") return "Owner";
@@ -43,17 +36,12 @@ export default function InvitePage() {
       const { data: sessionData } = await supabase.auth.getSession();
       setUserEmail(sessionData.session?.user?.email ?? null);
 
-      const { data, error: rpcError } = await supabase
-        .rpc("get_invite_info", { invite_token: token })
-        .maybeSingle();
-
-      if (rpcError || !data) {
-        setError(
-          "This invite link isn’t valid or has expired. Ask the workspace owner for a new one.",
-        );
+      const result = await getInviteInfo(token);
+      if (!result.ok) {
+        setError(result.error);
         setInvite(null);
       } else {
-        setInvite(data as InviteInfo);
+        setInvite(result.invite);
         setError(null);
       }
       setLoading(false);
@@ -74,7 +62,7 @@ export default function InvitePage() {
         const msg = err instanceof Error ? err.message : "Could not join";
         if (msg === "NOT_SIGNED_IN") {
           setError(
-            "You’re not signed in. Create an account or sign in with the invited email, then open this link again.",
+            "You’re not signed in. Use the button below with the invited email, then open this link again.",
           );
         } else {
           setError(msg);
@@ -83,12 +71,25 @@ export default function InvitePage() {
     });
   }
 
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    window.location.href = `/invite/${token}`;
+  }
+
   const loginHref = invite
     ? `/login?email=${encodeURIComponent(invite.email)}&next=${encodeURIComponent(`/invite/${token}`)}`
     : "/login";
 
+  const emailMatches =
+    userEmail &&
+    invite &&
+    userEmail.trim().toLowerCase() === invite.email.trim().toLowerCase();
+
+  const canJoin =
+    invite?.status === "pending" && Boolean(userEmail) && emailMatches;
+
   return (
-    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-12 sm:px-6">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link
@@ -99,7 +100,7 @@ export default function InvitePage() {
           </Link>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
           {loading ? (
             <p className="text-sm text-zinc-500">Loading invite…</p>
           ) : !invite || invite.status !== "pending" ? (
@@ -132,11 +133,12 @@ export default function InvitePage() {
 
               <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm text-zinc-600">
                 <li>
-                  Create an account or sign in with{" "}
-                  <strong>{invite.email}</strong> (exact email).
+                  Sign up or sign in with <strong>{invite.email}</strong> only.
                 </li>
-                <li>Come back to this same invite link.</li>
-                <li>Click <strong>Join workspace</strong> below.</li>
+                <li>Return to this page (or use the same link again).</li>
+                <li>
+                  Click <strong>Join workspace</strong>.
+                </li>
               </ol>
 
               {!userEmail ? (
@@ -147,30 +149,44 @@ export default function InvitePage() {
                   >
                     Step 1 — Sign up / Sign in
                   </Link>
-                  <p className="text-xs text-zinc-400">
-                    After you sign in, open this invite link again to finish.
+                  <p className="text-center text-xs text-zinc-400">
+                    After auth you’ll come back here automatically.
                   </p>
+                </div>
+              ) : !emailMatches ? (
+                <div className="mt-6 space-y-3">
+                  <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    You’re signed in as <strong>{userEmail}</strong>, but this
+                    invite is for <strong>{invite.email}</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                  >
+                    Sign out and use the invited email
+                  </button>
                 </div>
               ) : (
                 <div className="mt-6 space-y-3">
-                  <p className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
-                    Signed in as{" "}
-                    <span className="font-medium text-zinc-900">{userEmail}</span>
+                  <p className="text-xs text-zinc-500">
+                    Signed in as <strong>{userEmail}</strong>
                   </p>
-                  {error && (
-                    <p className="text-sm text-red-600" role="alert">
-                      {error}
-                    </p>
-                  )}
                   <button
                     type="button"
-                    disabled={isPending}
+                    disabled={isPending || !canJoin}
                     onClick={handleJoin}
-                    className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
                   >
                     {isPending ? "Joining…" : "Join workspace"}
                   </button>
                 </div>
+              )}
+
+              {error && (
+                <p className="mt-4 text-sm text-red-600" role="alert">
+                  {error}
+                </p>
               )}
             </>
           )}

@@ -2,6 +2,7 @@
 
 import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export async function createInvite(
@@ -32,8 +33,9 @@ export async function createInvite(
   }
 
   const token = randomUUID();
+  const admin = createAdminClient();
 
-  const { error } = await supabase.from("invites").insert({
+  const { error } = await admin.from("invites").insert({
     organization_id: organizationId,
     email: normalizedEmail,
     role,
@@ -53,7 +55,28 @@ export async function revokeInvite(inviteId: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+
+  const { data: invite } = await admin
+    .from("invites")
+    .select("id, organization_id")
+    .eq("id", inviteId)
+    .maybeSingle();
+
+  if (!invite) throw new Error("Invite not found");
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("organization_id", invite.organization_id)
+    .maybeSingle();
+
+  if (!membership || !["ceo", "admin"].includes(membership.role)) {
+    throw new Error("Not authorized");
+  }
+
+  const { error } = await admin
     .from("invites")
     .update({ status: "revoked" })
     .eq("id", inviteId);
