@@ -2,24 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-
-async function requireOrgMembership(organizationId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("organization_id", organizationId)
-    .maybeSingle();
-
-  if (!membership) throw new Error("Not a member of this organization");
-  return supabase;
-}
+import { requireOrgManager } from "@/lib/org/auth";
 
 export async function createEmailRule(input: {
   organizationId: string;
@@ -33,7 +16,7 @@ export async function createEmailRule(input: {
   tag?: string;
   templateKey?: string;
 }) {
-  const supabase = await requireOrgMembership(input.organizationId);
+  const { supabase } = await requireOrgManager(input.organizationId);
 
   if (!input.name.trim()) throw new Error("Rule name is required");
 
@@ -72,7 +55,7 @@ export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
     .maybeSingle();
 
   if (!rule) throw new Error("Rule not found");
-  await requireOrgMembership(rule.organization_id);
+  await requireOrgManager(rule.organization_id);
 
   const { error } = await supabase
     .from("email_rules")
@@ -100,7 +83,7 @@ export async function deleteEmailRule(ruleId: string) {
     .maybeSingle();
 
   if (!rule) throw new Error("Rule not found");
-  await requireOrgMembership(rule.organization_id);
+  await requireOrgManager(rule.organization_id);
 
   const { error } = await supabase.from("email_rules").delete().eq("id", ruleId);
   if (error) throw new Error(error.message);

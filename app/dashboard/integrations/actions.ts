@@ -1,10 +1,10 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireOrgManager } from "@/lib/org/auth";
 
 export async function disconnectGoogle(organizationId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireOrgManager(organizationId);
 
   const { error } = await supabase
     .from("connections")
@@ -14,4 +14,5 @@ export async function disconnectGoogle(organizationId: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/integrations");
 }

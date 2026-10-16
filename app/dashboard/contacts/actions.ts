@@ -2,26 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireOrgMember } from "@/lib/org/auth";
 import { sendSms } from "@/lib/sms/send";
 import { sendGmailMessage } from "@/lib/google/send-email";
-
-async function requireOrgMember(organizationId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("organization_id", organizationId)
-    .maybeSingle();
-
-  if (!membership) throw new Error("Not a member of this organization");
-  return { supabase, user };
-}
 
 export async function createContact(input: {
   organizationId: string;
@@ -107,8 +90,7 @@ export async function updateContact(input: {
   phone?: string;
   status?: "lead" | "booked" | "customer" | "inactive";
 }) {
-  await requireOrgMember(input.organizationId);
-  const supabase = await createClient();
+  const { supabase } = await requireOrgMember(input.organizationId);
 
   const updates: Record<string, string | null> = {
     updated_at: new Date().toISOString(),

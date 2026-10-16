@@ -1,26 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireOrgManager } from "@/lib/org/auth";
 import { sendAutoAck } from "@/lib/google/send-auto-ack";
-
-async function requireMember(organizationId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("role")
-    .eq("user_id", user.id)
-    .eq("organization_id", organizationId)
-    .maybeSingle();
-
-  if (!membership) throw new Error("Not a member of this organization");
-  return { supabase, user };
-}
 
 export async function saveEmailTemplate(input: {
   organizationId: string;
@@ -28,7 +10,7 @@ export async function saveEmailTemplate(input: {
   subject: string;
   body: string;
 }) {
-  const { supabase, user } = await requireMember(input.organizationId);
+  const { supabase, user } = await requireOrgManager(input.organizationId);
 
   const key = input.templateKey.trim().toLowerCase().replace(/\s+/g, "_");
   if (!key) throw new Error("Template key is required");
@@ -55,7 +37,7 @@ export async function deleteEmailTemplate(
   organizationId: string,
   templateKey: string,
 ) {
-  const { supabase } = await requireMember(organizationId);
+  const { supabase } = await requireOrgManager(organizationId);
 
   if (templateKey === "gmail_auto_ack") {
     throw new Error("Default auto-ack template cannot be deleted");
@@ -76,7 +58,7 @@ export async function sendTestAutoAck(
   toEmail: string,
   templateKey = "gmail_auto_ack",
 ) {
-  await requireMember(organizationId);
+  await requireOrgManager(organizationId);
 
   const result = await sendAutoAck({
     organizationId,

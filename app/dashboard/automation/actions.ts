@@ -1,33 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireOrgManager } from "@/lib/org/auth";
 import { startGmailWatch, stopGmailWatch } from "@/lib/google/watch";
-
-async function requireMember(organizationId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("organization_id", organizationId)
-    .maybeSingle();
-
-  if (!membership) throw new Error("Not a member of this organization");
-  return supabase;
-}
 
 export async function setAutomationEnabled(
   organizationId: string,
   serviceKey: string,
   isEnabled: boolean,
 ) {
-  const supabase = await requireMember(organizationId);
+  const { supabase } = await requireOrgManager(organizationId);
 
   if (serviceKey === "sms-reminders" && isEnabled) {
     const { data: twilio } = await supabase
@@ -58,7 +40,6 @@ export async function setAutomationEnabled(
     }
   }
 
-  // Block enabling coming-soon keys
   if (
     serviceKey === "email-follow-up" ||
     serviceKey === "form-thanks" ||
@@ -101,7 +82,7 @@ export async function saveAutomationSettings(input: {
   serviceKey: string;
   settings: Record<string, unknown>;
 }) {
-  const supabase = await requireMember(input.organizationId);
+  const { supabase } = await requireOrgManager(input.organizationId);
 
   const { error } = await supabase.from("org_automation_settings").upsert(
     {
