@@ -1,5 +1,18 @@
 "use server";
 
+/**
+ * Invite cold-path manual test (8 steps)
+ * 1. As ceo/admin: Team → invite a NEW email (role admin/assistant/member).
+ * 2. Copy the invite link (/invite/{token}). Confirm invites.status = pending and token is set.
+ * 3. Incognito: sign up (or sign in) with that EXACT email. Confirm email OFF in Supabase.
+ * 4. Open the invite link while signed in as that email. getInviteInfo should show pending.
+ * 5. Join → joinWithInvite should: match email, upsert org_members, set active_organization_id,
+ *    set cookie jns_active_org, set invite status accepted, land on /dashboard.
+ * 6. CEO Team page should show the new member; invite no longer pending.
+ * 7. Sign out → sign in again with that email + password → still reaches dashboard / My orgs.
+ * 8. Reopen the same link: if already member, still sets active org and succeeds (no hard fail).
+ */
+
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -50,7 +63,9 @@ export async function getInviteInfo(
       organization_id: invite.organization_id,
       organization_name: org?.name ?? "Workspace",
       role: invite.role,
-      email: (invite.email as string).trim().toLowerCase(),
+      email: String(invite.email ?? "")
+        .trim()
+        .toLowerCase(),
       status: invite.status,
     },
   };
@@ -60,6 +75,11 @@ export async function getInviteInfo(
  * Login-first invite: user must already be signed in with the invited email.
  */
 export async function joinWithInvite(token: string) {
+  const trimmedToken = token.trim();
+  if (!trimmedToken) {
+    throw new Error("This invite link is not valid.");
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,7 +90,6 @@ export async function joinWithInvite(token: string) {
   }
 
   const admin = createAdminClient();
-  const trimmedToken = token.trim();
 
   const { data: invite, error: inviteError } = await admin
     .from("invites")
@@ -81,6 +100,11 @@ export async function joinWithInvite(token: string) {
   if (inviteError || !invite) {
     throw new Error("This invite link is not valid.");
   }
+
+  if (invite.status === "revoked") {
+    throw new Error("This invite was cancelled. Ask the owner for a new link.");
+  }
+
   if (invite.status === "accepted") {
     // Already used — if they're a member, still park them in the org
     const { data: existing } = await admin
@@ -91,7 +115,7 @@ export async function joinWithInvite(token: string) {
       .maybeSingle();
 
     if (existing) {
-      await setActiveOrg(admin, user.id, invite.organization_id);
+      await setActiveOrg(admin, user.id, invite.organization_id as string);
       return { organizationId: invite.organization_id as string };
     }
 
@@ -99,9 +123,7 @@ export async function joinWithInvite(token: string) {
       "This invite was already used. Sign in and open My orgs to find the workspace.",
     );
   }
-  if (invite.status === "revoked") {
-    throw new Error("This invite was cancelled. Ask the owner for a new link.");
-  }
+
   if (invite.status !== "pending") {
     throw new Error("This invite is no longer valid.");
   }
