@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveActiveOrg } from "@/lib/org/resolve-active-org";
+import { isOrgManagerRole } from "@/lib/org/roles";
 
 /** Workspace tools only ceo/admin should open (URL bar included). */
 const MANAGER_PREFIXES = [
@@ -72,30 +74,35 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Org manager-only tools
+  // Org manager-only tools — SAME priority as getActiveOrg
   if (user && isManagerPath(pathname)) {
+    const cookieOrgId =
+      request.cookies.get("jns_active_org")?.value ?? null;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("active_organization_id")
       .eq("id", user.id)
       .maybeSingle();
 
-    const orgId = profile?.active_organization_id;
-    if (!orgId) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/dashboard";
-      return NextResponse.redirect(redirectUrl);
-    }
+    const profileActiveId =
+      (profile?.active_organization_id as string | null) ?? null;
 
-    const { data: membership } = await supabase
+    const { data: memberships } = await supabase
       .from("org_members")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("organization_id", orgId)
-      .maybeSingle();
+      .select("organization_id, role")
+      .eq("user_id", user.id);
 
-    const role = membership?.role;
-    if (role !== "ceo" && role !== "admin") {
+    const selected = resolveActiveOrg({
+      memberships: (memberships ?? []).map((m) => ({
+        organization_id: m.organization_id,
+        role: m.role as string,
+      })),
+      cookieOrgId,
+      profileActiveId,
+    });
+
+    if (!selected || !isOrgManagerRole(selected.role)) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);

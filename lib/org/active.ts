@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveActiveOrg } from "@/lib/org/resolve-active-org";
 
 export type ActiveOrg = {
   organizationId: string;
@@ -34,26 +35,28 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
       .select("active_organization_id")
       .eq("id", user.id)
       .maybeSingle();
-    profileActiveId = (profile?.active_organization_id as string | null) ?? null;
+    profileActiveId =
+      (profile?.active_organization_id as string | null) ?? null;
   } catch {
     const { data: profile } = await supabase
       .from("profiles")
       .select("active_organization_id")
       .eq("id", user.id)
       .maybeSingle();
-    profileActiveId = (profile?.active_organization_id as string | null) ?? null;
+    profileActiveId =
+      (profile?.active_organization_id as string | null) ?? null;
   }
 
-  const preferredId = cookieOrgId || profileActiveId;
+  const selected = resolveActiveOrg({
+    memberships: memberships.map((m) => ({
+      organization_id: m.organization_id,
+      role: m.role as string,
+    })),
+    cookieOrgId,
+    profileActiveId,
+  });
 
-  let selected =
-    (preferredId &&
-      memberships.find((m) => m.organization_id === preferredId)) ||
-    null;
-
-  if (!selected) {
-    selected = memberships[0];
-  }
+  if (!selected) return null;
 
   // Align profile only — do NOT cookies().set() here (crashes Server Components)
   if (profileActiveId !== selected.organization_id) {
@@ -91,7 +94,7 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
 
   return {
     organizationId: selected.organization_id,
-    role: selected.role as string,
+    role: selected.role,
     orgName,
   };
 }
