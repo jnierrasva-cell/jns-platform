@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgManager } from "@/lib/org/auth";
 
 export async function createEmailRule(input: {
@@ -16,16 +16,18 @@ export async function createEmailRule(input: {
   tag?: string;
   templateKey?: string;
 }) {
-  const { supabase } = await requireOrgManager(input.organizationId);
+  await requireOrgManager(input.organizationId);
 
   if (!input.name.trim()) throw new Error("Rule name is required");
 
-  const { error } = await supabase.from("email_rules").insert({
+  const admin = createAdminClient();
+
+  const { error } = await admin.from("email_rules").insert({
     organization_id: input.organizationId,
     name: input.name.trim(),
-    priority: input.priority ?? 100,
+    priority: Number.isFinite(input.priority) ? input.priority : 100,
     from_email: input.fromEmail?.trim() || null,
-    from_domain: input.fromDomain?.trim() || null,
+    from_domain: input.fromDomain?.trim().toLowerCase() || null,
     subject_contains: input.subjectContains?.trim() || null,
     only_new_contact: Boolean(input.onlyNewContact),
     action: input.action,
@@ -42,13 +44,9 @@ export async function createEmailRule(input: {
 }
 
 export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const admin = createAdminClient();
 
-  const { data: rule } = await supabase
+  const { data: rule } = await admin
     .from("email_rules")
     .select("organization_id")
     .eq("id", ruleId)
@@ -57,7 +55,7 @@ export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
   if (!rule) throw new Error("Rule not found");
   await requireOrgManager(rule.organization_id);
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("email_rules")
     .update({
       is_enabled: isEnabled,
@@ -70,13 +68,9 @@ export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
 }
 
 export async function deleteEmailRule(ruleId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const admin = createAdminClient();
 
-  const { data: rule } = await supabase
+  const { data: rule } = await admin
     .from("email_rules")
     .select("organization_id")
     .eq("id", ruleId)
@@ -85,7 +79,7 @@ export async function deleteEmailRule(ruleId: string) {
   if (!rule) throw new Error("Rule not found");
   await requireOrgManager(rule.organization_id);
 
-  const { error } = await supabase.from("email_rules").delete().eq("id", ruleId);
+  const { error } = await admin.from("email_rules").delete().eq("id", ruleId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/email-rules");
 }

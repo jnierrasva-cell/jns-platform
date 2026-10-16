@@ -33,6 +33,12 @@ function conditionSummary(rule: Rule) {
   return parts.length ? parts.join(" · ") : "Any inbound email";
 }
 
+function actionLabel(action: Rule["action"]) {
+  if (action === "auto_ack") return "Auto-reply + contact";
+  if (action === "tag_only") return "Contact only";
+  return "Skip";
+}
+
 export function EmailRulesClient({
   organizationId,
   rules,
@@ -43,7 +49,7 @@ export function EmailRulesClient({
   templateKeys: string[];
 }) {
   const [name, setName] = useState("");
-  const [priority, setPriority] = useState(100);
+  const [priority, setPriority] = useState(10);
   const [fromEmail, setFromEmail] = useState("");
   const [fromDomain, setFromDomain] = useState("");
   const [subjectContains, setSubjectContains] = useState("");
@@ -58,7 +64,7 @@ export function EmailRulesClient({
 
   function resetForm() {
     setName("");
-    setPriority(100);
+    setPriority(10);
     setFromEmail("");
     setFromDomain("");
     setSubjectContains("");
@@ -76,7 +82,7 @@ export function EmailRulesClient({
         await createEmailRule({
           organizationId,
           name,
-          priority: Number(priority) || 100,
+          priority: Number(priority) || 10,
           fromEmail,
           fromDomain,
           subjectContains,
@@ -87,7 +93,17 @@ export function EmailRulesClient({
         });
         resetForm();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not create rule");
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === "string"
+              ? err
+              : "Could not create rule";
+        setError(
+          message.includes("Minified React error")
+            ? "Could not save this rule. Check you are an owner/admin of this workspace, then try again."
+            : message,
+        );
       }
     });
   }
@@ -108,9 +124,8 @@ export function EmailRulesClient({
 
       <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Email rules</h1>
       <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-        Decide who gets a reply, who becomes a contact, and who is ignored.
-        Lower priority runs first. This is how JNS stays clean — not a silent
-        reply to everything.
+        Rules decide who gets a reply. Leave optional filters empty to match
+        more mail. Lower priority number is checked first.
       </p>
 
       <form
@@ -118,6 +133,10 @@ export function EmailRulesClient({
         className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
       >
         <h2 className="text-sm font-medium text-zinc-900">New rule</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Example: subject contains “cancel” → auto-reply. You do not need
+          every field filled in.
+        </p>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
@@ -126,35 +145,45 @@ export function EmailRulesClient({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Pricing inquiries"
+              placeholder="Cancellation requests"
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-zinc-700">
-              Priority (lower = first)
+              Priority (1 = highest)
             </label>
             <input
               type="number"
+              min={1}
+              max={999}
               value={priority}
-              onChange={(e) => setPriority(Number(e.target.value))}
+              onChange={(e) => setPriority(Number(e.target.value) || 1)}
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             />
+            <p className="text-xs text-zinc-400">
+              Use 1–10 for important rules. Default 10 is fine.
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">From email (optional)</label>
+            <label className="text-sm text-zinc-700">
+              From email (optional)
+            </label>
             <input
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
+              placeholder="one.person@email.com"
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">From domain (optional)</label>
+            <label className="text-sm text-zinc-700">
+              From domain (optional)
+            </label>
             <input
               value={fromDomain}
               onChange={(e) => setFromDomain(e.target.value)}
-              placeholder="gmail.com"
+              placeholder="ilovemypilates.com"
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             />
           </div>
@@ -165,6 +194,7 @@ export function EmailRulesClient({
             <input
               value={subjectContains}
               onChange={(e) => setSubjectContains(e.target.value)}
+              placeholder="cancellation"
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             />
           </div>
@@ -178,13 +208,13 @@ export function EmailRulesClient({
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             >
               <option value="auto_ack">Send auto-reply + contact</option>
-              <option value="tag_only">Contact only (tag, no reply)</option>
-              <option value="skip">Skip (ignore)</option>
+              <option value="tag_only">Contact only (no reply)</option>
+              <option value="skip">Skip (ignore this mail)</option>
             </select>
           </div>
           {action === "auto_ack" && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-zinc-700">Template</label>
+              <label className="text-sm text-zinc-700">Reply template</label>
               <select
                 value={templateKey}
                 onChange={(e) => setTemplateKey(e.target.value)}
@@ -206,6 +236,7 @@ export function EmailRulesClient({
             <input
               value={tag}
               onChange={(e) => setTag(e.target.value)}
+              placeholder="cancellation"
               className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
             />
           </div>
@@ -252,8 +283,8 @@ export function EmailRulesClient({
                   colSpan={5}
                   className="px-4 py-10 text-center text-zinc-500"
                 >
-                  No custom rules yet. Save templates, then add rules so
-                  replies stay intentional.
+                  No rules yet. Add one so auto-reply only fires when you want
+                  it.
                 </td>
               </tr>
             ) : (
@@ -275,7 +306,9 @@ export function EmailRulesClient({
                   <td className="px-4 py-3 text-zinc-500">
                     {conditionSummary(rule)}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{rule.action}</td>
+                  <td className="px-4 py-3 text-zinc-500">
+                    {actionLabel(rule.action)}
+                  </td>
                   <td className="px-4 py-3 text-zinc-500">{rule.priority}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
@@ -284,10 +317,18 @@ export function EmailRulesClient({
                         className="text-xs text-zinc-600 underline"
                         onClick={() =>
                           startTransition(async () => {
-                            await setEmailRuleEnabled(
-                              rule.id,
-                              !rule.is_enabled,
-                            );
+                            try {
+                              await setEmailRuleEnabled(
+                                rule.id,
+                                !rule.is_enabled,
+                              );
+                            } catch (err) {
+                              setError(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Could not update rule",
+                              );
+                            }
                           })
                         }
                       >
@@ -298,7 +339,15 @@ export function EmailRulesClient({
                         className="text-xs text-red-600 underline"
                         onClick={() =>
                           startTransition(async () => {
-                            await deleteEmailRule(rule.id);
+                            try {
+                              await deleteEmailRule(rule.id);
+                            } catch (err) {
+                              setError(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Could not delete rule",
+                              );
+                            }
                           })
                         }
                       >
