@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
+import { isOrgManagerRole } from "@/lib/org/roles";
 
 async function requireSopManager() {
   const supabase = await createClient();
@@ -13,11 +14,43 @@ async function requireSopManager() {
 
   const active = await getActiveOrg();
   if (!active) return { error: "No workspace selected" as const };
-  if (active.role !== "ceo" && active.role !== "admin") {
+  if (!isOrgManagerRole(active.role)) {
     return { error: "Only owners and admins can manage SOPs" as const };
   }
 
   return { user, active };
+}
+
+async function requireSopViewer(sopId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" as const };
+
+  const active = await getActiveOrg();
+  if (!active) return { error: "No workspace selected" as const };
+
+  const admin = createAdminClient();
+  const { data: sop, error } = await admin
+    .from("org_sops")
+    .select("id, file_path, file_name, file_type, visibility, organization_id")
+    .eq("id", sopId)
+    .eq("organization_id", active.organizationId)
+    .maybeSingle();
+
+  if (error || !sop) return { error: "SOP not found" as const };
+
+  const isManager = isOrgManagerRole(active.role);
+  const visibility = (sop.visibility as string) || "all_members";
+
+  if (visibility === "managers_only" && !isManager) {
+    return { error: "You don’t have access to this document" as const };
+  }
+
+  // Future: if visibility === 'selected', check org_sop_viewers here
+
+  return { user, active, sop, isManager };
 }
 
 /** Browser uploads to this URL (bypasses storage RLS pain). */
@@ -52,8 +85,9 @@ export async function saveSopRecord(input: {
   description?: string;
   filePath: string;
   fileName: string;
-  fileType: string | null;
+  fileType: string;
   fileSize: number;
+  visibility?: "all_members" | "managers_only";
 }) {
   const gate = await requireSopManager();
   if ("error" in gate) return { ok: false as const, error: gate.error };
@@ -63,6 +97,9 @@ export async function saveSopRecord(input: {
   if (!input.filePath.startsWith(`${gate.active.organizationId}/`)) {
     return { ok: false as const, error: "Invalid file path" };
   }
+
+  const visibility =
+    input.visibility === "managers_only" ? "managers_only" : "all_members";
 
   const admin = createAdminClient();
   const { error } = await admin.from("org_sops").insert({
@@ -74,7 +111,26 @@ export async function saveSopRecord(input: {
     file_type: input.fileType,
     file_size: input.fileSize,
     uploaded_by: gate.user.id,
+    visibility,
   });
+
+  if (error) return { ok: false as const, error: error.message };
+  return { ok: true as const };
+}
+
+export async function updateSopVisibility(
+  sopId: string,
+  visibility: "all_members" | "managers_only",
+) {
+  const gate = await requireSopManager();
+  if ("error" in gate) return { ok: false as const, error: gate.error };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("org_sops")
+    .update({ visibility })
+    .eq("id", sopId)
+    .eq("organization_id", gate.active.organizationId);
 
   if (error) return { ok: false as const, error: error.message };
   return { ok: true as const };
@@ -105,25 +161,46 @@ export async function deleteSop(sopId: string) {
   return { ok: true as const };
 }
 
-export async function getSopDownloadUrl(sopId: string) {
-  const supabase = await createClient();
-  const active = await getActiveOrg();
-  if (!active) return { ok: false as const, error: "No workspace selected" };
+/** Open in browser (View). Any allowed org member. */
+export async function getSopViewUrl(sopId: string) {
+  const gate = await requireSopViewer(sopId);
+  if ("error" in gate) return { ok: false as const, error: gate.error };
 
   const admin = createAdminClient();
-  const { data: sop, error } = await admin
-    .from("org_sops")
-    .select("file_path, file_name")
-    .eq("id", sopId)
-    .eq("organization_id", active.organizationId)
-    .maybeSingle();
-
-  if (error || !sop) return { ok: false as const, error: "SOP not found" };
-
-  // Member must belong to org (active already implies that)
   const { data, error: signError } = await admin.storage
     .from("org-sops")
-    .createSignedUrl(sop.file_path, 60 * 10);
+    .createSignedUrl(gate.sop.file_path, 60 * 15);
+
+  if (signError || !data?.signedUrl) {
+    return {
+      ok: false as const,
+      error: signError?.message || "Could not open document",
+    };
+  }
+
+  return {
+    ok: true as const,
+    url: data.signedUrl,
+    fileName: gate.sop.file_name as string,
+    fileType: (gate.sop.file_type as string) || null,
+  };
+}
+
+/** Download file — managers only (members use View). */
+export async function getSopDownloadUrl(sopId: string) {
+  const gate = await requireSopViewer(sopId);
+  if ("error" in gate) return { ok: false as const, error: gate.error };
+  if (!gate.isManager) {
+    return {
+      ok: false as const,
+      error: "Only owners and admins can download. Use View instead.",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data, error: signError } = await admin.storage
+    .from("org-sops")
+    .createSignedUrl(gate.sop.file_path, 60 * 10);
 
   if (signError || !data?.signedUrl) {
     return {
@@ -135,6 +212,6 @@ export async function getSopDownloadUrl(sopId: string) {
   return {
     ok: true as const,
     url: data.signedUrl,
-    fileName: sop.file_name,
+    fileName: gate.sop.file_name as string,
   };
 }

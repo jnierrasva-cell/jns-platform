@@ -7,7 +7,9 @@ import {
   prepareSopUpload,
   saveSopRecord,
   deleteSop,
+  getSopViewUrl,
   getSopDownloadUrl,
+  updateSopVisibility,
 } from "@/app/dashboard/sops/actions";
 
 type Sop = {
@@ -19,6 +21,7 @@ type Sop = {
   file_size: number | null;
   created_at: string;
   uploaded_by: string | null;
+  visibility?: string | null;
 };
 
 function formatSize(bytes: number | null) {
@@ -45,6 +48,9 @@ export function SopsClient({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [visibility, setVisibility] = useState<"all_members" | "managers_only">(
+    "all_members",
+  );
 
   function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,6 +72,7 @@ export function SopsClient({
     const uploadFile = file;
     const uploadTitle = title.trim();
     const uploadDescription = description.trim();
+    const uploadVisibility = visibility;
 
     startTransition(async () => {
       try {
@@ -92,8 +99,9 @@ export function SopsClient({
           description: uploadDescription,
           filePath: prepared.path,
           fileName: uploadFile.name,
-          fileType: uploadFile.type || null,
+          fileType: uploadFile.type || "application/octet-stream",
           fileSize: uploadFile.size,
+          visibility: uploadVisibility,
         });
 
         if (!result.ok) {
@@ -104,10 +112,23 @@ export function SopsClient({
         setTitle("");
         setDescription("");
         setFile(null);
+        setVisibility("all_members");
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
       }
+    });
+  }
+
+  function handleView(sopId: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await getSopViewUrl(sopId);
+      if (!result.ok) {
+        setError(result.error ?? "Could not open document");
+        return;
+      }
+      window.open(result.url, "_blank", "noopener,noreferrer");
     });
   }
 
@@ -143,6 +164,21 @@ export function SopsClient({
     });
   }
 
+  function handleVisibility(
+    sopId: string,
+    next: "all_members" | "managers_only",
+  ) {
+    setError(null);
+    startTransition(async () => {
+      const result = await updateSopVisibility(sopId, next);
+      if (!result.ok) {
+        setError(result.error ?? "Could not update access");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <div>
       <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
@@ -152,8 +188,9 @@ export function SopsClient({
         Company processes
       </h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Shared playbooks for <span className="font-medium">{orgName}</span> so
-        everyone follows the same steps.
+        Shared playbooks for <span className="font-medium">{orgName}</span>.
+        Everyone can view team SOPs; only owners and admins can upload or
+        delete.
       </p>
 
       {error && (
@@ -179,19 +216,32 @@ export function SopsClient({
             <div>
               <label className="text-sm text-zinc-700">Notes (optional)</label>
               <textarea
-                rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="When to use this process…"
+                rows={2}
                 className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
               />
+            </div>
+            <div>
+              <label className="text-sm text-zinc-700">Who can view</label>
+              <select
+                value={visibility}
+                onChange={(e) =>
+                  setVisibility(
+                    e.target.value as "all_members" | "managers_only",
+                  )
+                }
+                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              >
+                <option value="all_members">Everyone in this workspace</option>
+                <option value="managers_only">Owners & admins only</option>
+              </select>
             </div>
             <div>
               <label className="text-sm text-zinc-700">File</label>
               <input
                 type="file"
                 required
-                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="mt-1 block w-full text-sm text-zinc-600"
               />
@@ -200,7 +250,7 @@ export function SopsClient({
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
             >
               {isPending ? "Uploading…" : "Upload"}
             </button>
@@ -237,26 +287,60 @@ export function SopsClient({
                     <p className="mt-2 text-xs text-zinc-400">
                       {sop.file_name} · {formatSize(sop.file_size)} ·{" "}
                       {new Date(sop.created_at).toLocaleDateString()}
+                      {sop.visibility === "managers_only"
+                        ? " · Owners & admins only"
+                        : " · Visible to team"}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       disabled={isPending}
-                      onClick={() => handleDownload(sop.id)}
+                      onClick={() => handleView(sop.id)}
                       className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
                     >
-                      Download
+                      View
                     </button>
                     {canManage && (
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() => handleDelete(sop.id, sop.title)}
-                        className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => handleDownload(sop.id)}
+                          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+                        >
+                          Download
+                        </button>
+                        <select
+                          disabled={isPending}
+                          value={
+                            sop.visibility === "managers_only"
+                              ? "managers_only"
+                              : "all_members"
+                          }
+                          onChange={(e) =>
+                            handleVisibility(
+                              sop.id,
+                              e.target.value as
+                                | "all_members"
+                                | "managers_only",
+                            )
+                          }
+                          className="rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-xs text-zinc-800"
+                          title="Who can view"
+                        >
+                          <option value="all_members">Team can view</option>
+                          <option value="managers_only">Managers only</option>
+                        </select>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => handleDelete(sop.id, sop.title)}
+                          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
