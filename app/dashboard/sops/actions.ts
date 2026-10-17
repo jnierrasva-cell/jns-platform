@@ -1,9 +1,26 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getActiveOrg } from "@/lib/org/active";
 import { isOrgManagerRole } from "@/lib/org/roles";
+
+function extensionFromName(fileName: string) {
+  const i = fileName.lastIndexOf(".");
+  if (i <= 0) return "";
+  return fileName.slice(i).toLowerCase();
+}
+
+/** Safe download/view filename from SOP title + original extension */
+function titledFileName(title: string, originalFileName: string) {
+  const ext = extensionFromName(originalFileName) || "";
+  const base = title
+    .trim()
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+    .replace(/\s+/g, " ")
+    .slice(0, 120);
+  return `${base || "SOP"}${ext}`;
+}
 
 async function requireSopManager() {
   const supabase = await createClient();
@@ -34,7 +51,9 @@ async function requireSopViewer(sopId: string) {
   const admin = createAdminClient();
   const { data: sop, error } = await admin
     .from("org_sops")
-    .select("id, file_path, file_name, file_type, visibility, organization_id")
+    .select(
+      "id, title, file_path, file_name, file_type, visibility, organization_id, version, updated_at",
+    )
     .eq("id", sopId)
     .eq("organization_id", active.organizationId)
     .maybeSingle();
@@ -48,12 +67,9 @@ async function requireSopViewer(sopId: string) {
     return { error: "You don’t have access to this document" as const };
   }
 
-  // Future: if visibility === 'selected', check org_sop_viewers here
-
   return { user, active, sop, isManager };
 }
 
-/** Browser uploads to this URL (bypasses storage RLS pain). */
 export async function prepareSopUpload(fileName: string) {
   const gate = await requireSopManager();
   if ("error" in gate) return { ok: false as const, error: gate.error };
@@ -73,11 +89,7 @@ export async function prepareSopUpload(fileName: string) {
     };
   }
 
-  return {
-    ok: true as const,
-    path,
-    token: data.token,
-  };
+  return { ok: true as const, path, token: data.token };
 }
 
 export async function saveSopRecord(input: {
@@ -88,6 +100,7 @@ export async function saveSopRecord(input: {
   fileType: string;
   fileSize: number;
   visibility?: "all_members" | "managers_only";
+  version?: string;
 }) {
   const gate = await requireSopManager();
   if ("error" in gate) return { ok: false as const, error: gate.error };
@@ -100,6 +113,8 @@ export async function saveSopRecord(input: {
 
   const visibility =
     input.visibility === "managers_only" ? "managers_only" : "all_members";
+  const version = (input.version || "1.0").trim() || "1.0";
+  const now = new Date().toISOString();
 
   const admin = createAdminClient();
   const { error } = await admin.from("org_sops").insert({
@@ -112,6 +127,8 @@ export async function saveSopRecord(input: {
     file_size: input.fileSize,
     uploaded_by: gate.user.id,
     visibility,
+    version,
+    updated_at: now,
   });
 
   if (error) return { ok: false as const, error: error.message };
@@ -128,7 +145,29 @@ export async function updateSopVisibility(
   const admin = createAdminClient();
   const { error } = await admin
     .from("org_sops")
-    .update({ visibility })
+    .update({
+      visibility,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", sopId)
+    .eq("organization_id", gate.active.organizationId);
+
+  if (error) return { ok: false as const, error: error.message };
+  return { ok: true as const };
+}
+
+export async function updateSopVersion(sopId: string, version: string) {
+  const gate = await requireSopManager();
+  if ("error" in gate) return { ok: false as const, error: gate.error };
+
+  const v = version.trim() || "1.0";
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("org_sops")
+    .update({
+      version: v,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", sopId)
     .eq("organization_id", gate.active.organizationId);
 
@@ -141,7 +180,6 @@ export async function deleteSop(sopId: string) {
   if ("error" in gate) return { ok: false as const, error: gate.error };
 
   const admin = createAdminClient();
-
   const { data: sop, error } = await admin
     .from("org_sops")
     .select("id, file_path")
@@ -161,15 +199,23 @@ export async function deleteSop(sopId: string) {
   return { ok: true as const };
 }
 
-/** Open in browser (View). Any allowed org member. */
+/** View — returns URL + display title (prefer PDF in browser). */
 export async function getSopViewUrl(sopId: string) {
   const gate = await requireSopViewer(sopId);
   if ("error" in gate) return { ok: false as const, error: gate.error };
 
+  const displayName = titledFileName(
+    gate.sop.title as string,
+    gate.sop.file_name as string,
+  );
+
   const admin = createAdminClient();
+  // Inline preview when possible; filename hint for the browser
   const { data, error: signError } = await admin.storage
     .from("org-sops")
-    .createSignedUrl(gate.sop.file_path, 60 * 15);
+    .createSignedUrl(gate.sop.file_path, 60 * 15, {
+      download: displayName,
+    });
 
   if (signError || !data?.signedUrl) {
     return {
@@ -181,12 +227,13 @@ export async function getSopViewUrl(sopId: string) {
   return {
     ok: true as const,
     url: data.signedUrl,
-    fileName: gate.sop.file_name as string,
+    title: gate.sop.title as string,
+    fileName: displayName,
     fileType: (gate.sop.file_type as string) || null,
   };
 }
 
-/** Download file — managers only (members use View). */
+/** Download — managers only; uses SOP title as file name. */
 export async function getSopDownloadUrl(sopId: string) {
   const gate = await requireSopViewer(sopId);
   if ("error" in gate) return { ok: false as const, error: gate.error };
@@ -197,10 +244,17 @@ export async function getSopDownloadUrl(sopId: string) {
     };
   }
 
+  const displayName = titledFileName(
+    gate.sop.title as string,
+    gate.sop.file_name as string,
+  );
+
   const admin = createAdminClient();
   const { data, error: signError } = await admin.storage
     .from("org-sops")
-    .createSignedUrl(gate.sop.file_path, 60 * 10);
+    .createSignedUrl(gate.sop.file_path, 60 * 10, {
+      download: displayName,
+    });
 
   if (signError || !data?.signedUrl) {
     return {
@@ -212,6 +266,6 @@ export async function getSopDownloadUrl(sopId: string) {
   return {
     ok: true as const,
     url: data.signedUrl,
-    fileName: gate.sop.file_name as string,
+    fileName: displayName,
   };
 }

@@ -21,12 +21,12 @@ export default async function SopsPage() {
   let query = admin
     .from("org_sops")
     .select(
-      "id, title, description, file_name, file_type, file_size, created_at, uploaded_by, visibility",
+      "id, title, description, file_name, file_type, file_size, created_at, updated_at, uploaded_by, visibility, version",
     )
     .eq("organization_id", active.organizationId)
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false });
 
-  // Members only see org-wide SOPs; managers see all
+  // Non-managers: only SOPs shared with the whole team
   if (!canManage) {
     query = query.eq("visibility", "all_members");
   }
