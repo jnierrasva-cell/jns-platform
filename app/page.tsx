@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Mail, Plug, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Mail, Plug, Users } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 
 const features = [
@@ -22,6 +22,54 @@ const features = [
     icon: Plug,
     title: "Connected tools",
     body: "Google, SMS, and class software when you need them — less copy-paste between tabs.",
+  },
+];
+
+const plans = [
+  {
+    name: "Starter",
+    price: "$35",
+    blurb: "Solo operators who need one place for clients and bookings.",
+    cta: "Get started",
+    highlighted: false,
+    features: [
+      "1 workspace, up to 2 users",
+      "Contacts, pipeline, and notes",
+      "Bookings and public booking page",
+      "Forms (core fields) and CSV export",
+      "SOPs for the owner",
+      "Google Calendar connect",
+    ],
+  },
+  {
+    name: "Pro",
+    price: "$89",
+    blurb: "Daily ops: inbox follow-up, team access, and process in one workspace.",
+    cta: "Start with Pro",
+    highlighted: true,
+    features: [
+      "Everything in Starter",
+      "Gmail connect, auto-reply, email rules and templates",
+      "Unmatched inbox (not every email becomes a lead)",
+      "Team invites and roles",
+      "Custom forms, duplicate, and branding",
+      "Team SOPs",
+      "SMS reminders (usage billed separately)",
+    ],
+  },
+  {
+    name: "Business",
+    price: "$179",
+    blurb: "Growing teams that need more seats and a serious ops home.",
+    cta: "Talk to us",
+    highlighted: false,
+    features: [
+      "Everything in Pro",
+      "More seats included",
+      "Higher automation and form limits",
+      "Priority onboarding support",
+      "Specialty integrations (e.g. class software) as available",
+    ],
   },
 ];
 
@@ -118,8 +166,11 @@ export default function LandingPage() {
             <a href="#how" className="hover:text-white">
               How it works
             </a>
+            <a href="#pricing" className="hover:text-white">
+              Pricing
+            </a>
           </nav>
-      <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Link
               href="/login"
               className="hidden px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white sm:inline"
@@ -143,45 +194,46 @@ export default function LandingPage() {
               For service businesses and the people who run them
             </p>
             <h1 className="mt-3 max-w-lg text-[2.15rem] font-semibold leading-[1.15] tracking-tight text-zinc-900 sm:text-5xl">
-              One workspace for clients, bookings, and follow-up.
+              One workspace for clients, bookings, and follow-up
             </h1>
-            <p className="mt-4 max-w-md text-[15px] leading-7 text-zinc-600">
-              JNS is where inquiries become contacts under your rules, bookings
-              stay on the calendar, and the team works from the same system —
-              connected to Google, SMS, and the tools you already use.
+            <p className="mt-4 max-w-md text-base leading-7 text-zinc-600">
+              Journey Network Systems keeps contacts, intake, schedule, and
+              team process in one place—so work doesn&apos;t scatter across
+              inboxes and spreadsheets.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/login"
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0B132B] px-4 text-sm font-medium text-white hover:bg-[#111e3a]"
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#0B132B] px-5 text-sm font-medium text-white hover:bg-[#111e3a]"
               >
-                Sign in
+                Get started
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a
-                href="#product"
-                className="inline-flex h-10 items-center rounded-lg border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                href="#pricing"
+                className="inline-flex h-11 items-center rounded-lg border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
               >
-                See what's included
+                See pricing
               </a>
             </div>
-            <p className="mt-4 text-xs text-zinc-400">
-              Private pilot — access may be limited while we onboard partners.
+            <p className="mt-4 text-xs text-zinc-500">
+              Open for new workspaces. Billing rolls out in phases—see pricing
+              for what each plan includes.
             </p>
           </div>
           <ProductPreview />
         </section>
 
-        <section id="product" className="border-y border-zinc-200 bg-white">
+        <section id="product" className="border-t border-zinc-200 bg-white">
           <div className="mx-auto max-w-5xl px-5 py-16">
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
-              What the workspace is for
+              Built for how service work actually runs
             </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
-              Built for the path from inquiry to booked to ongoing client — with
-              rules so the system stays clean.
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+              Not another bloated marketing suite. A clear ops home for people,
+              appointments, and follow-up you control.
             </p>
-            <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-zinc-200 bg-zinc-200 sm:grid-cols-2">
+            <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-zinc-200 bg-zinc-200 sm:grid-cols-2">
               {features.map((feature) => {
                 const Icon = feature.icon;
                 return (
@@ -236,15 +288,112 @@ export default function LandingPage() {
           </ol>
         </section>
 
+        <section id="pricing" className="border-t border-zinc-200 bg-white">
+          <div className="mx-auto max-w-5xl px-5 py-16">
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
+              Simple pricing
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+              Founding rates while we open to more teams. SMS is usage-based.
+              Card checkout is coming—new accounts get access through sign-up;
+              we&apos;ll confirm plan details with you as billing goes live.
+            </p>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-3">
+              {plans.map((plan) => (
+                <article
+                  key={plan.name}
+                  className={`flex flex-col rounded-xl border p-6 ${
+                    plan.highlighted
+                      ? "border-[#0B132B] bg-[#0B132B] text-white shadow-lg"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3
+                      className={`text-sm font-semibold ${
+                        plan.highlighted ? "text-white" : "text-zinc-900"
+                      }`}
+                    >
+                      {plan.name}
+                    </h3>
+                    {plan.highlighted ? (
+                      <span className="rounded-full bg-cyan-400/20 px-2 py-0.5 text-[11px] font-medium text-cyan-200">
+                        Most used
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 flex items-baseline gap-1">
+                    <span className="text-3xl font-semibold tracking-tight">
+                      {plan.price}
+                    </span>
+                    <span
+                      className={`text-sm ${
+                        plan.highlighted ? "text-slate-400" : "text-zinc-500"
+                      }`}
+                    >
+                      / month
+                    </span>
+                  </p>
+                  <p
+                    className={`mt-2 text-sm leading-6 ${
+                      plan.highlighted ? "text-slate-300" : "text-zinc-600"
+                    }`}
+                  >
+                    {plan.blurb}
+                  </p>
+                  <ul className="mt-6 flex-1 space-y-2.5">
+                    {plan.features.map((item) => (
+                      <li key={item} className="flex gap-2 text-sm leading-5">
+                        <Check
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            plan.highlighted
+                              ? "text-cyan-300"
+                              : "text-sky-600"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span
+                          className={
+                            plan.highlighted ? "text-slate-200" : "text-zinc-700"
+                          }
+                        >
+                          {item}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/login"
+                    className={`mt-8 inline-flex h-10 items-center justify-center rounded-lg text-sm font-medium ${
+                      plan.highlighted
+                        ? "bg-white text-[#0B132B] hover:bg-slate-100"
+                        : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </article>
+              ))}
+            </div>
+
+            <p className="mt-8 text-xs leading-5 text-zinc-500">
+              Prices in USD. Annual billing (save ~2 months) available when card
+              checkout launches. Specialty integrations and high SMS volume may
+              be quoted separately.
+            </p>
+          </div>
+        </section>
+
         <section className="border-t border-[#1e2a4a] bg-[#0B132B]">
           <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-6 px-5 py-14 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-white">
-                Ready to use your workspace
+                Ready to open a workspace
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Sign in with your JNS account, or create one from the sign-in
-                page. This is a private pilot.
+                Create an account from sign-in. We&apos;re onboarding teams in
+                waves while billing is finalized.
               </p>
             </div>
             <Link
@@ -260,7 +409,12 @@ export default function LandingPage() {
       <footer className="border-t border-zinc-200 bg-zinc-50 px-5 py-8">
         <div className="mx-auto flex max-w-5xl flex-col gap-1 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Journey Network Systems</p>
-          <p>Private pilot · Clients, bookings, and follow-up in one workspace</p>
+          <p>
+            Clients, bookings, and follow-up in one workspace ·{" "}
+            <a href="#pricing" className="underline hover:text-zinc-700">
+              Pricing
+            </a>
+          </p>
         </div>
       </footer>
     </div>
