@@ -11,7 +11,7 @@ function extensionFromName(fileName: string) {
   return fileName.slice(i).toLowerCase();
 }
 
-/** Safe download/view filename from SOP title + original extension */
+/** Safe download filename from SOP title + original extension */
 function titledFileName(title: string, originalFileName: string) {
   const ext = extensionFromName(originalFileName) || "";
   const base = title
@@ -199,7 +199,7 @@ export async function deleteSop(sopId: string) {
   return { ok: true as const };
 }
 
-/** View — returns URL + display title (prefer PDF in browser). */
+/** View — open inline in the browser when possible (PDF). No download flag. */
 export async function getSopViewUrl(sopId: string) {
   const gate = await requireSopViewer(sopId);
   if ("error" in gate) return { ok: false as const, error: gate.error };
@@ -210,12 +210,10 @@ export async function getSopViewUrl(sopId: string) {
   );
 
   const admin = createAdminClient();
-  // Inline preview when possible; filename hint for the browser
+  // Do NOT pass `download` — that forces the browser to save the file.
   const { data, error: signError } = await admin.storage
     .from("org-sops")
-    .createSignedUrl(gate.sop.file_path, 60 * 15, {
-      download: displayName,
-    });
+    .createSignedUrl(gate.sop.file_path, 60 * 15);
 
   if (signError || !data?.signedUrl) {
     return {
@@ -233,7 +231,7 @@ export async function getSopViewUrl(sopId: string) {
   };
 }
 
-/** Download — managers only; uses SOP title as file name. */
+/** Download — managers only; file saves as SOP title + extension. */
 export async function getSopDownloadUrl(sopId: string) {
   const gate = await requireSopViewer(sopId);
   if ("error" in gate) return { ok: false as const, error: gate.error };
