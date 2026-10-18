@@ -175,12 +175,15 @@ export async function exportFormSubmissionsCsv(input: {
 
     const { data: form } = await admin
       .from("intake_forms")
-      .select("name, slug")
+      .select("name, slug, fields")
       .eq("id", input.formId)
       .eq("organization_id", input.organizationId)
       .maybeSingle();
 
     if (!form) return { ok: false, error: "Form not found" };
+
+    const formFields = normalizeFields(form.fields);
+    const questionFields = formFields.filter((f) => f.enabled !== false);
 
     const { data: rows, error } = await admin
       .from("intake_submissions")
@@ -197,22 +200,38 @@ export async function exportFormSubmissionsCsv(input: {
       return s;
     };
 
+    const headers = [
+      "Submitted at",
+      ...questionFields.map((f) => f.label || f.id),
+    ];
+
     const lines = [
-      ["created_at", "name", "email", "phone", "message", "responses"].join(
-        ",",
-      ),
-      ...(rows ?? []).map((r) =>
-        [
+      headers.map(escape).join(","),
+      ...(rows ?? []).map((r) => {
+        const responses =
+          (r.responses as Record<string, unknown> | null) ||
+          (r.payload as Record<string, unknown> | null) ||
+          {};
+
+        const cells = [
           r.created_at,
-          r.name,
-          r.email,
-          r.phone,
-          r.message,
-          JSON.stringify(r.responses ?? r.payload ?? {}),
-        ]
-          .map(escape)
-          .join(","),
-      ),
+          ...questionFields.map((f) => {
+            if (
+              responses[f.id] != null &&
+              String(responses[f.id]).trim() !== ""
+            ) {
+              return String(responses[f.id]);
+            }
+            if (f.id === "name") return r.name ?? "";
+            if (f.id === "email") return r.email ?? "";
+            if (f.id === "phone") return r.phone ?? "";
+            if (f.id === "message") return r.message ?? "";
+            return "";
+          }),
+        ];
+
+        return cells.map(escape).join(",");
+      }),
     ];
 
     const filename = `${slugify(form.name || form.slug || "form")}-submissions.csv`;
