@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { FormsClient } from "@/components/forms-client";
-import { DEFAULT_FORM_FIELDS } from "@/app/dashboard/forms/actions";
+import { DEFAULT_FORM_FIELDS } from "@/lib/forms/fields";
 
 export default async function FormsPage() {
   const supabase = await createClient();

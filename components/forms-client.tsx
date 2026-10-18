@@ -6,9 +6,11 @@ import {
   updateIntakeForm,
   duplicateIntakeForm,
   exportFormSubmissionsCsv,
-  type FormField,
-  DEFAULT_FORM_FIELDS,
 } from "@/app/dashboard/forms/actions";
+import {
+  DEFAULT_FORM_FIELDS,
+  type FormField,
+} from "@/lib/forms/fields";
 
 type FormRow = {
   id: string;

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 import { submitIntakeForm } from "@/app/forms/[orgSlug]/[formSlug]/actions";
-import type { FormField } from "@/app/dashboard/forms/actions";
+import type { FormField } from "@/lib/forms/fields";
 
 export function IntakeFormClient({
   organizationId,
