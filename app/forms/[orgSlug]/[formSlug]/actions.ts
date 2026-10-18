@@ -102,20 +102,39 @@ async function sendIntakeAutoAck(input: {
 export async function submitIntakeForm(input: {
   organizationId: string;
   formId: string;
-  name: string;
-  email: string;
-  phone?: string;
-  message?: string;
+  /** Answers keyed by field id (name, email, phone, message, custom_…) */
+  responses: Record<string, string>;
 }) {
   const supabase = createAdminClient();
+  const responses = input.responses || {};
 
-  const name = input.name.trim();
-  const email = input.email.trim().toLowerCase();
-  const phone = input.phone?.trim() || null;
-  const message = input.message?.trim() || null;
+  const name = (
+    responses.name ||
+    responses.full_name ||
+    responses.fullName ||
+    ""
+  ).trim();
+  const email = (responses.email || "").trim().toLowerCase();
+  const phone = (responses.phone || "").trim() || null;
+
+  const customLines = Object.entries(responses)
+    .filter(
+      ([k]) =>
+        !["name", "full_name", "fullName", "email", "phone", "message"].includes(
+          k,
+        ),
+    )
+    .map(([k, v]) => `${k}: ${String(v || "").trim()}`)
+    .filter((line) => !line.endsWith(": "));
+
+  const messageBody = (responses.message || "").trim();
+  const message =
+    [messageBody, ...customLines].filter(Boolean).join("\n\n") || null;
 
   if (!name) throw new Error("Name is required");
-  if (!email || !email.includes("@")) throw new Error("Valid email is required");
+  if (!email || !email.includes("@")) {
+    throw new Error("Valid email is required");
+  }
 
   const { data: form } = await supabase
     .from("intake_forms")
@@ -180,7 +199,6 @@ export async function submitIntakeForm(input: {
     onlyIfEmpty: true,
   });
 
-  // Message lives on the contact as a note (readable in CRM)
   if (message) {
     await supabase.from("contact_notes").insert({
       organization_id: input.organizationId,
@@ -198,11 +216,9 @@ export async function submitIntakeForm(input: {
     email,
     phone,
     message,
+    responses,
     payload: {
-      name,
-      email,
-      phone,
-      message,
+      ...responses,
       form_slug: form.slug,
       form_name: form.name,
     },

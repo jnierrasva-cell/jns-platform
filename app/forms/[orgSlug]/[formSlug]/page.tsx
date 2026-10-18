@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IntakeFormClient } from "@/components/intake-form-client";
+import { DEFAULT_FORM_FIELDS } from "@/app/dashboard/forms/actions";
 
 export default async function PublicIntakeFormPage({
   params,
@@ -33,12 +34,19 @@ export default async function PublicIntakeFormPage({
 
   const { data: form } = await supabase
     .from("intake_forms")
-    .select("id, name, success_message, is_published")
+    .select(
+      "id, name, success_message, is_published, headline, description, fields",
+    )
     .eq("organization_id", org.id)
     .eq("slug", formSlug)
     .maybeSingle();
 
   if (!form || !form.is_published) notFound();
+
+  const fields =
+    Array.isArray(form.fields) && form.fields.length > 0
+      ? form.fields
+      : DEFAULT_FORM_FIELDS;
 
   return (
     <IntakeFormClient
@@ -46,7 +54,10 @@ export default async function PublicIntakeFormPage({
       formId={form.id}
       businessName={org.name}
       formName={form.name}
+      headline={form.headline}
+      description={form.description}
       successMessage={form.success_message}
+      fields={fields}
     />
   );
 }
