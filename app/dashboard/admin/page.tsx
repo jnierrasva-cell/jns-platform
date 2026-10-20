@@ -40,6 +40,16 @@ export default async function DashboardAdminPage() {
     status: string;
     created_at: string;
   }[] = [];
+  let organizations: {
+    id: string;
+    name: string | null;
+    slug: string | null;
+    plan: string | null;
+    billing_status: string | null;
+    billing_provider: string | null;
+    plan_period_end: string | null;
+    plan_notes: string | null;
+  }[] = [];
   let loadError: string | null = null;
 
   try {
@@ -51,6 +61,16 @@ export default async function DashboardAdminPage() {
 
     if (error) loadError = error.message;
     else profiles = data ?? [];
+
+    const { data: orgs, error: orgError } = await admin
+      .from("organizations")
+      .select(
+        "id, name, slug, plan, billing_status, billing_provider, plan_period_end, plan_notes",
+      )
+      .order("name", { ascending: true });
+
+    if (orgError && !loadError) loadError = orgError.message;
+    else organizations = orgs ?? [];
   } catch (err) {
     loadError =
       err instanceof Error
@@ -64,9 +84,7 @@ export default async function DashboardAdminPage() {
         <h1 className="text-2xl font-semibold text-zinc-900">JNS Admin</h1>
         <p className="mt-4 text-sm text-red-600">{loadError}</p>
         <p className="mt-2 text-xs text-zinc-500">
-          In Vercel → Environment Variables, confirm{" "}
-          <code>SUPABASE_SERVICE_ROLE_KEY</code> is set for Production, then
-          Redeploy.
+          Confirm service role key and that plan columns exist on organizations.
         </p>
         <Link href="/dashboard" className="mt-4 inline-block text-sm underline">
           ← Back to overview
@@ -75,5 +93,7 @@ export default async function DashboardAdminPage() {
     );
   }
 
-  return <AdminClient profiles={profiles} />;
+  return (
+    <AdminClient profiles={profiles} organizations={organizations} />
+  );
 }
