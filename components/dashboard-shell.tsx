@@ -23,6 +23,7 @@ import {
   Menu,
   X,
   FileText,
+  CreditCard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -227,6 +228,23 @@ export function DashboardShell({
             }`}
           />
           {showLabels && "My orgs"}
+        </Link>
+
+        <Link
+          href="/dashboard/billing"
+          className={linkClass(pathname.startsWith("/dashboard/billing"))}
+          title={!showLabels ? "Billing" : undefined}
+          onClick={() => setMobileOpen(false)}
+        >
+          <CreditCard
+            size={16}
+            className={`shrink-0 ${
+              pathname.startsWith("/dashboard/billing")
+                ? "text-sky-400"
+                : "text-slate-500"
+            }`}
+          />
+          {showLabels && "Billing"}
         </Link>
 
         {isPlatformAdmin && (
