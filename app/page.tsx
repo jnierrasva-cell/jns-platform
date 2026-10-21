@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Check, Mail, Plug, Users } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { PricingCheckoutButton } from "@/components/pricing-checkout-button";
 
 const features = [
   {
@@ -26,7 +27,8 @@ const features = [
 ];
 
 const plans = [
-  {
+  { 
+    id: "starter" as const,
     name: "Starter",
     price: "$35",
     blurb: "Solo operators who need one place for clients and bookings.",
@@ -41,7 +43,8 @@ const plans = [
       "Google Calendar connect",
     ],
   },
-  {
+  { 
+    id: "pro" as const,
     name: "Pro",
     price: "$89",
     blurb: "Daily ops: inbox follow-up, team access, and process in one workspace.",
@@ -57,7 +60,8 @@ const plans = [
       "SMS reminders (usage billed separately)",
     ],
   },
-  {
+  { 
+    id: "business" as const,
     name: "Business",
     price: "$179",
     blurb: "Growing teams that need more seats and a serious ops home.",
@@ -371,7 +375,15 @@ export default function LandingPage() {
                         : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
                     }`}
                   >
-                    {plan.cta}
+                   <PricingCheckoutButton
+  plan={plan.id}
+  label={plan.cta}
+  className={`mt-8 inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-medium ${
+    plan.highlighted
+      ? "bg-white text-[#0B132B] hover:bg-slate-100"
+      : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
+  }`}
+/>
                   </Link>
                 </article>
               ))}
