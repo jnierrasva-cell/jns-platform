@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrg } from "@/lib/org/active";
+import { getPlanGateState } from "@/lib/billing/org-plan";
+import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { EmailRulesClient } from "@/components/email-rules-client";
 
 export default async function EmailRulesPage() {
@@ -15,6 +17,7 @@ export default async function EmailRulesPage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const gate = await getPlanGateState(orgId);
 
   const { data: rules } = await supabase
     .from("email_rules")
@@ -36,10 +39,18 @@ export default async function EmailRulesPage() {
   ];
 
   return (
-    <EmailRulesClient
-      organizationId={orgId}
-      rules={rules ?? []}
-      templateKeys={templateKeys}
-    />
+    <div>
+      {!gate.limits.emailRules && (
+        <PlanGateBanner
+          title="Email rules need Pro or Business"
+          body="You can view this area, but creating or enabling rules is locked until this workspace has an active Pro or Business plan."
+        />
+      )}
+      <EmailRulesClient
+        organizationId={orgId}
+        rules={rules ?? []}
+        templateKeys={templateKeys}
+      />
+    </div>
   );
 }

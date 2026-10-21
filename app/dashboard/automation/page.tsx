@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
+import { getPlanGateState } from "@/lib/billing/org-plan";
+import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { AutomationClient } from "@/components/automation-client";
 import { mockServices } from "@/lib/mock-services";
 
@@ -21,6 +23,7 @@ export default async function AutomationPage() {
   }
 
   const orgId = active.organizationId;
+  const gate = await getPlanGateState(orgId);
   const admin = createAdminClient();
 
   const [
@@ -76,17 +79,25 @@ export default async function AutomationPage() {
   }
 
   return (
-    <AutomationClient
-      organizationId={orgId}
-      services={mockServices}
-      initialEnabledKeys={enabledKeys}
-      initialSettings={settingsByKey}
-      recentActivity={activityRes.data ?? []}
-      googleConnected={Boolean(googleRes.data?.connected_email)}
-      googleEmail={googleRes.data?.connected_email ?? null}
-      twilioConnected={Boolean(twilioRes.data?.from_number)}
-      twilioFrom={twilioRes.data?.from_number ?? null}
-      enabledRulesCount={rulesRes.count ?? 0}
-    />
+    <div>
+      {!gate.limits.emailAutomation && (
+        <PlanGateBanner
+          title="Inbox automation needs Pro or Business"
+          body="Turning on auto-reply or SMS reminders requires an active Pro or Business subscription."
+        />
+      )}
+      <AutomationClient
+        organizationId={orgId}
+        services={mockServices}
+        initialEnabledKeys={enabledKeys}
+        initialSettings={settingsByKey}
+        recentActivity={activityRes.data ?? []}
+        googleConnected={Boolean(googleRes.data?.connected_email)}
+        googleEmail={googleRes.data?.connected_email ?? null}
+        twilioConnected={Boolean(twilioRes.data?.from_number)}
+        twilioFrom={twilioRes.data?.from_number ?? null}
+        enabledRulesCount={rulesRes.count ?? 0}
+      />
+    </div>
   );
 }

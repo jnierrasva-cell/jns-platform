@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgManager } from "@/lib/org/auth";
+import { assertEmailRules } from "@/lib/billing/org-plan";
 
 export async function createEmailRule(input: {
   organizationId: string;
@@ -17,6 +18,7 @@ export async function createEmailRule(input: {
   templateKey?: string;
 }) {
   await requireOrgManager(input.organizationId);
+  await assertEmailRules(input.organizationId);
 
   if (!input.name.trim()) throw new Error("Rule name is required");
 
@@ -54,6 +56,7 @@ export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
 
   if (!rule) throw new Error("Rule not found");
   await requireOrgManager(rule.organization_id);
+  if (isEnabled) await assertEmailRules(rule.organization_id);
 
   const { error } = await admin
     .from("email_rules")

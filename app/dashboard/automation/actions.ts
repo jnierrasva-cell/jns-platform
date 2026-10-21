@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { requireOrgManager } from "@/lib/org/auth";
 import { startGmailWatch, stopGmailWatch } from "@/lib/google/watch";
+import {
+  assertEmailAutomation,
+  assertSmsReminders,
+} from "@/lib/billing/org-plan";
 
 export async function setAutomationEnabled(
   organizationId: string,
@@ -10,6 +14,19 @@ export async function setAutomationEnabled(
   isEnabled: boolean,
 ) {
   const { supabase } = await requireOrgManager(organizationId);
+
+  if (isEnabled) {
+    if (serviceKey === "sms-reminders") {
+      await assertSmsReminders(organizationId);
+    }
+    if (
+      serviceKey === "email-auto-ack" ||
+      serviceKey === "email-follow-up" ||
+      serviceKey === "form-thanks"
+    ) {
+      await assertEmailAutomation(organizationId);
+    }
+  }
 
   if (serviceKey === "sms-reminders" && isEnabled) {
     const { data: twilio } = await supabase

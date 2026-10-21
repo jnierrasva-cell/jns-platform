@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
+import { getPlanGateState } from "@/lib/billing/org-plan";
+import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { TeamClient } from "@/components/team-client";
 
 export default async function TeamPage() {
@@ -20,6 +22,7 @@ export default async function TeamPage() {
   }
 
   const orgId = active.organizationId;
+  const gate = await getPlanGateState(orgId);
   const admin = createAdminClient();
 
   const { data: memberRows } = await admin
@@ -34,7 +37,13 @@ export default async function TeamPage() {
           .from("profiles")
           .select("id, email, business_name")
           .in("id", userIds)
-      : { data: [] as { id: string; email: string | null; business_name: string | null }[] };
+      : {
+          data: [] as {
+            id: string;
+            email: string | null;
+            business_name: string | null;
+          }[],
+        };
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -60,12 +69,20 @@ export default async function TeamPage() {
     "https://jns-platform.vercel.app";
 
   return (
-    <TeamClient
-      orgId={orgId}
-      orgName={active.orgName}
-      members={members}
-      invites={invites ?? []}
-      appOrigin={origin}
-    />
+    <div>
+      {!gate.limits.teamInvites && (
+        <PlanGateBanner
+          title="Team invites need a paid plan"
+          body="Starter and above can invite members. Subscribe under Billing to unlock seats."
+        />
+      )}
+      <TeamClient
+        orgId={orgId}
+        orgName={active.orgName}
+        members={members}
+        invites={invites ?? []}
+        appOrigin={origin}
+      />
+    </div>
   );
 }
