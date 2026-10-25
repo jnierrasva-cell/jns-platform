@@ -221,8 +221,8 @@ export default function LandingPage() {
               </a>
             </div>
             <p className="mt-4 text-xs text-zinc-500">
-              Open for new workspaces. Billing rolls out in phases—see pricing
-              for what each plan includes.
+              Open for new workspaces. Choose a plan at signup or anytime under
+              Billing in your dashboard.
             </p>
           </div>
           <ProductPreview />
@@ -298,9 +298,10 @@ export default function LandingPage() {
               Simple pricing
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-              Founding rates while we open to more teams. SMS is usage-based.
-              Card checkout is coming—new accounts get access through sign-up;
-              we&apos;ll confirm plan details with you as billing goes live.
+              Monthly plans for solo operators through growing teams. SMS is
+              usage-based. Subscribe from the homepage when signed in, or from
+              Billing inside your workspace—your plan badge shows what&apos;s
+              active.
             </p>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-3">
@@ -390,9 +391,10 @@ export default function LandingPage() {
             </div>
 
             <p className="mt-8 text-xs leading-5 text-zinc-500">
-              Prices in USD. Annual billing (save ~2 months) available when card
-              checkout launches. Specialty integrations and high SMS volume may
-              be quoted separately.
+              Prices in USD, billed monthly. Card checkout via Lemon Squeezy.
+              Specialty integrations and high SMS volume may be quoted
+              separately. Philippines bank or e-wallet: pay manually, then we
+              activate your plan.
             </p>
           </div>
         </section>
@@ -404,8 +406,8 @@ export default function LandingPage() {
                 Ready to open a workspace
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Create an account from sign-in. We&apos;re onboarding teams in
-                waves while billing is finalized.
+                Create an account, name your business, and subscribe when you
+                need Pro tools—or start and upgrade from Billing anytime.
               </p>
             </div>
             <Link
