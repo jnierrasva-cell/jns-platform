@@ -115,6 +115,49 @@ export function AdminClient({
     return false;
   }).length;
 
+  const metricCards = [
+    {
+      label: "Total users",
+      value: String(usersTotal),
+      detail: `${usersNewMonth} new this month`,
+    },
+    {
+      label: "Workspaces",
+      value: String(orgsTotal),
+      detail: `${paidActive.length} paid active`,
+    },
+    {
+      label: "Est. MRR",
+      value: `$${estimatedMrr}`,
+      detail: "List price × active paid",
+    },
+    {
+      label: "Expiring ≤14 days",
+      value: String(expiringSoon),
+      detail: "Renew or follow up",
+    },
+    {
+      label: "Expired / cancelled",
+      value: String(expiredOrCancelled),
+      detail: "Churn signal",
+    },
+    {
+      label: "No plan",
+      value: String(byPlan.none),
+      detail: "Not converting yet",
+    },
+    {
+      label: "Starter",
+      value: String(byPlan.starter),
+      detail: "Workspaces on Starter",
+    },
+    {
+      label: "Pro + Business",
+      value: String(byPlan.pro + byPlan.business),
+      detail: `${byPlan.pro} Pro · ${byPlan.business} Business`,
+    },
+  ] as const;
+
   function draftFor(org: OrgRow) {
     return (
       planDraft[org.id] || {
@@ -493,11 +536,12 @@ export function AdminClient({
                     <select
                       value={p.role}
                       disabled={isPending}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const role = e.target.value as "user" | "super_admin";
                         startTransition(() => {
-                          setUserRole(p.id, e.target.value);
-                        })
-                      }
+                          setUserRole(p.id, role);
+                        });
+                      }}
                       className="rounded border border-zinc-200 px-2 py-1 text-xs"
                     >
                       <option value="user">user</option>
