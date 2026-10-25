@@ -420,13 +420,16 @@ export default function LandingPage() {
         </section>
       </main>
 
-<footer className="border-t border-zinc-200 bg-zinc-50 px-5 py-8">
+      <footer className="border-t border-zinc-200 bg-zinc-50 px-5 py-8">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Journey Network Systems</p>
           <p className="flex flex-wrap gap-x-3 gap-y-1">
             <a href="#pricing" className="underline hover:text-zinc-700">
               Pricing
             </a>
+            <Link href="/support" className="underline hover:text-zinc-700">
+              Support
+            </Link>
             <Link href="/terms" className="underline hover:text-zinc-700">
               Terms
             </Link>
