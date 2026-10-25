@@ -33,6 +33,28 @@ type OrgRow = {
   plan_notes: string | null;
 };
 
+const LIST_PRICE: Record<string, number> = {
+  starter: 35,
+  pro: 89,
+  business: 179,
+};
+
+function isPaidActive(org: OrgRow) {
+  const plan = (org.plan || "none").toLowerCase();
+  if (!["starter", "pro", "business"].includes(plan)) return false;
+  const status = (org.billing_status || "").toLowerCase();
+  if (status !== "active" && status !== "trialing") return false;
+  if (org.plan_period_end) {
+    const end = new Date(org.plan_period_end).getTime();
+    if (!Number.isNaN(end) && end < Date.now()) return false;
+  }
+  return true;
+}
+
+function startOfMonth(d = new Date()) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
 export function AdminClient({
   profiles,
   organizations,
@@ -53,6 +75,45 @@ export function AdminClient({
 
   const activeUsers = profiles.filter((p) => p.status !== "rejected");
   const rejectedUsers = profiles.filter((p) => p.status === "rejected");
+
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const in14 = now.getTime() + 14 * 24 * 60 * 60 * 1000;
+
+  const usersTotal = profiles.length;
+  const usersNewMonth = profiles.filter(
+    (p) => new Date(p.created_at) >= monthStart,
+  ).length;
+
+  const orgsTotal = organizations.length;
+  const paidActive = organizations.filter(isPaidActive);
+  const byPlan = {
+    none: organizations.filter((o) => !o.plan || o.plan === "none").length,
+    starter: organizations.filter((o) => o.plan === "starter").length,
+    pro: organizations.filter((o) => o.plan === "pro").length,
+    business: organizations.filter((o) => o.plan === "business").length,
+  };
+
+  const estimatedMrr = paidActive.reduce((sum, o) => {
+    const plan = (o.plan || "").toLowerCase();
+    return sum + (LIST_PRICE[plan] ?? 0);
+  }, 0);
+
+  const expiringSoon = organizations.filter((o) => {
+    if (!isPaidActive(o) || !o.plan_period_end) return false;
+    const end = new Date(o.plan_period_end).getTime();
+    return !Number.isNaN(end) && end <= in14 && end >= now.getTime();
+  }).length;
+
+  const expiredOrCancelled = organizations.filter((o) => {
+    const status = (o.billing_status || "").toLowerCase();
+    if (status === "expired" || status === "cancelled") return true;
+    if (o.plan_period_end && o.plan && o.plan !== "none") {
+      const end = new Date(o.plan_period_end).getTime();
+      if (!Number.isNaN(end) && end < now.getTime()) return true;
+    }
+    return false;
+  }).length;
 
   function draftFor(org: OrgRow) {
     return (
@@ -152,6 +213,49 @@ export function AdminClient({
     });
   }
 
+  const metricCards = [
+    {
+      label: "Total users",
+      value: String(usersTotal),
+      detail: `${usersNewMonth} new this month`,
+    },
+    {
+      label: "Workspaces",
+      value: String(orgsTotal),
+      detail: `${paidActive.length} paid active`,
+    },
+    {
+      label: "Est. MRR",
+      value: `$${estimatedMrr}`,
+      detail: "List price × active paid",
+    },
+    {
+      label: "Expiring ≤14 days",
+      value: String(expiringSoon),
+      detail: "Renew or follow up",
+    },
+    {
+      label: "Expired / cancelled",
+      value: String(expiredOrCancelled),
+      detail: "Churn signal",
+    },
+    {
+      label: "No plan",
+      value: String(byPlan.none),
+      detail: "Not converting yet",
+    },
+    {
+      label: "Starter",
+      value: String(byPlan.starter),
+      detail: "Workspaces on Starter",
+    },
+    {
+      label: "Pro + Business",
+      value: String(byPlan.pro + byPlan.business),
+      detail: `${byPlan.pro} Pro · ${byPlan.business} Business`,
+    },
+  ] as const;
+
   return (
     <div>
       <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
@@ -159,9 +263,26 @@ export function AdminClient({
       </span>
       <h1 className="mt-1 text-2xl font-semibold text-zinc-900">JNS Admin</h1>
       <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-        Platform access and workspace subscriptions. Org roles stay under each
-        workspace Team tab.
+        Platform access, workspace subscriptions, and a live snapshot for
+        business decisions. Org roles stay under each workspace Team tab.
       </p>
+
+      <section className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {metricCards.map((m) => (
+          <div
+            key={m.label}
+            className="rounded-xl border border-zinc-200 bg-white p-4"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+              {m.label}
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-zinc-900">
+              {m.value}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">{m.detail}</p>
+          </div>
+        ))}
+      </section>
 
       {actionError && (
         <p className="mt-4 text-sm text-red-600" role="alert">
@@ -189,7 +310,6 @@ export function AdminClient({
         </div>
       )}
 
-      {/* ——— Subscriptions ——— */}
       <section className="mt-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -239,7 +359,9 @@ export function AdminClient({
                     ? new Date(org.plan_period_end)
                     : null;
                   const expired =
-                    end && !Number.isNaN(end.getTime()) && end.getTime() < Date.now();
+                    end &&
+                    !Number.isNaN(end.getTime()) &&
+                    end.getTime() < Date.now();
 
                   return (
                     <tr
@@ -258,12 +380,11 @@ export function AdminClient({
                         </p>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium capitalize">
+                        <span className="font-medium capitalize text-zinc-900">
                           {org.plan || "none"}
                         </span>
-                        <span className="text-zinc-500">
-                          {" "}
-                          · {org.billing_status || "none"}
+                        <span className="block text-xs text-zinc-500">
+                          {org.billing_status || "—"}
                           {expired ? " · past end" : ""}
                         </span>
                       </td>
@@ -341,7 +462,6 @@ export function AdminClient({
         </div>
       </section>
 
-      {/* ——— Users ——— */}
       <section className="mt-12">
         <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
           Platform users ({activeUsers.length})
@@ -351,8 +471,9 @@ export function AdminClient({
             <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
+                <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Platform role</th>
+                <th className="px-4 py-3 font-medium">Joined</th>
                 <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -364,52 +485,38 @@ export function AdminClient({
                 >
                   <td className="px-4 py-3">
                     <p className="font-medium text-zinc-900">
-                      {p.business_name || p.email}
+                      {p.business_name || p.email || "—"}
                     </p>
                     <p className="text-xs text-zinc-500">{p.email}</p>
                   </td>
-                  <td className="px-4 py-3 capitalize text-zinc-600">
-                    {p.status}
+                  <td className="px-4 py-3">
+                    <select
+                      value={p.role}
+                      disabled={isPending}
+                      onChange={(e) =>
+                        startTransition(() => {
+                          setUserRole(p.id, e.target.value);
+                        })
+                      }
+                      className="rounded border border-zinc-200 px-2 py-1 text-xs"
+                    >
+                      <option value="user">user</option>
+                      <option value="super_admin">super_admin</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-zinc-600">{p.status}</td>
+                  <td className="px-4 py-3 text-zinc-500">
+                    {new Date(p.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    {p.role === "super_admin" ? "super_admin" : "user"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap justify-end gap-3">
-                      {p.role !== "super_admin" ? (
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() =>
-                            startTransition(() => {
-                              setUserRole(p.id, "super_admin");
-                            })
-                          }
-                          className="text-xs underline disabled:opacity-50"
-                        >
-                          Make super admin
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() =>
-                            startTransition(() => {
-                              setUserRole(p.id, "user");
-                            })
-                          }
-                          className="text-xs underline disabled:opacity-50"
-                        >
-                          Remove super admin
-                        </button>
-                      )}
+                    <div className="flex flex-wrap justify-end gap-2">
                       <button
                         type="button"
                         disabled={isPending}
                         onClick={() => handleResetLink(p.id)}
-                        className="text-xs underline disabled:opacity-50"
+                        className="text-xs font-medium text-zinc-700 underline disabled:opacity-50"
                       >
-                        Reset password link
+                        Reset link
                       </button>
                       <button
                         type="button"
@@ -419,7 +526,7 @@ export function AdminClient({
                             rejectUser(p.id);
                           })
                         }
-                        className="text-xs text-red-600 underline disabled:opacity-50"
+                        className="text-xs font-medium text-amber-800 underline disabled:opacity-50"
                       >
                         Block
                       </button>
