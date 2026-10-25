@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getPlanGateState } from "@/lib/billing/org-plan";
+import { PLAN_LIMITS } from "@/lib/billing/plans";
 import {
   Plug,
   Users,
@@ -44,6 +46,18 @@ export default async function OverviewPage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const gate = await getPlanGateState(orgId);
+  const planLabel = PLAN_LIMITS[gate.planId].label;
+  const planId = gate.planId;
+  const periodEnd = gate.billing.plan_period_end;
+  const periodLabel =
+    periodEnd && !Number.isNaN(new Date(periodEnd).getTime())
+      ? new Date(periodEnd).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
   const isManager = active.role === "ceo" || active.role === "admin";
   const admin = createAdminClient();
 
@@ -359,11 +373,36 @@ export default async function OverviewPage() {
         <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
           Overview
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-          {active.orgName}
-        </h1>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            {active.orgName}
+          </h1>
+          <Link
+            href="/dashboard/billing"
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              planId === "none"
+                ? "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200"
+                : "bg-[#0B132B] text-white"
+            }`}
+          >
+            {planLabel}
+          </Link>
+        </div>
         <p className="mt-1 text-sm text-zinc-500">
-          Live snapshot for this workspace. Switch orgs anytime under My orgs.
+          Live snapshot for this workspace.
+          {periodLabel
+            ? ` Plan access through ${periodLabel}.`
+            : planId === "none"
+              ? " No active subscription — some tools are limited."
+              : ""}{" "}
+          <Link
+            href="/dashboard/billing"
+            className="font-medium text-zinc-800 underline underline-offset-2"
+          >
+            Billing
+          </Link>
+          {" · "}
+          Switch orgs under My orgs.
         </p>
       </div>
 

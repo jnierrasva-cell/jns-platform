@@ -57,16 +57,20 @@ const MANAGER_NAV: NavItem[] = [
 ];
 
 export function DashboardShell({
-  userEmail,
+userEmail,
   isPlatformAdmin,
   isOrgManager,
   orgName,
+  planLabel = "No plan",
+  planId = "none",
   children,
 }: {
-  userEmail: string;
+userEmail: string;
   isPlatformAdmin: boolean;
   isOrgManager: boolean;
   orgName: string;
+  planLabel?: string;
+  planId?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -171,6 +175,29 @@ export function DashboardShell({
             <p className="mt-2 truncate px-0.5 text-xs text-slate-400">
               {orgName}
             </p>
+            <p className="mt-2 truncate px-0.5 text-xs text-slate-400">
+              {orgName}
+            </p>
+            <Link
+              href="/dashboard/billing"
+              className="mt-1 inline-flex max-w-full items-center gap-1.5 px-0.5"
+              onClick={() => setMobileOpen(false)}
+              title="View plan and billing"
+            >
+              <span
+                className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                  planId === "none"
+                    ? "bg-slate-700/80 text-slate-300"
+                    : planId === "business"
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : planId === "pro"
+                        ? "bg-sky-500/20 text-sky-300"
+                        : "bg-emerald-500/15 text-emerald-300"
+                }`}
+              >
+                {planLabel}
+              </span>
+            </Link>
           </>
         )}
       </div>
@@ -313,6 +340,30 @@ export function DashboardShell({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-zinc-900">
               {orgName}
+            <p className="mt-2 truncate px-0.5 text-xs text-slate-400">
+              {orgName}
+            </p>
+            <Link
+              href="/dashboard/billing"
+              className="mt-1 inline-flex max-w-full items-center gap-1.5 px-0.5"
+              onClick={() => setMobileOpen(false)}
+              title="View plan and billing"
+            >
+              <span
+                className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                  planId === "none"
+                    ? "bg-slate-700/80 text-slate-300"
+                    : planId === "business"
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : planId === "pro"
+                        ? "bg-sky-500/20 text-sky-300"
+                        : "bg-emerald-500/15 text-emerald-300"
+                }`}
+              >
+                {planLabel}
+              </span>
+            </Link>
+
             </p>
           </div>
         </header>

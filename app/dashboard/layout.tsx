@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getActiveOrg } from "@/lib/org/active";
+import { getPlanGateState } from "@/lib/billing/org-plan";
+import { PLAN_LIMITS } from "@/lib/billing/plans";
 
 export default async function DashboardLayout({
   children,
@@ -28,7 +30,6 @@ export default async function DashboardLayout({
 
   const hasMembership = (memberships?.length ?? 0) > 0;
 
-  // Best-effort approve / seed active org — never throw the page
   if (profile) {
     try {
       await supabase
@@ -81,12 +82,18 @@ export default async function DashboardLayout({
     user.email?.toLowerCase() === "j.nierras.va@gmail.com";
   const isOrgManager = active.role === "ceo" || active.role === "admin";
 
+  const gate = await getPlanGateState(active.organizationId);
+  const planLabel = PLAN_LIMITS[gate.planId].label;
+  const planId = gate.planId;
+
   return (
     <DashboardShell
       userEmail={user.email ?? ""}
       isPlatformAdmin={isPlatformAdmin}
       isOrgManager={isOrgManager}
       orgName={active.orgName}
+      planLabel={planLabel}
+      planId={planId}
     >
       {children}
     </DashboardShell>
