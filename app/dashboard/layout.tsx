@@ -5,6 +5,8 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { getActiveOrg } from "@/lib/org/active";
 import { getPlanGateState } from "@/lib/billing/org-plan";
 import { PLAN_LIMITS } from "@/lib/billing/plans";
+import { needsProfileName } from "@/lib/names";
+import { CompleteProfileBanner } from "@/components/complete-profile-banner";
 
 export default async function DashboardLayout({
   children,
@@ -20,7 +22,9 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, status, account_type, active_organization_id")
+    .select(
+      "role, status, account_type, active_organization_id, first_name, last_name",
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -100,6 +104,10 @@ export default async function DashboardLayout({
   const gate = await getPlanGateState(active.organizationId);
   const planLabel = PLAN_LIMITS[gate.planId].label;
   const planId = gate.planId;
+  const showNamePrompt = needsProfileName(
+    profile?.first_name,
+    profile?.last_name,
+  );
 
   return (
     <DashboardShell
@@ -107,10 +115,15 @@ export default async function DashboardLayout({
       isPlatformAdmin={isPlatformAdmin}
       isOrgManager={isOrgManager}
       orgName={active.orgName}
+      orgKind={active.orgKind}
+      orgLogoUrl={active.orgLogoUrl}
       planLabel={planLabel}
       planId={planId}
     >
-      {children}
+      <>
+        {showNamePrompt && <CompleteProfileBanner />}
+        {children}
+      </>
     </DashboardShell>
   );
 }

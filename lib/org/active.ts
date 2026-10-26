@@ -7,6 +7,8 @@ export type ActiveOrg = {
   organizationId: string;
   role: string;
   orgName: string;
+  orgKind: "personal" | "business";
+  orgLogoUrl: string | null;
 };
 
 export async function getActiveOrg(): Promise<ActiveOrg | null> {
@@ -75,26 +77,34 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
   }
 
   let orgName = "Workspace";
+  let orgKind: "personal" | "business" = "personal";
+  let orgLogoUrl: string | null = null;
   try {
     const admin = createAdminClient();
     const { data: org } = await admin
       .from("organizations")
-      .select("name")
+      .select("name, kind, logo_url")
       .eq("id", selected.organization_id)
       .maybeSingle();
     orgName = org?.name ?? "Workspace";
+    orgKind = org?.kind === "business" ? "business" : "personal";
+    orgLogoUrl = org?.logo_url ?? null;
   } catch {
     const { data: org } = await supabase
       .from("organizations")
-      .select("name")
+      .select("name, kind, logo_url")
       .eq("id", selected.organization_id)
       .maybeSingle();
     orgName = org?.name ?? "Workspace";
+    orgKind = org?.kind === "business" ? "business" : "personal";
+    orgLogoUrl = org?.logo_url ?? null;
   }
 
   return {
     organizationId: selected.organization_id,
     role: selected.role,
     orgName,
+    orgKind,
+    orgLogoUrl,
   };
 }

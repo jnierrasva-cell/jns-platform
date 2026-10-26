@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
+import Image from "next/image";
 
 const STORAGE_KEY = "jns_sidebar_collapsed";
 
@@ -64,6 +65,8 @@ export function DashboardShell({
   isPlatformAdmin,
   isOrgManager,
   orgName,
+  orgKind,
+  orgLogoUrl,
   planLabel = "No plan",
   planId = "none",
   children,
@@ -72,6 +75,8 @@ export function DashboardShell({
   isPlatformAdmin: boolean;
   isOrgManager: boolean;
   orgName: string;
+  orgKind?: "personal" | "business" | null;
+  orgLogoUrl?: string | null;
   planLabel?: string;
   planId?: string;
   children: React.ReactNode;
@@ -197,7 +202,9 @@ export function DashboardShell({
         ) : (
           <>
             <div className="flex items-center justify-between gap-2">
-              <BrandMark href="/dashboard" />
+              <div className="origin-left scale-90">
+                <BrandMark href="/dashboard" />
+              </div>
               <button
                 type="button"
                 className="rounded-md p-1.5 text-slate-400 hover:bg-[#111e3a] hover:text-white md:hidden"
@@ -207,9 +214,28 @@ export function DashboardShell({
                 <X size={18} />
               </button>
             </div>
-            <p className="mt-2 truncate px-0.5 text-xs text-slate-400">
-              {orgName}
-            </p>
+            {orgLogoUrl && (
+              <div className="mt-3 flex h-10 items-center px-0.5">
+                <Image
+                  src={orgLogoUrl}
+                  alt={`${orgName} logo`}
+                  width={160}
+                  height={40}
+                  unoptimized
+                  className="max-h-10 w-auto max-w-full object-contain object-left"
+                />
+              </div>
+            )}
+            <div className="mt-2 flex items-center gap-2 px-0.5">
+              <p className="truncate text-sm font-semibold text-white">
+                {orgName}
+              </p>
+              {orgKind === "business" && (
+                <span className="shrink-0 text-[10px] font-medium text-slate-400">
+                  Business
+                </span>
+              )}
+            </div>
             <Link
               href="/dashboard/billing"
               className="mt-1 inline-flex max-w-full items-center gap-1.5 px-0.5"

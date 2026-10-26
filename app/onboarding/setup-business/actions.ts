@@ -32,7 +32,21 @@ export async function createOrganization(
   }
 
   const admin = createAdminClient();
-  await admin
+  const { data: organization, error: kindError } = await admin
+    .from("organizations")
+    .update({ kind: "business" })
+    .eq("id", orgId as string)
+    .select("id")
+    .maybeSingle();
+
+  if (kindError) {
+    return { ok: false, error: kindError.message };
+  }
+  if (!organization) {
+    return { ok: false, error: "Could not mark organization as a business." };
+  }
+
+  const { error: profileError } = await admin
     .from("profiles")
     .update({
       active_organization_id: orgId as string,
@@ -40,6 +54,10 @@ export async function createOrganization(
       status: "approved",
     })
     .eq("id", user.id);
+
+  if (profileError) {
+    return { ok: false, error: profileError.message };
+  }
 
   return { ok: true, next: "/dashboard" };
 }

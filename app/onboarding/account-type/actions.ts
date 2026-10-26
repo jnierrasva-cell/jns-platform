@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { possessiveWorkspaceName } from "@/lib/names";
 
 export async function setAccountType(
   type: "individual" | "business",
@@ -11,34 +12,52 @@ export async function setAccountType(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { ok: false, error: "Not authenticated" };
-  }
+  if (!user) return { ok: false, error: "Not authenticated" };
 
   const admin = createAdminClient();
 
-  const { error: profileError } = await admin
+  const { data: profile } = await admin
     .from("profiles")
-    .update({
-      account_type: type,
-      status: "approved",
-    })
-    .eq("id", user.id);
+    .select("first_name, last_name")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  if (profileError) {
-    return { ok: false, error: profileError.message };
+  const meta = user.user_metadata as Record<string, string> | undefined;
+  const firstName =
+    profile?.first_name?.trim() ||
+    meta?.first_name?.trim() ||
+    "";
+
+  // Sync metadata → profile if signup wrote metadata only
+  if ((!profile?.first_name || !profile?.last_name) && (meta?.first_name || meta?.last_name)) {
+    await admin
+      .from("profiles")
+      .update({
+        first_name: meta?.first_name?.trim() || profile?.first_name || null,
+        last_name: meta?.last_name?.trim() || profile?.last_name || null,
+        account_type: type,
+        status: "approved",
+      })
+      .eq("id", user.id);
+  } else {
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({
+        account_type: type,
+        status: "approved",
+      })
+      .eq("id", user.id);
+    if (profileError) return { ok: false, error: profileError.message };
   }
 
   if (type === "business") {
     return { ok: true, next: "/onboarding/setup-business" };
   }
 
-  // Individual: personal workspace via SECURITY DEFINER RPC
-  const emailPrefix =
-    user.email?.split("@")[0]?.replace(/[^a-zA-Z0-9]/g, " ") || "Personal";
-  const workspaceName = `${emailPrefix} workspace`.trim();
+  const workspaceName = possessiveWorkspaceName(
+    firstName || user.email?.split("@")[0] || "My",
+  );
 
-  // RPC still runs as the user for auth.uid(); admin is not needed for rpc call
   const { data: orgId, error: orgError } = await supabase.rpc(
     "create_organization_with_ceo",
     { business_name: workspaceName },
@@ -50,6 +69,11 @@ export async function setAccountType(
       error: orgError?.message ?? "Could not create workspace",
     };
   }
+
+  await admin
+    .from("organizations")
+    .update({ kind: "personal" })
+    .eq("id", orgId as string);
 
   await admin
     .from("profiles")

@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
+import { saveSignupNames } from "./actions";
 
 const workspaceBenefits = [
   "Contacts under your rules — not every email as a lead",
@@ -25,6 +26,8 @@ function LoginForm() {
   const nextPath = safeNextPath(searchParams.get("next"));
 
   const [mode, setMode] = useState<Mode>("signin");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -91,10 +94,23 @@ function LoginForm() {
         return;
       }
 
+      const trimmedFirstName = firstName.trim();
+      const trimmedLastName = lastName.trim();
+      if (!trimmedFirstName || !trimmedLastName) {
+        setError("Enter your first and last name.");
+        return;
+      }
+
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            data: {
+              first_name: trimmedFirstName,
+              last_name: trimmedLastName,
+            },
+          },
         });
 
       if (signUpError) {
@@ -103,6 +119,7 @@ function LoginForm() {
       }
 
       if (signUpData.session) {
+        await saveSignupNames(trimmedFirstName, trimmedLastName);
         afterAuthRedirect("/onboarding/account-type");
         return;
       }
@@ -118,6 +135,7 @@ function LoginForm() {
         return;
       }
 
+      await saveSignupNames(trimmedFirstName, trimmedLastName);
       afterAuthRedirect("/onboarding/account-type");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -211,6 +229,35 @@ function LoginForm() {
               </p>
             ) : (
               <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+                {mode === "signup" && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-sm font-medium text-zinc-700">
+                        First name
+                      </label>
+                      <input
+                        required
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        autoComplete="given-name"
+                        className="mt-1 w-full rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#0B132B]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-zinc-700">
+                        Last name
+                      </label>
+                      <input
+                        required
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        autoComplete="family-name"
+                        className="mt-1 w-full rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#0B132B]"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm font-medium text-zinc-700">
                     Email
