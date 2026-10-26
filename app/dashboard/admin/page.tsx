@@ -4,14 +4,23 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AdminClient } from "@/components/admin-client";
 
-function isPlatformOwner(
-  role: string | null | undefined,
+async function assertPlatformAdmin(
+  userId: string,
   email: string | null | undefined,
 ) {
-  return (
-    role === "super_admin" ||
-    email?.toLowerCase() === "j.nierras.va@gmail.com"
-  );
+  if (email?.toLowerCase() === "j.nierras.va@gmail.com") return true;
+
+  try {
+    const admin = createAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    return profile?.role === "super_admin";
+  } catch {
+    return false;
+  }
 }
 
 export default async function DashboardAdminPage() {
@@ -22,15 +31,8 @@ export default async function DashboardAdminPage() {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!isPlatformOwner(profile?.role, user.email)) {
-    redirect("/dashboard");
-  }
+  const allowed = await assertPlatformAdmin(user.id, user.email);
+  if (!allowed) redirect("/dashboard");
 
   let profiles: {
     id: string;
@@ -93,7 +95,5 @@ export default async function DashboardAdminPage() {
     );
   }
 
-  return (
-    <AdminClient profiles={profiles} organizations={organizations} />
-  );
+  return <AdminClient profiles={profiles} organizations={organizations} />;
 }
