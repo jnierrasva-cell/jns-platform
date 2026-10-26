@@ -9,12 +9,11 @@ import {
   CalendarDays,
   Contact,
   Inbox,
-  CheckCircle2,
-  Circle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
+import { FirstRunPanel } from "@/components/first-run-panel";
 
 type OverviewMetric = {
   href: string;
@@ -406,78 +405,23 @@ export default async function OverviewPage() {
         </p>
       </div>
 
-      {/* Setup checklist — managers only */}
-      {showSetupCard && (
-        <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900">
-                {allCriticalDone
-                  ? "Inbox loop is ready"
-                  : "Get the inbox loop working"}
-              </h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                {allCriticalDone
-                  ? "Google, auto-reply, and at least one rule are in place. Optional steps still help you prove and polish."
-                  : "Connect the business email, turn on auto-reply, and set one rule so inquiries are handled without junk contacts."}
-              </p>
-            </div>
-            <p className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs text-zinc-600">
-              {allCriticalDone
-                ? "Core setup complete"
-                : `${criticalRemaining} core step${criticalRemaining === 1 ? "" : "s"} left`}
-            </p>
-          </div>
+      {showSetupCard && !allCriticalDone && (
+        <FirstRunPanel
+          orgName={active.orgName}
+          steps={setupSteps}
+          planIsNone={planId === "none"}
+        />
+      )}
 
-          <ul className="mt-5 space-y-3">
-            {setupSteps.map((step) => (
-              <li
-                key={step.id}
-                className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-100 bg-zinc-50/80 px-3 py-3 sm:flex-nowrap"
-              >
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                  {step.done ? (
-                    <CheckCircle2
-                      className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"
-                      aria-hidden
-                    />
-                  ) : (
-                    <Circle
-                      className="mt-0.5 h-5 w-5 shrink-0 text-zinc-300"
-                      aria-hidden
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p
-                      className={`text-sm font-medium ${
-                        step.done ? "text-zinc-700" : "text-zinc-900"
-                      }`}
-                    >
-                      {step.title}
-                      {step.critical && !step.done ? (
-                        <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                          Required
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href={step.href}
-                  className={`relative z-10 shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                    step.done
-                      ? "border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900"
-                      : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
-                  }`}
-                >
-                  {step.actionLabel}
-                </a>
-              </li>
-            ))}
-          </ul>
+      {showSetupCard && allCriticalDone && (
+        <section className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/50 px-5 py-4">
+          <p className="text-sm font-medium text-emerald-900">
+            Inbox loop is ready
+          </p>
+          <p className="mt-1 text-sm text-emerald-800/80">
+            Google, auto-reply, and at least one rule are in place. Use the
+            snapshot below to run the workspace day to day.
+          </p>
         </section>
       )}
 

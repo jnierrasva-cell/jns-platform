@@ -23,19 +23,26 @@ export function SetupBusinessClient() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
-      <div className="w-full max-w-[380px]">
+    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-5 py-12 sm:px-6 sm:py-16">
+      <div className="w-full max-w-[400px]">
         <div className="mb-8">
           <BrandMark />
-          <p className="mt-4 text-sm text-zinc-500">Set up your workspace</p>
+          <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400">
+            Step 2 of 2
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            <span className="h-1 w-10 rounded-full bg-[#0B132B]" />
+            <span className="h-1 w-10 rounded-full bg-[#0B132B]" />
+          </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-zinc-900">
-            Name your business
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
+            Name your workspace
           </h1>
-          <p className="mt-1.5 text-sm text-zinc-500">
-            This creates the workspace. You can invite your team after.
+          <p className="mt-2 text-sm leading-6 text-zinc-500">
+            Use the business or studio name your team will recognize. Invite
+            people from Team after this.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -44,16 +51,17 @@ export function SetupBusinessClient() {
                 htmlFor="businessName"
                 className="text-sm font-medium text-zinc-700"
               >
-                Business name
+                Workspace name
               </label>
               <input
                 id="businessName"
                 type="text"
                 required
+                autoFocus
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Studio name"
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
+                placeholder="e.g. Northside Pilates"
+                className="mt-1.5 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
               />
             </div>
 
@@ -65,12 +73,20 @@ export function SetupBusinessClient() {
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || !businessName.trim()}
               className="w-full rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
             >
-              {isPending ? "Setting up…" : "Create workspace"}
+              {isPending ? "Creating workspace…" : "Create workspace"}
             </button>
           </form>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-zinc-200 bg-white/70 px-4 py-3 text-xs leading-5 text-zinc-500">
+          <p className="font-medium text-zinc-700">What happens next</p>
+          <p className="mt-1">
+            Overview opens with three steps: connect Google, turn on auto-reply,
+            add one email rule—so the first inquiry is handled cleanly.
+          </p>
         </div>
       </div>
     </div>

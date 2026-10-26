@@ -17,26 +17,31 @@ export function AccountTypeClient() {
         setError(result.error);
         return;
       }
-      // Full navigation avoids React #441 from server redirect()
       window.location.href = result.next;
     });
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-6 py-16">
+    <div className="flex min-h-full items-center justify-center bg-zinc-50 px-5 py-12 sm:px-6 sm:py-16">
       <div className="w-full max-w-lg">
         <div className="mb-8">
           <BrandMark />
-          <p className="mt-4 text-sm text-zinc-500">Almost ready</p>
+          <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400">
+            Step 1 of 2
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            <span className="h-1 w-10 rounded-full bg-[#0B132B]" />
+            <span className="h-1 w-10 rounded-full bg-zinc-200" />
+          </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-zinc-900">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
             How will you use JNS?
           </h1>
           <p className="mt-2 text-sm leading-6 text-zinc-500">
-            This sets up the right workspace. You can still run the same tools
-            either way.
+            Pick the closest fit. You get a workspace either way—tools stay the
+            same. You can invite people later from Team.
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -44,12 +49,16 @@ export function AccountTypeClient() {
               type="button"
               disabled={isPending}
               onClick={() => choose("individual")}
-              className="rounded-lg border border-zinc-200 p-4 text-left transition hover:bg-zinc-50 disabled:opacity-60"
+              className="group rounded-xl border border-zinc-200 p-4 text-left transition hover:border-[#0B132B]/40 hover:bg-zinc-50 disabled:opacity-60"
             >
-              <User className="h-4 w-4 text-zinc-400" />
-              <p className="mt-3 text-sm font-medium text-zinc-900">Individual</p>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 group-hover:bg-[#0B132B] group-hover:text-white">
+                <User className="h-4 w-4" />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-zinc-900">
+                Individual
+              </p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Solo use — we create a personal workspace for you.
+                Solo operator or VA. We create a personal workspace now.
               </p>
             </button>
 
@@ -57,12 +66,14 @@ export function AccountTypeClient() {
               type="button"
               disabled={isPending}
               onClick={() => choose("business")}
-              className="rounded-lg border border-zinc-200 p-4 text-left transition hover:bg-zinc-50 disabled:opacity-60"
+              className="group rounded-xl border border-zinc-200 p-4 text-left transition hover:border-[#0B132B]/40 hover:bg-zinc-50 disabled:opacity-60"
             >
-              <Building2 className="h-4 w-4 text-zinc-400" />
-              <p className="mt-3 text-sm font-medium text-zinc-900">Business</p>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 group-hover:bg-[#0B132B] group-hover:text-white">
+                <Building2 className="h-4 w-4" />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-zinc-900">Business</p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Company or team — name your business next.
+                Studio or team. Next you name the workspace, then invite staff.
               </p>
             </button>
           </div>
@@ -73,9 +84,13 @@ export function AccountTypeClient() {
             </p>
           )}
           {isPending && (
-            <p className="mt-4 text-xs text-zinc-500">Setting up…</p>
+            <p className="mt-4 text-sm text-zinc-500">Setting up…</p>
           )}
         </div>
+
+        <p className="mt-6 text-center text-xs text-zinc-400">
+          Takes under a minute. You can change how you work inside the app.
+        </p>
       </div>
     </div>
   );
