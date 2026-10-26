@@ -16,8 +16,8 @@ export function SupportBubble({
   const [hintVisible, setHintVisible] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setHintVisible(true), 1200);
-    return () => window.clearTimeout(timer);
+    const t = window.setTimeout(() => setHintVisible(true), 1200);
+    return () => window.clearTimeout(t);
   }, []);
 
   function buildMailto() {
@@ -40,6 +40,15 @@ export function SupportBubble({
       ].join("\n"),
     );
     return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+  }
+
+  function openMail(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = buildMailto();
+    // Open mail first; close panel after so the control isn't unmounted mid-click
+    window.location.href = url;
+    window.setTimeout(() => setOpen(false), 300);
   }
 
   return (
@@ -68,8 +77,8 @@ export function SupportBubble({
           </div>
           <a
             href={buildMailto()}
+            onClick={openMail}
             className="mt-4 flex w-full items-center justify-center rounded-lg bg-[#0B132B] px-3 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a]"
-            onClick={() => setOpen(false)}
           >
             Write to support
           </a>
@@ -91,7 +100,7 @@ export function SupportBubble({
 
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen((v) => !v)}
         className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#0B132B] text-white shadow-lg shadow-zinc-900/20 transition hover:bg-[#111e3a]"
         aria-label={open ? "Close support" : "Open support"}
         aria-expanded={open}
