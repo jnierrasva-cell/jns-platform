@@ -29,6 +29,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
 import Image from "next/image";
+import { SupportBubble } from "@/components/support-bubble";
 
 const STORAGE_KEY = "jns_sidebar_collapsed";
 
@@ -425,6 +426,8 @@ export function DashboardShell({
           </div>
         </main>
       </div>
+
+      <SupportBubble userEmail={userEmail} orgName={orgName} />
     </div>
   );
 }
