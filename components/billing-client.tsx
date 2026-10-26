@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { Check } from "lucide-react";
 import { PricingCheckoutButton } from "@/components/pricing-checkout-button";
+import {
+  normalizePlan,
+  PLAN_LIMITS,
+  type PlanId,
+} from "@/lib/billing/plans";
 
 const PLANS = [
   {
@@ -41,10 +45,24 @@ const PLANS = [
   },
 ];
 
+function unlockSummary(planId: PlanId): string {
+  const limits = PLAN_LIMITS[planId];
+  if (planId === "none") {
+    return "No paid plan active — contacts and bookings still work; email automation, rules, and team invites stay locked until you subscribe.";
+  }
+
+  const parts: string[] = [`up to ${limits.maxUsers} seats`];
+  if (limits.teamInvites) parts.push("team invites");
+  if (limits.customForms) parts.push("custom forms");
+  if (limits.emailRules) parts.push("email rules");
+  if (limits.emailAutomation) parts.push("inbox automation");
+  if (limits.smsReminders) parts.push("SMS reminders");
+  return parts.join(" · ");
+}
+
 export function BillingClient({
   orgName,
   canManage,
-  plan,
   billingStatus,
   periodEnd,
   provider,
@@ -63,6 +81,7 @@ export function BillingClient({
   planLabel: string;
   isActive: boolean;
 }) {
+  const planId = normalizePlan(effectivePlan);
   const endLabel =
     periodEnd && !Number.isNaN(new Date(periodEnd).getTime())
       ? new Date(periodEnd).toLocaleDateString(undefined, {
@@ -87,11 +106,14 @@ export function BillingClient({
           Current access
         </p>
         <p className="mt-2 text-lg font-semibold text-zinc-900">
-          {planLabel}
+          You are on {planLabel}
           <span className="ml-2 text-sm font-normal text-zinc-500">
             ({billingStatus || "none"}
             {provider ? ` · ${provider}` : ""})
           </span>
+        </p>
+        <p className="mt-2 text-sm leading-6 text-zinc-600">
+          Unlocks: {unlockSummary(planId)}
         </p>
         {endLabel && (
           <p className="mt-1 text-sm text-zinc-600">
@@ -150,8 +172,8 @@ export function BillingClient({
                   </p>
                 )}
                 <ul className="mt-4 flex-1 space-y-2">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex gap-2 text-sm">
+                  {p.features.map((feature) => (
+                    <li key={feature} className="flex gap-2 text-sm">
                       <Check
                         className={`mt-0.5 h-4 w-4 shrink-0 ${
                           p.highlighted ? "text-cyan-300" : "text-sky-600"
@@ -162,7 +184,7 @@ export function BillingClient({
                           p.highlighted ? "text-slate-200" : "text-zinc-700"
                         }
                       >
-                        {f}
+                        {feature}
                       </span>
                     </li>
                   ))}

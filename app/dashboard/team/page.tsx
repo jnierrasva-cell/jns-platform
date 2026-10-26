@@ -66,7 +66,7 @@ export default async function TeamPage() {
 
   const origin =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "https://jns-platform.vercel.app";
+    "https://www.jnsystem.app";
 
   return (
     <div>
