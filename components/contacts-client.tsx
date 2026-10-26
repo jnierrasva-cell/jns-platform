@@ -1,9 +1,17 @@
 "use client";
 
+import {
+  Contact as ContactIcon,
+  Download,
+  MoreVertical,
+  Plus,
+  Upload,
+  X,
+} from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, MoreVertical, Plus, Upload, X } from "lucide-react";
 import {
   createContact,
   updateContact,
@@ -429,6 +437,7 @@ export function ContactsClient({
             Export CSV
           </button>
           <button
+            id="import"
             type="button"
             onClick={() => fileRef.current?.click()}
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
@@ -503,99 +512,117 @@ export function ContactsClient({
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
 
-      <div className="mt-6 overflow-visible rounded-xl border border-zinc-200 bg-white/[0.035]">
-        {filtered.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-slate-400">
-            No contacts in this stage.
-          </p>
+      <div className="mt-6">
+        {contacts.length === 0 ? (
+          <EmptyState
+            icon={ContactIcon}
+            title="No contacts yet"
+            description="People from forms, bookings, and email land here. Add someone manually or import a CSV to start."
+            actionLabel="Add contact"
+            onAction={() => setShowAdd(true)}
+            secondaryLabel="Import CSV"
+            secondaryHref="#import"
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title="No matches"
+            description="Nothing in this stage or search. Clear filters or try another name."
+            actionLabel="Show all"
+            onAction={() => {
+              setStageFilter("all");
+              setQuery("");
+            }}
+          />
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Phone</th>
-                <th className="px-4 py-3">Pipeline</th>
-                <th className="px-4 py-3">Source</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id} className="border-b border-white/5 last:border-0">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/dashboard/contacts/${c.id}`}
-                      className="font-medium text-zinc-900 hover:text-cyan-700"
-                    >
-                      {displayName(c)}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">{c.email ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-400">{c.phone ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={c.pipeline_stage_id ?? ""}
-                      onChange={(e) =>
-                        changePipelineStage(c.id, e.target.value)
-                      }
-                      className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-800 outline-none"
-                    >
-                      <option value="">Unassigned</option>
-                      {stages.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 text-xs capitalize text-slate-500">
-                    {(c.source ?? "—").replace(/_/g, " ")}
-                  </td>
-                  <td className="relative z-10 px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMenuId((id) => (id === c.id ? null : c.id))
-                      }
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
-                      aria-label="Actions"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                    {menuId === c.id && (
-                      <div
-                        ref={menuRef}
-                        className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-zinc-200 bg-[#0f1a35] py-1 shadow-xl"
-                      >
-                        <button
-                          type="button"
-                          className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
-                          onClick={() => openEmail(c)}
-                        >
-                          Send email
-                        </button>
-                        <button
-                          type="button"
-                          className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
-                          onClick={() => openSms(c)}
-                        >
-                          Send SMS
-                        </button>
-                        <Link
-                          href={`/dashboard/contacts/${c.id}`}
-                          className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
-                          onClick={() => setMenuId(null)}
-                        >
-                          Open contact
-                        </Link>
-                      </div>
-                    )}
-                  </td>
+          <div className="overflow-visible rounded-xl border border-zinc-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">Pipeline</th>
+                  <th className="px-4 py-3">Source</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((c) => (
+                  <tr key={c.id} className="border-b border-white/5 last:border-0">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/dashboard/contacts/${c.id}`}
+                        className="font-medium text-zinc-900 hover:text-cyan-700"
+                      >
+                        {displayName(c)}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-slate-300">{c.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-400">{c.phone ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={c.pipeline_stage_id ?? ""}
+                        onChange={(e) =>
+                          changePipelineStage(c.id, e.target.value)
+                        }
+                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-800 outline-none"
+                      >
+                        <option value="">Unassigned</option>
+                        {stages.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 text-xs capitalize text-slate-500">
+                      {(c.source ?? "—").replace(/_/g, " ")}
+                    </td>
+                    <td className="relative z-10 px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMenuId((id) => (id === c.id ? null : c.id))
+                        }
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                        aria-label="Actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                      {menuId === c.id && (
+                        <div
+                          ref={menuRef}
+                          className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-zinc-200 bg-[#0f1a35] py-1 shadow-xl"
+                        >
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                            onClick={() => openEmail(c)}
+                          >
+                            Send email
+                          </button>
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                            onClick={() => openSms(c)}
+                          >
+                            Send SMS
+                          </button>
+                          <Link
+                            href={`/dashboard/contacts/${c.id}`}
+                            className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                            onClick={() => setMenuId(null)}
+                          >
+                            Open contact
+                          </Link>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

@@ -5,13 +5,14 @@ import { isOrgManagerRole } from "@/lib/org/roles";
 
 /** Workspace tools only ceo/admin should open (URL bar included). */
 const MANAGER_PREFIXES = [
+  "/dashboard/unmatched",
   "/dashboard/automation",
   "/dashboard/email-rules",
   "/dashboard/templates",
   "/dashboard/integrations",
   "/dashboard/team",
+  "/dashboard/billing",
 ];
-
 function isManagerPath(pathname: string) {
   return MANAGER_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),

@@ -1,5 +1,7 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useMemo, useState, useTransition } from "react";
 import {
   createBooking,
@@ -189,6 +191,7 @@ export function BookingsClient({
       )}
 
       <form
+        id="new-booking"
         onSubmit={handleCreate}
         className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
       >
@@ -308,31 +311,35 @@ export function BookingsClient({
         </button>
       </form>
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
-            <tr>
-              <th className="px-4 py-3">When</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Contact</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">SMS</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.length === 0 ? (
+      {bookings.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState
+            icon={CalendarDays}
+            title="No bookings yet"
+            description="Schedule client sessions here. Times follow the visitor’s browser timezone. Share your public booking link when you’re ready."
+            actionLabel="Scroll to create"
+            onAction={() => {
+              document
+                .getElementById("new-booking")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+        </div>
+      ) : (
+        <div className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500">
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-10 text-center text-zinc-500"
-                >
-                  No bookings yet. Create one above or share your public booking
-                  link.
-                </td>
+                <th className="px-4 py-3">When</th>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">SMS</th>
+                <th className="px-4 py-3"></th>
               </tr>
-            ) : (
-              bookings.map((b) => (
+            </thead>
+            <tbody>
+              {bookings.map((b) => (
                 <tr key={b.id} className="border-b border-white/5 last:border-0">
                   <td className="px-4 py-3 text-zinc-700">
                     <div>{formatLocal(b.starts_at)}</div>
@@ -383,11 +390,11 @@ export function BookingsClient({
                     )}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

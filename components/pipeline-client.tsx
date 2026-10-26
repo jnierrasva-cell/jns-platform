@@ -1,5 +1,7 @@
 "use client";
 
+import { Kanban } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useState, useTransition } from "react";
 import {
   createPipelineStage,
@@ -58,6 +60,7 @@ export function PipelineClient({
       </div>
 
       <form
+        id="new-stage"
         onSubmit={handleCreate}
         className="mt-8 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
       >
@@ -86,9 +89,17 @@ export function PipelineClient({
 
       <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
         {stages.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-slate-400">
-            No stages yet. Add your first lifecycle stage above.
-          </p>
+          <EmptyState
+            icon={Kanban}
+            title="No pipeline stages yet"
+            description="Stages are your contact lifecycle (Lead → Booked → Client). Add the first stage so Contacts can move people through a clear path."
+            actionLabel="Scroll to add stage"
+            onAction={() => {
+              document
+                .getElementById("new-stage")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
         ) : (
           <ul className="divide-y divide-white/5">
             {stages.map((stage, index) => (

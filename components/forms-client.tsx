@@ -1,5 +1,7 @@
 "use client";
 
+import { FileInput } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useState, useTransition } from "react";
 import {
   createIntakeForm,
@@ -217,6 +219,7 @@ export function FormsClient({
       )}
 
       <form
+        id="new-form"
         onSubmit={handleCreate}
         className="mt-8 flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4"
       >
@@ -238,28 +241,33 @@ export function FormsClient({
         </button>
       </form>
 
-      <div className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Form name</th>
-              <th className="px-4 py-3 font-medium">Date created</th>
-              <th className="px-4 py-3 font-medium">Submissions</th>
-              <th className="px-4 py-3 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {forms.length === 0 ? (
+      {forms.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState
+            icon={FileInput}
+            title="No forms yet"
+            description="Publish an intake form to collect leads. Submissions can create contacts and show up in Recent submissions."
+            actionLabel="Scroll to create"
+            onAction={() => {
+              document
+                .getElementById("new-form")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+        </div>
+      ) : (
+        <div className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-10 text-center text-zinc-500"
-                >
-                  No forms yet. Create one above.
-                </td>
+                <th className="px-4 py-3 font-medium">Form name</th>
+                <th className="px-4 py-3 font-medium">Date created</th>
+                <th className="px-4 py-3 font-medium">Submissions</th>
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
-            ) : (
-              forms.map((form) => (
+            </thead>
+            <tbody>
+              {forms.map((form) => (
                 <tr
                   key={form.id}
                   className="border-b border-zinc-50 align-top last:border-0"
@@ -469,11 +477,11 @@ export function FormsClient({
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
