@@ -135,7 +135,7 @@ function LoginForm() {
 
   return (
     <main className="flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden lg:flex-row">
-      {/* LEFT: full-height slogan panel */}
+      {/* LEFT: brand panel */}
       <section className="flex w-full flex-col justify-between bg-[#0B132B] px-6 py-8 text-white sm:px-10 sm:py-10 lg:min-h-screen lg:w-[42%] lg:max-w-xl lg:px-12 lg:py-12">
         <div>
           <BrandMark href="/" className="h-9 w-auto" />
@@ -146,8 +146,7 @@ function LoginForm() {
             One workspace for clients, bookings, and follow-up
           </h1>
           <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">
-            For service businesses and the people who run them — with rules so
-            the system stays clean.
+            Built for service businesses — with rules so the system stays clean.
           </p>
           <ul className="mt-8 space-y-3">
             {workspaceBenefits.map((item) => (
@@ -162,11 +161,11 @@ function LoginForm() {
           </ul>
         </div>
         <p className="mt-10 text-xs text-slate-500 lg:mt-0">
-          JNS · Private pilot
+          © {new Date().getFullYear()} Journey Network Systems
         </p>
       </section>
 
-      {/* RIGHT: form vertically + horizontally centered */}
+      {/* RIGHT: form */}
       <section className="flex min-h-[70vh] w-full flex-1 items-center justify-center bg-zinc-50 px-4 py-10 sm:px-8 lg:min-h-screen">
         <div className="w-full max-w-sm">
           {nextPath?.startsWith("/invite/") && (
@@ -176,8 +175,8 @@ function LoginForm() {
             </p>
           )}
 
-          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex justify-center gap-6 text-sm">
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-[0_20px_50px_-28px_rgba(11,19,43,0.35)] sm:p-7">
+            <div className="flex justify-center gap-8 text-sm">
               <button
                 type="button"
                 onClick={() => chooseMode("signin")}
@@ -204,30 +203,33 @@ function LoginForm() {
 
             {confirmSent ? (
               <p className="mt-6 text-center text-sm text-zinc-600">
-                Check your email to confirm, or turn off Confirm email in
-                Supabase Auth so signup can sign you in immediately.
+                Check your email to confirm your account, then sign in.
               </p>
             ) : resetSent ? (
               <p className="mt-6 text-center text-sm text-zinc-600">
                 If that email exists, a reset link was sent.
               </p>
             ) : (
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <form onSubmit={handleSubmit} className="mt-7 space-y-4">
                 <div>
-                  <label className="text-sm text-zinc-700">Email</label>
+                  <label className="text-sm font-medium text-zinc-700">
+                    Email
+                  </label>
                   <input
                     type="email"
                     required
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
+                    className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#0B132B] focus:ring-2 focus:ring-[#0B132B]/10"
                   />
                 </div>
 
                 {mode !== "forgot" && (
                   <div>
-                    <label className="text-sm text-zinc-700">Password</label>
+                    <label className="text-sm font-medium text-zinc-700">
+                      Password
+                    </label>
                     <input
                       type="password"
                       required
@@ -237,7 +239,7 @@ function LoginForm() {
                       }
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#0B132B] focus:ring-1 focus:ring-[#0B132B]"
+                      className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#0B132B] focus:ring-2 focus:ring-[#0B132B]/10"
                     />
                   </div>
                 )}
@@ -251,7 +253,7 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+                  className="w-full rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#111e3a] disabled:opacity-60"
                 >
                   {loading
                     ? "Please wait…"
@@ -267,7 +269,7 @@ function LoginForm() {
                     <button
                       type="button"
                       onClick={() => chooseMode("forgot")}
-                      className="text-xs text-zinc-500 underline hover:text-zinc-800"
+                      className="text-xs text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -279,7 +281,7 @@ function LoginForm() {
                     <button
                       type="button"
                       onClick={() => chooseMode("signin")}
-                      className="text-xs text-zinc-500 underline hover:text-zinc-800"
+                      className="text-xs text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
                     >
                       Back to sign in
                     </button>
@@ -290,7 +292,10 @@ function LoginForm() {
           </div>
 
           <p className="mt-6 text-center text-xs text-zinc-400">
-            <Link href="/" className="underline hover:text-zinc-600">
+            <Link
+              href="/"
+              className="underline-offset-2 hover:text-zinc-600 hover:underline"
+            >
               Back to home
             </Link>
           </p>

@@ -16,13 +16,14 @@ export const metadata: Metadata = {
     "Journey Network Systems is the operating workspace for service businesses. Contacts under your rules, bookings on the calendar, forms, team process, and connected tools in one place.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-      "https://jns-platform.vercel.app",
+      "https://www.jnsystem.app",
   ),
   openGraph: {
     title: "JNS — Workspace for clients, bookings, and follow-up",
     description:
       "Contacts, bookings, intake, and follow-up for service businesses—in one workspace.",
     type: "website",
+    url: "https://www.jnsystem.app",
   },
   twitter: {
     card: "summary_large_image",
