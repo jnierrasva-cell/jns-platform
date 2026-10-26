@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getActiveOrg } from "@/lib/org/active";
 import { getPlanGateState } from "@/lib/billing/org-plan";
@@ -77,8 +78,22 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
+  // Trust service role for platform role (RLS can hide role on user client)
+  let platformRole = profile?.role ?? null;
+  try {
+    const admin = createAdminClient();
+    const { data: adminProfile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (adminProfile?.role) platformRole = adminProfile.role;
+  } catch {
+    // fall back to profile from user client
+  }
+
   const isPlatformAdmin =
-    profile?.role === "super_admin" ||
+    platformRole === "super_admin" ||
     user.email?.toLowerCase() === "j.nierras.va@gmail.com";
   const isOrgManager = active.role === "ceo" || active.role === "admin";
 
