@@ -493,12 +493,20 @@ export function AdminClient({
                     <select
                       value={p.role}
                       disabled={isPending}
-                      onChange={(e) => {
-                        const role = e.target.value as "user" | "super_admin";
-                        startTransition(() => {
-                          setUserRole(p.id, role);
-                        });
-                      }}
+onChange={(e) => {
+  const role = e.target.value as "user" | "super_admin";
+  setActionError(null);
+  startTransition(async () => {
+    try {
+      await setUserRole(p.id, role);
+      window.location.reload();
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not update role",
+      );
+    }
+  });
+}}
                       className="rounded border border-zinc-200 px-2 py-1 text-xs"
                     >
                       <option value="user">user</option>

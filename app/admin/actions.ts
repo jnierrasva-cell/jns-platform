@@ -57,13 +57,23 @@ export async function setUserRole(
 ) {
   await requirePlatformAdmin();
   const admin = createAdminClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("profiles")
     .update({ role })
-    .eq("id", userId);
+    .eq("id", userId)
+    .select("id, email, role")
+    .maybeSingle();
+
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("User profile not found");
+  if (data.role !== role) {
+    throw new Error("Role did not update — check profiles.role column");
+  }
+
   revalidatePath("/dashboard/admin");
   revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  return data;
 }
 
 export async function removeUser(userId: string) {
