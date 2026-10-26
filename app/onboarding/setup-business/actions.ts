@@ -59,5 +59,5 @@ export async function createOrganization(
     return { ok: false, error: profileError.message };
   }
 
-  return { ok: true, next: "/dashboard" };
+  return { ok: true, next: "/dashboard/workspace?welcome=1" };
 }

@@ -24,6 +24,7 @@ import {
   X,
   FileText,
   CreditCard,
+  ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -52,6 +53,7 @@ const WORK_NAV: NavItem[] = [
  * Unmatched lives here so assistants are not dropped into email triage by default.
  */
 const SETUP_NAV: NavItem[] = [
+  { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
   { label: "Unmatched email", href: "/dashboard/unmatched", icon: Inbox },
   { label: "Automation", href: "/dashboard/automation", icon: Zap },
   { label: "Who gets replies", href: "/dashboard/email-rules", icon: Filter },

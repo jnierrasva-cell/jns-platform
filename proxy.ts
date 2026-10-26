@@ -5,6 +5,7 @@ import { isOrgManagerRole } from "@/lib/org/roles";
 
 /** Workspace tools only ceo/admin should open (URL bar included). */
 const MANAGER_PREFIXES = [
+  "/dashboard/workspace",
   "/dashboard/unmatched",
   "/dashboard/automation",
   "/dashboard/email-rules",
