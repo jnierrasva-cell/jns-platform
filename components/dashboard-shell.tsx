@@ -37,27 +37,30 @@ type NavItem = {
 };
 
 /** Day-to-day work — every org member */
-const MEMBER_NAV: NavItem[] = [
+const WORK_NAV: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
-  { label: "Unmatched", href: "/dashboard/unmatched", icon: Inbox },
   { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
   { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
   { label: "Forms", href: "/dashboard/forms", icon: FileInput },
   { label: "SOPs", href: "/dashboard/sops", icon: BookOpen },
 ];
 
-/** Workspace setup & automation — ceo / admin only */
-const MANAGER_NAV: NavItem[] = [
+/**
+ * Inbox ops + workspace setup — ceo / admin only.
+ * Unmatched lives here so assistants are not dropped into email triage by default.
+ */
+const SETUP_NAV: NavItem[] = [
+  { label: "Unmatched email", href: "/dashboard/unmatched", icon: Inbox },
   { label: "Automation", href: "/dashboard/automation", icon: Zap },
-  { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
-  { label: "Templates", href: "/dashboard/templates", icon: FileText },
+  { label: "Who gets replies", href: "/dashboard/email-rules", icon: Filter },
+  { label: "Reply templates", href: "/dashboard/templates", icon: FileText },
   { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
   { label: "Team", href: "/dashboard/team", icon: Users },
 ];
 
 export function DashboardShell({
-userEmail,
+  userEmail,
   isPlatformAdmin,
   isOrgManager,
   orgName,
@@ -65,7 +68,7 @@ userEmail,
   planId = "none",
   children,
 }: {
-userEmail: string;
+  userEmail: string;
   isPlatformAdmin: boolean;
   isOrgManager: boolean;
   orgName: string;
@@ -95,14 +98,6 @@ userEmail: string;
     setMobileOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    function onResize() {
-      if (window.innerWidth >= 768) setMobileOpen(false);
-    }
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
   function toggleCollapsed() {
     setCollapsed((prev) => {
       const next = !prev;
@@ -121,10 +116,6 @@ userEmail: string;
     router.refresh();
   }
 
-  const navItems: NavItem[] = isOrgManager
-    ? [...MEMBER_NAV, ...MANAGER_NAV]
-    : [...MEMBER_NAV];
-
   function isActive(href: string) {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
@@ -140,6 +131,50 @@ userEmail: string;
         ? "bg-[#111e3a] font-medium text-white"
         : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
     }`;
+
+  function renderNavItems(items: NavItem[]) {
+    return items.map((item) => {
+      const active = isActive(item.href);
+      const Icon = item.icon;
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={linkClass(active)}
+          title={!showLabels ? item.label : undefined}
+          onClick={() => setMobileOpen(false)}
+        >
+          <Icon
+            size={16}
+            className={`shrink-0 ${
+              active ? "text-sky-400" : "text-slate-500"
+            }`}
+          />
+          {showLabels && item.label}
+        </Link>
+      );
+    });
+  }
+
+  function SectionLabel({ children }: { children: React.ReactNode }) {
+    if (!showLabels) {
+      return <div className="my-2 border-t border-[#1e2a4a]" />;
+    }
+    return (
+      <p className="mb-1 mt-3 px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 first:mt-0">
+        {children}
+      </p>
+    );
+  }
+
+  const planBadgeClass =
+    planId === "none"
+      ? "bg-slate-700/80 text-slate-300"
+      : planId === "business"
+        ? "bg-cyan-500/20 text-cyan-300"
+        : planId === "pro"
+          ? "bg-sky-500/20 text-sky-300"
+          : "bg-emerald-500/15 text-emerald-300";
 
   const sidebarInner = (
     <>
@@ -182,15 +217,7 @@ userEmail: string;
               title="View plan and billing"
             >
               <span
-                className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
-                  planId === "none"
-                    ? "bg-slate-700/80 text-slate-300"
-                    : planId === "business"
-                      ? "bg-cyan-500/20 text-cyan-300"
-                      : planId === "pro"
-                        ? "bg-sky-500/20 text-sky-300"
-                        : "bg-emerald-500/15 text-emerald-300"
-                }`}
+                className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${planBadgeClass}`}
               >
                 {planLabel}
               </span>
@@ -203,7 +230,7 @@ userEmail: string;
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="flex w-full items-center justify-center gap-2 rounded-md px-2 py-2 text-slate-400 transition hover:bg-[#111e3a] hover:text-white"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-slate-400 transition hover:bg-[#111e3a] hover:text-white"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand" : "Collapse"}
         >
@@ -213,34 +240,21 @@ userEmail: string;
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-        {navItems.map((item) => {
-          const active = isActive(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={linkClass(active)}
-              title={!showLabels ? item.label : undefined}
-              onClick={() => setMobileOpen(false)}
-            >
-              <Icon
-                size={16}
-                className={`shrink-0 ${
-                  active ? "text-sky-400" : "text-slate-500"
-                }`}
-              />
-              {showLabels && item.label}
-            </Link>
-          );
-        })}
+        <SectionLabel>Work</SectionLabel>
+        {renderNavItems(WORK_NAV)}
 
-        <div className="my-2 border-t border-[#1e2a4a]" />
+        {isOrgManager && (
+          <>
+            <SectionLabel>Setup</SectionLabel>
+            {renderNavItems(SETUP_NAV)}
+          </>
+        )}
 
+        <SectionLabel>Account</SectionLabel>
         <Link
           href="/dashboard/orgs"
           className={linkClass(pathname.startsWith("/dashboard/orgs"))}
-          title={!showLabels ? "My orgs" : undefined}
+          title={!showLabels ? "My workspaces" : undefined}
           onClick={() => setMobileOpen(false)}
         >
           <Building2
@@ -251,25 +265,27 @@ userEmail: string;
                 : "text-slate-500"
             }`}
           />
-          {showLabels && "My orgs"}
+          {showLabels && "My workspaces"}
         </Link>
 
-        <Link
-          href="/dashboard/billing"
-          className={linkClass(pathname.startsWith("/dashboard/billing"))}
-          title={!showLabels ? "Billing" : undefined}
-          onClick={() => setMobileOpen(false)}
-        >
-          <CreditCard
-            size={16}
-            className={`shrink-0 ${
-              pathname.startsWith("/dashboard/billing")
-                ? "text-sky-400"
-                : "text-slate-500"
-            }`}
-          />
-          {showLabels && "Billing"}
-        </Link>
+        {isOrgManager && (
+          <Link
+            href="/dashboard/billing"
+            className={linkClass(pathname.startsWith("/dashboard/billing"))}
+            title={!showLabels ? "Billing" : undefined}
+            onClick={() => setMobileOpen(false)}
+          >
+            <CreditCard
+              size={16}
+              className={`shrink-0 ${
+                pathname.startsWith("/dashboard/billing")
+                  ? "text-sky-400"
+                  : "text-slate-500"
+              }`}
+            />
+            {showLabels && "Billing"}
+          </Link>
+        )}
 
         {isPlatformAdmin && (
           <Link
@@ -278,7 +294,14 @@ userEmail: string;
             title={!showLabels ? "JNS Admin" : undefined}
             onClick={() => setMobileOpen(false)}
           >
-            <Shield size={16} className="shrink-0 text-slate-500" />
+            <Shield
+              size={16}
+              className={`shrink-0 ${
+                pathname.startsWith("/dashboard/admin")
+                  ? "text-sky-400"
+                  : "text-slate-500"
+              }`}
+            />
             {showLabels && "JNS Admin"}
           </Link>
         )}
@@ -338,13 +361,25 @@ userEmail: string;
             <p className="truncate text-sm font-medium text-zinc-900">
               {orgName}
             </p>
-            <Link
-              href="/dashboard/billing"
-              className="mt-0.5 inline-flex"
-              title="View plan and billing"
-            >
+            {isOrgManager ? (
+              <Link
+                href="/dashboard/billing"
+                className="mt-0.5 inline-flex"
+                title="View plan and billing"
+              >
+                <span
+                  className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                    planId === "none"
+                      ? "bg-zinc-100 text-zinc-600"
+                      : "bg-[#0B132B] text-white"
+                  }`}
+                >
+                  {planLabel}
+                </span>
+              </Link>
+            ) : (
               <span
-                className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                className={`mt-0.5 inline-flex truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
                   planId === "none"
                     ? "bg-zinc-100 text-zinc-600"
                     : "bg-[#0B132B] text-white"
@@ -352,7 +387,7 @@ userEmail: string;
               >
                 {planLabel}
               </span>
-            </Link>
+            )}
           </div>
         </header>
 
