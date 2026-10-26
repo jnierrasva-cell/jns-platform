@@ -256,49 +256,6 @@ export function AdminClient({
     });
   }
 
-  const metricCards = [
-    {
-      label: "Total users",
-      value: String(usersTotal),
-      detail: `${usersNewMonth} new this month`,
-    },
-    {
-      label: "Workspaces",
-      value: String(orgsTotal),
-      detail: `${paidActive.length} paid active`,
-    },
-    {
-      label: "Est. MRR",
-      value: `$${estimatedMrr}`,
-      detail: "List price × active paid",
-    },
-    {
-      label: "Expiring ≤14 days",
-      value: String(expiringSoon),
-      detail: "Renew or follow up",
-    },
-    {
-      label: "Expired / cancelled",
-      value: String(expiredOrCancelled),
-      detail: "Churn signal",
-    },
-    {
-      label: "No plan",
-      value: String(byPlan.none),
-      detail: "Not converting yet",
-    },
-    {
-      label: "Starter",
-      value: String(byPlan.starter),
-      detail: "Workspaces on Starter",
-    },
-    {
-      label: "Pro + Business",
-      value: String(byPlan.pro + byPlan.business),
-      detail: `${byPlan.pro} Pro · ${byPlan.business} Business`,
-    },
-  ] as const;
-
   return (
     <div>
       <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
