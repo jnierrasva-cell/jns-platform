@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
-import { disconnectGoogle } from "@/app/dashboard/integrations/actions";
+import { GoogleDisconnectButton } from "@/components/google-disconnect-button";
 import { TwilioConnectCard } from "@/components/twilio-connect-card";
 import { ArketaConnectCard } from "@/components/arketa-connect-card";
 
@@ -64,8 +64,6 @@ export default async function IntegrationsPage() {
     ).length,
   }));
 
-  const disconnectGoogleAction = disconnectGoogle.bind(null, orgId);
-
   return (
     <div>
       <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
@@ -110,14 +108,7 @@ export default async function IntegrationsPage() {
                 </span>
               </p>
               {canManage && (
-                <form action={disconnectGoogleAction}>
-                  <button
-                    type="submit"
-                    className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900"
-                  >
-                    Disconnect Google
-                  </button>
-                </form>
+                <GoogleDisconnectButton organizationId={orgId} />
               )}
             </div>
           ) : canManage ? (
