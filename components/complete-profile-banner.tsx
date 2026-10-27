@@ -10,6 +10,7 @@ export function CompleteProfileBanner() {
   const [lastName, setLastName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isComplete, setIsComplete] = useState(false);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,9 +22,12 @@ export function CompleteProfileBanner() {
         setError(result.error);
         return;
       }
+      setIsComplete(true);
       router.refresh();
     });
   }
+
+  if (isComplete) return null;
 
   return (
     <section className="mb-6 rounded-xl border border-sky-200 bg-sky-50 p-4 sm:p-5">

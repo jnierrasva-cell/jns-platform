@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { possessiveWorkspaceName } from "@/lib/names";
@@ -64,5 +65,6 @@ export async function completeProfileNames(firstName: string, lastName: string) 
     return { ok: false as const, error: "User profile not found." };
   }
 
+  revalidatePath("/dashboard");
   return { ok: true as const };
 }

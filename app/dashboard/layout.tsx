@@ -104,9 +104,17 @@ export default async function DashboardLayout({
   const gate = await getPlanGateState(active.organizationId);
   const planLabel = PLAN_LIMITS[gate.planId].label;
   const planId = gate.planId;
+  const metadataFirstName =
+    typeof user.user_metadata.first_name === "string"
+      ? user.user_metadata.first_name.trim()
+      : "";
+  const metadataLastName =
+    typeof user.user_metadata.last_name === "string"
+      ? user.user_metadata.last_name.trim()
+      : "";
   const showNamePrompt = needsProfileName(
-    profile?.first_name,
-    profile?.last_name,
+    profile?.first_name?.trim() || metadataFirstName,
+    profile?.last_name?.trim() || metadataLastName,
   );
 
   return (
