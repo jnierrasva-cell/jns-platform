@@ -57,12 +57,35 @@ export async function completeProfileNames(firstName: string, lastName: string) 
       last_name: trimmedLastName,
     })
     .eq("id", user.id)
-    .select("id")
+    .select("id, first_name, last_name")
     .maybeSingle();
 
   if (profileError) return { ok: false as const, error: profileError.message };
   if (!updatedProfile) {
     return { ok: false as const, error: "User profile not found." };
+  }
+  if (
+    updatedProfile.first_name?.trim() !== trimmedFirstName ||
+    updatedProfile.last_name?.trim() !== trimmedLastName
+  ) {
+    return {
+      ok: false as const,
+      error: "Your name could not be saved to your profile. Please try again.",
+    };
+  }
+
+  const { error: metadataError } = await admin.auth.admin.updateUserById(
+    user.id,
+    {
+      user_metadata: {
+        ...user.user_metadata,
+        first_name: trimmedFirstName,
+        last_name: trimmedLastName,
+      },
+    },
+  );
+  if (metadataError) {
+    return { ok: false as const, error: metadataError.message };
   }
 
   revalidatePath("/dashboard");

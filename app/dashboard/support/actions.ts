@@ -101,8 +101,24 @@ export async function sendSupportFeedback(
   }
 
   if (!response.ok) {
+    const responseBody = await response.text();
+    let providerError = responseBody.slice(0, 500);
+    try {
+      const parsed = JSON.parse(responseBody) as {
+        message?: unknown;
+        name?: unknown;
+      };
+      providerError = [parsed.name, parsed.message]
+        .filter((value): value is string => typeof value === "string")
+        .join(": ")
+        .slice(0, 500);
+    } catch {
+      // Keep a bounded response excerpt when the provider does not return JSON.
+    }
+
     console.error("Resend rejected support feedback.", {
       status: response.status,
+      error: providerError || "No error details returned",
     });
     return {
       ok: false,

@@ -84,16 +84,28 @@ export default async function DashboardLayout({
 
   // Trust service role for platform role (RLS can hide role on user client)
   let platformRole = profile?.role ?? null;
+  let firstName = profile?.first_name;
+  let lastName = profile?.last_name;
   try {
     const admin = createAdminClient();
-    const { data: adminProfile } = await admin
+    const { data: adminProfile, error: adminProfileError } = await admin
       .from("profiles")
-      .select("role")
+      .select("role, first_name, last_name")
       .eq("id", user.id)
       .maybeSingle();
-    if (adminProfile?.role) platformRole = adminProfile.role;
-  } catch {
-    // fall back to profile from user client
+
+    if (adminProfileError) {
+      console.error(
+        "Could not read the user's dashboard profile.",
+        adminProfileError,
+      );
+    } else if (adminProfile) {
+      if (adminProfile.role) platformRole = adminProfile.role;
+      firstName = adminProfile.first_name;
+      lastName = adminProfile.last_name;
+    }
+  } catch (error) {
+    console.error("Could not load the user's dashboard profile.", error);
   }
 
   const isPlatformAdmin =
@@ -113,8 +125,8 @@ export default async function DashboardLayout({
       ? user.user_metadata.last_name.trim()
       : "";
   const showNamePrompt = needsProfileName(
-    profile?.first_name?.trim() || metadataFirstName,
-    profile?.last_name?.trim() || metadataLastName,
+    firstName?.trim() || metadataFirstName,
+    lastName?.trim() || metadataLastName,
   );
 
   return (
