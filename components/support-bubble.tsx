@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
-
-const SUPPORT_EMAIL = "support@jnsystem.app";
+import { sendSupportFeedback } from "@/app/dashboard/support/actions";
 
 export function SupportBubble({
   userEmail,
@@ -16,27 +15,40 @@ export function SupportBubble({
   const [hintVisible, setHintVisible] = useState(false);
   const [subject, setSubject] = useState("JNS feedback / something to check");
   const [message, setMessage] = useState("");
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setHintVisible(true), 1200);
     return () => window.clearTimeout(t);
   }, []);
 
-  function openMail(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const body = [
-      message.trim(),
-      "",
-      "—",
-      `Account email: ${userEmail?.trim() || "(not signed in)"}`,
-      `Workspace: ${orgName?.trim() || "—"}`,
-      `Page: ${window.location.href}`,
-    ].join("\n");
-    const params = new URLSearchParams({
-      subject: subject.trim(),
-      body,
-    });
-    window.location.href = `mailto:${SUPPORT_EMAIL}?${params.toString()}`;
+    setError(null);
+    setIsPending(true);
+    try {
+      const result = await sendSupportFeedback(
+        subject,
+        message,
+        window.location.pathname,
+      );
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSent(true);
+      setMessage("");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not send feedback right now. Please try again.",
+      );
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -62,85 +74,107 @@ export function SupportBubble({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <form onSubmit={openMail} className="mt-4 space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="min-w-0">
-                <label
-                  htmlFor="support-account-email"
-                  className="mb-1 block text-[11px] font-medium text-zinc-600"
-                >
-                  Your email
-                </label>
-                <input
-                  id="support-account-email"
-                  type="email"
-                  readOnly
-                  value={userEmail?.trim() || ""}
-                  placeholder="Not signed in"
-                  className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600"
-                />
-              </div>
-              <div className="min-w-0">
-                <label
-                  htmlFor="support-workspace"
-                  className="mb-1 block text-[11px] font-medium text-zinc-600"
-                >
-                  Workspace
-                </label>
-                <input
-                  id="support-workspace"
-                  type="text"
-                  readOnly
-                  value={orgName?.trim() || ""}
-                  placeholder="Not available"
-                  className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600"
-                />
-              </div>
-            </div>
-            <div>
-              <label
-                htmlFor="support-subject"
-                className="mb-1 block text-[11px] font-medium text-zinc-600"
-              >
-                Subject
-              </label>
-              <input
-                id="support-subject"
-                type="text"
-                required
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-[#0B132B]"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="support-message"
-                className="mb-1 block text-[11px] font-medium text-zinc-600"
-              >
-                Message
-              </label>
-              <textarea
-                id="support-message"
-                required
-                rows={4}
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="Tell us what happened or how we can help."
-                className="w-full resize-y rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-[#0B132B]"
-              />
-            </div>
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center rounded-lg bg-[#0B132B] px-3 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a]"
+          {sent ? (
+            <div
+              className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              role="status"
             >
-              Open email app
+              Thanks for your feedback. We’ve received your message.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="min-w-0">
+                  <label
+                    htmlFor="support-account-email"
+                    className="mb-1 block text-[11px] font-medium text-zinc-600"
+                  >
+                    Your email
+                  </label>
+                  <input
+                    id="support-account-email"
+                    type="email"
+                    readOnly
+                    value={userEmail?.trim() || ""}
+                    placeholder="Not signed in"
+                    className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label
+                    htmlFor="support-workspace"
+                    className="mb-1 block text-[11px] font-medium text-zinc-600"
+                  >
+                    Workspace
+                  </label>
+                  <input
+                    id="support-workspace"
+                    type="text"
+                    readOnly
+                    value={orgName?.trim() || ""}
+                    placeholder="Not available"
+                    className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600"
+                  />
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="support-subject"
+                  className="mb-1 block text-[11px] font-medium text-zinc-600"
+                >
+                  Subject
+                </label>
+                <input
+                  id="support-subject"
+                  type="text"
+                  required
+                  maxLength={160}
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-[#0B132B]"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="support-message"
+                  className="mb-1 block text-[11px] font-medium text-zinc-600"
+                >
+                  Message
+                </label>
+                <textarea
+                  id="support-message"
+                  required
+                  rows={4}
+                  maxLength={10_000}
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  placeholder="Tell us what happened or how we can help."
+                  className="w-full resize-y rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-[#0B132B]"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="flex w-full items-center justify-center rounded-lg bg-[#0B132B] px-3 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPending ? "Sending…" : "Send feedback"}
+              </button>
+              {error && (
+                <p className="text-xs text-red-600" role="alert">
+                  {error}
+                </p>
+              )}
+            </form>
+          )}
+          {sent && (
+            <button
+              type="button"
+              onClick={() => setSent(false)}
+              className="mt-3 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+            >
+              Send another message
             </button>
-          </form>
-          <p className="mt-2 text-center text-[11px] text-zinc-400">
-            Your message will open in your email app addressed to{" "}
-            {SUPPORT_EMAIL}.
-          </p>
+          )}
         </div>
       )}
 

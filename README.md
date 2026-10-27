@@ -18,6 +18,18 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Support feedback email
+
+The dashboard support form sends feedback through Resend to `support@jnsystem.app`.
+Configure these server-side environment variables locally and in the deployment
+environment:
+
+- `RESEND_API_KEY`: a Resend API key with permission to send email.
+- `RESEND_FROM_EMAIL`: a sender address or display-name address on a domain
+  verified in Resend (for example, `JNS Support <support@jnsystem.app>`).
+
+Feedback replies are directed to the authenticated user's account email.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
