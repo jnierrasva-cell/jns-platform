@@ -110,6 +110,15 @@ export async function joinWithInvite(token: string) {
     throw new Error("This invite link is not valid.");
   }
 
+  const inviteEmail = String(invite.email ?? "").trim().toLowerCase();
+  const userEmail = user.email.trim().toLowerCase();
+
+  if (!inviteEmail || inviteEmail !== userEmail) {
+    throw new Error(
+      `This invite is for ${invite.email}. You are signed in as ${user.email}. Sign out, then sign in with the invited email.`,
+    );
+  }
+
   if (invite.status === "revoked") {
     throw new Error("This invite was cancelled. Ask the owner for a new link.");
   }
@@ -135,15 +144,6 @@ export async function joinWithInvite(token: string) {
 
   if (invite.status !== "pending") {
     throw new Error("This invite is no longer valid.");
-  }
-
-  const inviteEmail = String(invite.email).trim().toLowerCase();
-  const userEmail = user.email.trim().toLowerCase();
-
-  if (inviteEmail !== userEmail) {
-    throw new Error(
-      `This invite is for ${invite.email}. You are signed in as ${user.email}. Sign out, then sign in with the invited email.`,
-    );
   }
 
   const { data: existing } = await admin
