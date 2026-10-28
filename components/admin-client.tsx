@@ -361,7 +361,7 @@ export function AdminClient({
                   const expired =
                     end &&
                     !Number.isNaN(end.getTime()) &&
-                    end.getTime() < Date.now();
+                    end.getTime() < now.getTime();
 
                   return (
                     <tr

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -32,6 +32,45 @@ import Image from "next/image";
 import { SupportBubble } from "@/components/support-bubble";
 
 const STORAGE_KEY = "jns_sidebar_collapsed";
+const SIDEBAR_CHANGE_EVENT = "jns-sidebar-preference-change";
+
+function subscribeToSidebarPreference(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(SIDEBAR_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(SIDEBAR_CHANGE_EVENT, onChange);
+  };
+}
+
+function getSidebarCollapsed() {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function SectionLabel({
+  children,
+  collapsed,
+}: {
+  children: React.ReactNode;
+  collapsed: boolean;
+}) {
+  if (collapsed) {
+    return <div className="my-2 border-t border-[#1e2a4a]" />;
+  }
+  return (
+    <p className="mb-1 mt-3 px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 first:mt-0">
+      {children}
+    </p>
+  );
+}
+
+function subscribeToHydration() {
+  return () => {};
+}
 
 type NavItem = {
   label: string;
@@ -88,34 +127,26 @@ export function DashboardShell({
   const router = useRouter();
   const supabase = createClient();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "1") setCollapsed(true);
-    } catch {
-      // ignore
-    }
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  const collapsed = useSyncExternalStore(
+    subscribeToSidebarPreference,
+    getSidebarCollapsed,
+    () => false,
+  );
+  const ready = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
+  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
+  const mobileOpen = mobileOpenPath === pathname;
 
   function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        // ignore
-      }
-      return next;
-    });
+    try {
+      window.localStorage.setItem(STORAGE_KEY, collapsed ? "0" : "1");
+      window.dispatchEvent(new Event(SIDEBAR_CHANGE_EVENT));
+    } catch {
+      // Keep navigation usable when browser storage is unavailable.
+    }
   }
 
   async function handleSignOut() {
@@ -150,7 +181,7 @@ export function DashboardShell({
           href={item.href}
           className={linkClass(active)}
           title={!showLabels ? item.label : undefined}
-          onClick={() => setMobileOpen(false)}
+          onClick={() => setMobileOpenPath(null)}
         >
           <Icon
             size={16}
@@ -162,17 +193,6 @@ export function DashboardShell({
         </Link>
       );
     });
-  }
-
-  function SectionLabel({ children }: { children: React.ReactNode }) {
-    if (!showLabels) {
-      return <div className="my-2 border-t border-[#1e2a4a]" />;
-    }
-    return (
-      <p className="mb-1 mt-3 px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 first:mt-0">
-        {children}
-      </p>
-    );
   }
 
   const planBadgeClass =
@@ -211,7 +231,7 @@ export function DashboardShell({
               <button
                 type="button"
                 className="rounded-md p-1.5 text-slate-400 hover:bg-[#111e3a] hover:text-white md:hidden"
-                onClick={() => setMobileOpen(false)}
+                onClick={() => setMobileOpenPath(null)}
                 aria-label="Close menu"
               >
                 <X size={18} />
@@ -242,7 +262,7 @@ export function DashboardShell({
             <Link
               href="/dashboard/billing"
               className="mt-1 inline-flex max-w-full items-center gap-1.5 px-0.5"
-              onClick={() => setMobileOpen(false)}
+              onClick={() => setMobileOpenPath(null)}
               title="View plan and billing"
             >
               <span
@@ -269,22 +289,22 @@ export function DashboardShell({
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-        <SectionLabel>Work</SectionLabel>
+        <SectionLabel collapsed={!showLabels}>Work</SectionLabel>
         {renderNavItems(WORK_NAV)}
 
         {isOrgManager && (
           <>
-            <SectionLabel>Setup</SectionLabel>
+            <SectionLabel collapsed={!showLabels}>Setup</SectionLabel>
             {renderNavItems(SETUP_NAV)}
           </>
         )}
 
-        <SectionLabel>Account</SectionLabel>
+        <SectionLabel collapsed={!showLabels}>Account</SectionLabel>
         <Link
           href="/dashboard/orgs"
           className={linkClass(pathname.startsWith("/dashboard/orgs"))}
           title={!showLabels ? "My workspaces" : undefined}
-          onClick={() => setMobileOpen(false)}
+          onClick={() => setMobileOpenPath(null)}
         >
           <Building2
             size={16}
@@ -302,7 +322,7 @@ export function DashboardShell({
             href="/dashboard/billing"
             className={linkClass(pathname.startsWith("/dashboard/billing"))}
             title={!showLabels ? "Billing" : undefined}
-            onClick={() => setMobileOpen(false)}
+            onClick={() => setMobileOpenPath(null)}
           >
             <CreditCard
               size={16}
@@ -321,7 +341,7 @@ export function DashboardShell({
             href="/dashboard/admin"
             className={linkClass(pathname.startsWith("/dashboard/admin"))}
             title={!showLabels ? "JNS Admin" : undefined}
-            onClick={() => setMobileOpen(false)}
+            onClick={() => setMobileOpenPath(null)}
           >
             <Shield
               size={16}
@@ -360,7 +380,7 @@ export function DashboardShell({
           type="button"
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
           aria-label="Close menu"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => setMobileOpenPath(null)}
         />
       )}
 
@@ -380,7 +400,7 @@ export function DashboardShell({
         <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-zinc-200 bg-white px-3 md:hidden">
           <button
             type="button"
-            onClick={() => setMobileOpen(true)}
+            onClick={() => setMobileOpenPath(pathname)}
             className="rounded-md p-2 text-zinc-700 hover:bg-zinc-100"
             aria-label="Open menu"
           >

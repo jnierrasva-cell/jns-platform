@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   PHONE_COUNTRIES,
   getDefaultCountryIso,
@@ -18,22 +18,20 @@ export function CountryPhoneInput({
   onChange: (fullPhone: string) => void;
   disabled?: boolean;
 }) {
-  const initial = useMemo(() => splitPhone(value), [value]);
-  const [iso, setIso] = useState(initial.iso || getDefaultCountryIso());
-  const [national, setNational] = useState(initial.national);
+  const [previousValue, setPreviousValue] = useState(value);
+  const [phone, setPhone] = useState(() => splitPhone(value));
 
-  // Sync when parent value changes (e.g. loaded contact)
-  useEffect(() => {
-    const next = splitPhone(value);
-    setIso(next.iso);
-    setNational(next.national);
-  }, [value]);
+  if (value !== previousValue) {
+    setPreviousValue(value);
+    setPhone(splitPhone(value));
+  }
+
+  const iso = phone.iso || getDefaultCountryIso();
+  const national = phone.national;
 
   function emit(nextIso: string, nextNational: string) {
     onChange(joinPhone(nextIso, nextNational));
   }
-
-  const selected = PHONE_COUNTRIES.find((c) => c.iso === iso) ?? PHONE_COUNTRIES[0];
 
   return (
     <div className="flex gap-2">
@@ -43,7 +41,7 @@ export function CountryPhoneInput({
           value={iso}
           onChange={(e) => {
             const nextIso = e.target.value;
-            setIso(nextIso);
+            setPhone({ iso: nextIso, national });
             emit(nextIso, national);
           }}
           className="h-full appearance-none rounded-lg border border-white/15 bg-[#0B132B]/60 py-2.5 pl-3 pr-8 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
@@ -63,7 +61,7 @@ export function CountryPhoneInput({
         value={national}
         onChange={(e) => {
           const next = e.target.value;
-          setNational(next);
+          setPhone({ iso, national: next });
           emit(iso, next);
         }}
         placeholder="Phone number"

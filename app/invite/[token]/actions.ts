@@ -16,6 +16,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { matchesInviteEmail } from "@/lib/invites/email.mjs";
 
 export type InviteInfo = {
   id: string;
@@ -110,10 +111,7 @@ export async function joinWithInvite(token: string) {
     throw new Error("This invite link is not valid.");
   }
 
-  const inviteEmail = String(invite.email ?? "").trim().toLowerCase();
-  const userEmail = user.email.trim().toLowerCase();
-
-  if (!inviteEmail || inviteEmail !== userEmail) {
+  if (!matchesInviteEmail(invite.email, user.email)) {
     throw new Error(
       `This invite is for ${invite.email}. You are signed in as ${user.email}. Sign out, then sign in with the invited email.`,
     );

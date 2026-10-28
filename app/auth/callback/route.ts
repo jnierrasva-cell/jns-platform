@@ -1,16 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { needsProfileName } from "@/lib/names";
+import { safeNextPath } from "@/lib/auth/redirect.mjs";
 import { NextResponse } from "next/server";
-
-function safeNextPath(raw: string | null, origin: string): string | null {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
-
-  const nextUrl = new URL(raw, origin);
-  return nextUrl.origin === origin
-    ? `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
-    : null;
-}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);

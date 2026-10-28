@@ -29,6 +29,16 @@ environment:
   verified in Resend (for example, `JNS Support <support@jnsystem.app>`).
 
 Feedback replies are directed to the authenticated user's account email.
+Run `npm run check:env` to check that the required Supabase and support-email
+variables are present locally. In Vercel, configure the same variables for each
+environment (Development, Preview, and Production) and redeploy after changes.
+The check verifies presence only; confirm the sender domain in Resend and send a
+test feedback message to verify delivery.
+
+The required variables are `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`,
+and `RESEND_FROM_EMAIL`. Keep the service-role and Resend keys server-side; do
+not use a `NEXT_PUBLIC_` prefix for either.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

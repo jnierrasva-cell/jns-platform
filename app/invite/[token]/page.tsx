@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { matchesInviteEmail } from "@/lib/invites/email.mjs";
 import { getInviteInfo, joinWithInvite, type InviteInfo } from "./actions";
 
 function roleLabel(role: string) {
@@ -81,9 +82,9 @@ export default function InvitePage() {
     : "/login";
 
   const emailMatches =
-    userEmail &&
-    invite &&
-    userEmail.trim().toLowerCase() === invite.email.trim().toLowerCase();
+    Boolean(userEmail) &&
+    Boolean(invite) &&
+    matchesInviteEmail(invite?.email, userEmail);
 
   const canJoin =
     invite?.status === "pending" && Boolean(userEmail) && emailMatches;

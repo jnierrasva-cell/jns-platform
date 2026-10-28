@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/auth/redirect.mjs";
 import { BrandMark } from "@/components/brand-mark";
 import { saveSignupNames } from "./actions";
 
@@ -15,15 +16,12 @@ const workspaceBenefits = [
 
 type Mode = "signin" | "signup" | "forgot";
 
-function safeNextPath(raw: string | null): string | null {
-  if (!raw) return null;
-  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
-  return raw;
-}
-
 function LoginForm() {
   const searchParams = useSearchParams();
-  const nextPath = safeNextPath(searchParams.get("next"));
+  const nextPath = safeNextPath(
+    searchParams.get("next"),
+    typeof window === "undefined" ? undefined : window.location.origin,
+  );
 
   const [mode, setMode] = useState<Mode>(() =>
     searchParams.get("next")?.includes("/invite/") ? "signup" : "signin",
