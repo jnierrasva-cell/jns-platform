@@ -18,9 +18,16 @@ export async function setAccountType(
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("first_name, last_name")
+    .select("first_name, last_name, status")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (profile?.status === "rejected") {
+    return {
+      ok: false,
+      error: "This account cannot access a JNS workspace.",
+    };
+  }
 
   const meta = user.user_metadata as Record<string, string> | undefined;
   const firstName =

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -25,26 +25,25 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const nextPath = safeNextPath(searchParams.get("next"));
 
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(() =>
+    searchParams.get("next")?.includes("/invite/") ? "signup" : "signin",
+  );
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(
+    () => searchParams.get("email")?.trim() ?? "",
+  );
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get("error") === "auth_callback"
+      ? "We couldn’t complete sign in. The link may have expired; please try again."
+      : null,
+  );
   const [loading, setLoading] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
   const supabase = createClient();
-
-  useEffect(() => {
-    const qEmail = searchParams.get("email");
-    if (qEmail) setEmail(qEmail.trim());
-
-    if (searchParams.get("next")?.includes("/invite/")) {
-      setMode("signup");
-    }
-  }, [searchParams]);
 
   function afterAuthRedirect(fallback: string) {
     window.location.href = nextPath || fallback;
@@ -110,6 +109,9 @@ function LoginForm() {
               first_name: trimmedFirstName,
               last_name: trimmedLastName,
             },
+            emailRedirectTo: `${window.location.origin}/auth/callback${
+              nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""
+            }`,
           },
         });
 

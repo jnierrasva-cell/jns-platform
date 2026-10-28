@@ -90,6 +90,15 @@ export async function joinWithInvite(token: string) {
   }
 
   const admin = createAdminClient();
+  const { data: profileStatus } = await admin
+    .from("profiles")
+    .select("status")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileStatus?.status === "rejected") {
+    throw new Error("This account cannot access a JNS workspace.");
+  }
 
   const { data: invite, error: inviteError } = await admin
     .from("invites")

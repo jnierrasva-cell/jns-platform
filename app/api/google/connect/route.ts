@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(authUrl);
   response.cookies.set("google_oauth_state", state, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 600,
     path: "/",
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   // Bind OAuth to the active workspace
   response.cookies.set("google_oauth_org", active.organizationId, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 600,
     path: "/",

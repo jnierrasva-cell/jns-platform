@@ -16,6 +16,8 @@ export default async function AccountTypePage() {
     .eq("id", user.id)
     .maybeSingle();
 
+  if (profile?.status === "rejected") redirect("/pending-approval");
+
   if (profile && profile.status !== "approved") {
     await supabase
       .from("profiles")

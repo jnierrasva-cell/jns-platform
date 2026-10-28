@@ -28,6 +28,10 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  if (profile?.status === "rejected") {
+    redirect("/pending-approval");
+  }
+
   const { data: memberships } = await supabase
     .from("org_members")
     .select("organization_id, role")
@@ -67,9 +71,9 @@ export default async function DashboardLayout({
       await supabase
         .from("profiles")
         .update({
+          status: "approved",
           active_organization_id: memberships[0].organization_id,
           account_type: profile?.account_type ?? "individual",
-          status: "approved",
         })
         .eq("id", user.id);
     } catch {

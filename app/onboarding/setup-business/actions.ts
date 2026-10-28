@@ -15,6 +15,20 @@ export async function createOrganization(
     return { ok: false, error: "Not authenticated" };
   }
 
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("status")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.status === "rejected") {
+    return {
+      ok: false,
+      error: "This account cannot access a JNS workspace.",
+    };
+  }
+
   if (!businessName.trim()) {
     return { ok: false, error: "Business name is required" };
   }
@@ -31,7 +45,6 @@ export async function createOrganization(
     };
   }
 
-  const admin = createAdminClient();
   const { data: organization, error: kindError } = await admin
     .from("organizations")
     .update({ kind: "business" })

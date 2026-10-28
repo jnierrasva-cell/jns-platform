@@ -58,18 +58,15 @@ export async function proxy(request: NextRequest) {
   if (isProtectedRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
+    redirectUrl.search = "";
+    redirectUrl.searchParams.set(
+      "next",
+      `${pathname}${request.nextUrl.search}`,
+    );
     return NextResponse.redirect(redirectUrl);
   }
 
   // Platform panel: only super_admin (not org "admin")
-  if (user && isAdminRoute) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-  // Platform panel: only super_admin (or founder email)
   if (user && isAdminRoute) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -85,9 +82,9 @@ export async function proxy(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);
-      }
-     }
     }
+  }
+
   // Org manager-only tools — SAME priority as getActiveOrg
   if (user && isManagerPath(pathname)) {
     const cookieOrgId =
