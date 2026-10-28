@@ -12,7 +12,10 @@ async function requirePlatformAdmin() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data: profile } = await supabase
+  // Always read role with service role — same as admin page.
+  // User-scoped select is blocked/empty under RLS for many profiles.
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
