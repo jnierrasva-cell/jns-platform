@@ -10,6 +10,7 @@ type SendAutoAckInput = {
   firstName?: string;
   /** Defaults to gmail_auto_ack */
   templateKey?: string;
+  testMode?: boolean;
 };
 
 function applyTemplate(
@@ -49,7 +50,7 @@ export async function sendAutoAck(input: SendAutoAckInput) {
     .eq("service_key", "email-auto-ack")
     .maybeSingle();
 
-  if (!automation?.is_enabled) {
+  if (!input.testMode && !automation?.is_enabled) {
     return { skipped: true, reason: "automation_disabled" as const };
   }
 
@@ -66,7 +67,7 @@ export async function sendAutoAck(input: SendAutoAckInput) {
   const exclude = (settings.exclude_domains ?? [])
     .map((d) => d.toLowerCase().replace(/^@/, "").trim())
     .filter(Boolean);
-  if (exclude.includes(domainOf(input.toEmail))) {
+  if (!input.testMode && exclude.includes(domainOf(input.toEmail))) {
     return { skipped: true, reason: "excluded_domain" as const };
   }
 
@@ -122,7 +123,7 @@ export async function sendAutoAck(input: SendAutoAckInput) {
     headers.push(`References: ${input.inReplyToMessageId}`);
   }
 
-  const rawMessage = `\( {headers.join("\r\n")}\r\n\r\n \){body}`;
+  const rawMessage = `${headers.join("\r\n")}\r\n\r\n${body}`;
   const raw = toBase64Url(rawMessage);
 
   const payload: { raw: string; threadId?: string } = { raw };

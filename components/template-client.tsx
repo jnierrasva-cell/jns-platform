@@ -23,6 +23,9 @@ export function TemplateClient({
   templates: Template[];
 }) {
   const [list, setList] = useState(initial);
+  const [savedKeys, setSavedKeys] = useState(
+    () => new Set(initial.map((template) => template.template_key)),
+  );
   const [activeKey, setActiveKey] = useState(
     initial[0]?.template_key ?? "gmail_auto_ack",
   );
@@ -66,6 +69,7 @@ export function TemplateClient({
             t.template_key === activeKey ? { ...t, subject, body } : t,
           ),
         );
+        setSavedKeys((prev) => new Set(prev).add(activeKey));
         setSaved(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not save");
@@ -74,6 +78,8 @@ export function TemplateClient({
   }
 
   function handleAdd() {
+    setError(null);
+    setTestResult(null);
     const key = newKey.trim().toLowerCase().replace(/\s+/g, "_");
     if (!key) return;
     if (list.some((t) => t.template_key === key)) {
@@ -116,6 +122,10 @@ export function TemplateClient({
     startTransition(async () => {
       try {
         const result = await sendTestAutoAck(orgId, testEmail, activeKey);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
         setTestResult(`Sent. Gmail id: ${result.messageId}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Test failed");
@@ -249,10 +259,15 @@ export function TemplateClient({
             onChange={(e) => setTestEmail(e.target.value)}
             className="mt-1 block rounded-lg border border-zinc-200 px-3 py-2 text-sm"
           />
+          {!savedKeys.has(activeKey) && (
+            <p className="mt-1 text-xs text-zinc-500">
+              Save this template before sending a test.
+            </p>
+          )}
         </div>
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || !savedKeys.has(activeKey)}
           className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm hover:bg-zinc-50 disabled:opacity-60"
         >
           Send test

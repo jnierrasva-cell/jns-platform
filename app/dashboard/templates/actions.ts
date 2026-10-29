@@ -57,19 +57,42 @@ export async function sendTestAutoAck(
   organizationId: string,
   toEmail: string,
   templateKey = "gmail_auto_ack",
-) {
-  await requireOrgManager(organizationId);
+): Promise<{ ok: true; messageId: string } | { ok: false; error: string }> {
+  try {
+    await requireOrgManager(organizationId);
 
-  const result = await sendAutoAck({
-    organizationId,
-    toEmail: toEmail.trim(),
-    firstName: "there",
-    templateKey,
-  });
+    const recipient = toEmail.trim();
+    if (!recipient || !recipient.includes("@")) {
+      return { ok: false, error: "Enter a valid test email address." };
+    }
 
-  if (result.skipped) {
-    throw new Error(`Skipped: ${result.reason}`);
+    const result = await sendAutoAck({
+      organizationId,
+      toEmail: recipient,
+      firstName: "there",
+      templateKey,
+      testMode: true,
+    });
+
+    if (result.skipped) {
+      return { ok: false, error: `Test email skipped: ${result.reason}` };
+    }
+    if (!result.messageId) {
+      return {
+        ok: false,
+        error: "Gmail accepted the test, but returned no message ID.",
+      };
+    }
+
+    return { ok: true, messageId: result.messageId };
+  } catch (err) {
+    console.error("[sendTestAutoAck] failed:", err);
+    return {
+      ok: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Test email failed. Please try again.",
+    };
   }
-
-  return { messageId: result.messageId };
 }
