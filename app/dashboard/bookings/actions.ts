@@ -38,90 +38,118 @@ export async function createBooking(input: {
   endsAt?: string;
   contactId?: string;
   notes?: string;
-}) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  sendEmailNotification?: boolean;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireOrgMember(input.organizationId);
+    const admin = createAdminClient();
 
-  if (!input.title.trim()) throw new Error("Title is required");
-  if (!input.startsAt) throw new Error("Start time is required");
+    if (!input.title.trim()) throw new Error("Title is required");
+    if (!input.startsAt) throw new Error("Start time is required");
 
-  const startsAt = new Date(input.startsAt);
-  if (Number.isNaN(startsAt.getTime())) {
-    throw new Error("Invalid start time");
-  }
+    const startsAt = new Date(input.startsAt);
+    if (Number.isNaN(startsAt.getTime())) {
+      throw new Error("Invalid start time");
+    }
 
-  let endsAt: string | null = null;
-  if (input.endsAt) {
-    const end = new Date(input.endsAt);
-    if (Number.isNaN(end.getTime())) throw new Error("Invalid end time");
-    endsAt = end.toISOString();
-  }
+    let endsAt: string | null = null;
+    if (input.endsAt) {
+      const end = new Date(input.endsAt);
+      if (Number.isNaN(end.getTime())) throw new Error("Invalid end time");
+      endsAt = end.toISOString();
+    }
 
-  let attendeeEmail: string | null = null;
-  if (input.contactId) {
-    const { data: contact } = await supabase
-      .from("contacts")
-      .select("email")
-      .eq("id", input.contactId)
-      .maybeSingle();
-    attendeeEmail = contact?.email ?? null;
-  }
+    let attendeeEmail: string | null = null;
+    if (input.contactId) {
+      const { data: contact, error: contactError } = await admin
+        .from("contacts")
+        .select("email")
+        .eq("id", input.contactId)
+        .eq("organization_id", input.organizationId)
+        .maybeSingle();
+      if (contactError) {
+        console.error("[createBooking] contact lookup failed:", contactError);
+        throw new Error("Could not load the selected contact.");
+      }
+      if (!contact) throw new Error("The selected contact was not found.");
+      attendeeEmail = contact.email ?? null;
+      if (input.sendEmailNotification && !attendeeEmail) {
+        throw new Error("The selected contact does not have an email address.");
+      }
+    }
 
-  const { data: booking, error } = await supabase
-    .from("bookings")
-    .insert({
-      organization_id: input.organizationId,
-      contact_id: input.contactId || null,
-      title: input.title.trim(),
-      starts_at: startsAt.toISOString(),
-      ends_at: endsAt,
-      notes: input.notes?.trim() || null,
-      status: "scheduled",
-      source: "manual",
-    })
-    .select("id")
-    .single();
-
-  if (error || !booking) {
-    throw new Error(error?.message ?? "Could not create booking");
-  }
-
-  const cal = await createGoogleCalendarEvent({
-    organizationId: input.organizationId,
-    title: input.title.trim(),
-    startsAt: startsAt.toISOString(),
-    endsAt,
-    description: input.notes?.trim() || null,
-    attendeeEmail,
-  });
-
-  if (cal.eventId) {
-    await saveBookingGoogleEventId(booking.id, cal.eventId);
-  } else if (cal.error) {
-    console.error("[createBooking] calendar sync:", cal.error);
-  }
-
-  if (input.contactId) {
-    await supabase
-      .from("contacts")
-      .update({
-        status: "booked",
-        updated_at: new Date().toISOString(),
+    const { data: booking, error } = await admin
+      .from("bookings")
+      .insert({
+        organization_id: input.organizationId,
+        contact_id: input.contactId || null,
+        title: input.title.trim(),
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt,
+        notes: input.notes?.trim() || null,
+        status: "scheduled",
+        source: "manual",
       })
-      .eq("id", input.contactId)
-      .eq("organization_id", input.organizationId);
+      .select("id")
+      .single();
 
-    const bookedStageId = await getBookedPipelineStageId(input.organizationId);
-    await assignContactPipelineStage({
-      contactId: input.contactId,
+    if (error || !booking) {
+      console.error("[createBooking] booking insert failed:", error);
+      throw new Error("Could not create booking. Please try again.");
+    }
+
+    const cal = await createGoogleCalendarEvent({
       organizationId: input.organizationId,
-      stageId: bookedStageId,
-      onlyIfEmpty: false,
+      title: input.title.trim(),
+      startsAt: startsAt.toISOString(),
+      endsAt,
+      description: input.notes?.trim() || null,
+      attendeeEmail: input.sendEmailNotification ? attendeeEmail : null,
     });
-  }
 
-  revalidatePath("/dashboard/bookings");
-  revalidatePath("/dashboard/contacts");
-  revalidatePath("/dashboard");
+    if (cal.eventId) {
+      await saveBookingGoogleEventId(booking.id, cal.eventId);
+    } else if (cal.error) {
+      console.error("[createBooking] calendar sync:", cal.error);
+    }
+
+    if (input.contactId) {
+      const { error: contactUpdateError } = await admin
+        .from("contacts")
+        .update({
+          status: "booked",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.contactId)
+        .eq("organization_id", input.organizationId);
+      if (contactUpdateError) {
+        console.error(
+          "[createBooking] contact update failed:",
+          contactUpdateError,
+        );
+      }
+
+      const bookedStageId = await getBookedPipelineStageId(
+        input.organizationId,
+      );
+      await assignContactPipelineStage({
+        contactId: input.contactId,
+        organizationId: input.organizationId,
+        stageId: bookedStageId,
+        onlyIfEmpty: false,
+      });
+    }
+
+    revalidatePath("/dashboard/bookings");
+    revalidatePath("/dashboard/contacts");
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not create booking",
+    };
+  }
 }
 
 export async function updateBookingStatus(

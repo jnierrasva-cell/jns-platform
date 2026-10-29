@@ -76,6 +76,7 @@ export function BookingsClient({
   const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("10:00");
   const [contactId, setContactId] = useState("");
+  const [sendEmailNotification, setSendEmailNotification] = useState(false);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -109,20 +110,26 @@ export function BookingsClient({
 
     startTransition(async () => {
       try {
-        await createBooking({
+        const result = await createBooking({
           organizationId,
           title,
           startsAt,
           endsAt: endsAt || undefined,
           contactId: contactId || undefined,
           notes: notes || undefined,
+          sendEmailNotification,
         });
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
         setTitle("Appointment");
         setStartDate("");
         setStartTime("09:00");
         setEndDate("");
         setEndTime("10:00");
         setContactId("");
+        setSendEmailNotification(false);
         setNotes("");
         setSuccess("Booking created.");
       } catch (err) {
@@ -212,7 +219,10 @@ export function BookingsClient({
             <label className="text-sm text-zinc-700">Contact (optional)</label>
             <select
               value={contactId}
-              onChange={(e) => setContactId(e.target.value)}
+              onChange={(e) => {
+                setContactId(e.target.value);
+                setSendEmailNotification(false);
+              }}
               className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="">No contact</option>
@@ -223,6 +233,23 @@ export function BookingsClient({
                 </option>
               ))}
             </select>
+            {selectedContact?.email && (
+              <label className="flex items-start gap-2 text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={sendEmailNotification}
+                  onChange={(e) => setSendEmailNotification(e.target.checked)}
+                  className="mt-1 accent-blue-600"
+                />
+                <span>
+                  Send this contact a Google Calendar email invitation
+                  <span className="block text-xs text-zinc-500">
+                    Off by default. They will receive an invitation at{" "}
+                    {selectedContact.email} if enabled.
+                  </span>
+                </span>
+              </label>
+            )}
             {missingPhone && (
               <p className="text-xs text-amber-300">
                 SMS Reminders is on, but this contact has no phone. Add a phone
