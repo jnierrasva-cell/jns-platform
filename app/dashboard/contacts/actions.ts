@@ -103,7 +103,8 @@ export async function updateContact(input: {
   phone?: string;
   status?: "lead" | "booked" | "customer" | "inactive";
 }) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
   const updates: Record<string, string | null> = {
     updated_at: new Date().toISOString(),
@@ -131,13 +132,16 @@ export async function updateContact(input: {
     updates.status = input.status;
   }
 
-  const { error } = await supabase
+  const { data: contact, error } = await admin
     .from("contacts")
     .update(updates)
     .eq("id", input.contactId)
-    .eq("organization_id", input.organizationId);
+    .eq("organization_id", input.organizationId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!contact) throw new Error("Contact not found in this organization");
 
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
@@ -148,12 +152,13 @@ export async function addContactNote(input: {
   contactId: string;
   body: string;
 }) {
-  const { supabase, user } = await requireOrgMember(input.organizationId);
+  const { user } = await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
   const body = input.body.trim();
   if (!body) throw new Error("Note cannot be empty");
 
-  const { error } = await supabase.from("contact_notes").insert({
+  const { error } = await admin.from("contact_notes").insert({
     organization_id: input.organizationId,
     contact_id: input.contactId,
     body,
@@ -171,9 +176,10 @@ export async function sendContactEmail(input: {
   subject: string;
   body: string;
 }) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
-  const { data: contact } = await supabase
+  const { data: contact } = await admin
     .from("contacts")
     .select("id, email, first_name")
     .eq("id", input.contactId)
@@ -192,13 +198,14 @@ export async function sendContactEmail(input: {
     contactId: contact.id,
   });
 
-  await supabase
+  await admin
     .from("contacts")
     .update({
       last_contacted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", contact.id);
+    .eq("id", contact.id)
+    .eq("organization_id", input.organizationId);
 
   revalidatePath(`/dashboard/contacts/${contact.id}`);
   revalidatePath("/dashboard/contacts");
@@ -209,9 +216,10 @@ export async function sendContactSms(input: {
   contactId: string;
   body: string;
 }) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
-  const { data: contact } = await supabase
+  const { data: contact } = await admin
     .from("contacts")
     .select("id, phone, first_name")
     .eq("id", input.contactId)
@@ -229,13 +237,14 @@ export async function sendContactSms(input: {
     contactId: contact.id,
   });
 
-  await supabase
+  await admin
     .from("contacts")
     .update({
       last_contacted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", contact.id);
+    .eq("id", contact.id)
+    .eq("organization_id", input.organizationId);
 
   revalidatePath(`/dashboard/contacts/${contact.id}`);
   revalidatePath("/dashboard/contacts");
@@ -263,7 +272,8 @@ export async function importContactsCsv(input: {
   organizationId: string;
   rows: ImportRow[];
 }) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
   if (!input.rows.length) {
     throw new Error("CSV has no data rows");
@@ -293,7 +303,7 @@ export async function importContactsCsv(input: {
     }
 
     if (email) {
-      const { data: existing } = await supabase
+      const { data: existing } = await admin
         .from("contacts")
         .select("id, tags")
         .eq("organization_id", input.organizationId)
@@ -303,7 +313,7 @@ export async function importContactsCsv(input: {
       if (existing) {
         const tags = Array.isArray(existing.tags) ? existing.tags : [];
         const nextTags = Array.from(new Set([...tags, "imported"]));
-        await supabase
+        const { error } = await admin
           .from("contacts")
           .update({
             first_name: firstName,
@@ -313,13 +323,18 @@ export async function importContactsCsv(input: {
             tags: nextTags,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", existing.id);
+          .eq("id", existing.id)
+          .eq("organization_id", input.organizationId);
+        if (error) {
+          skipped += 1;
+          continue;
+        }
         updated += 1;
         continue;
       }
     }
 
-    const { error } = await supabase.from("contacts").insert({
+    const { error } = await admin.from("contacts").insert({
       organization_id: input.organizationId,
       email,
       phone,
@@ -351,16 +366,19 @@ export async function setContactPipelineStage(input: {
   await requireOrgMember(input.organizationId);
   const admin = createAdminClient();
 
-  const { error } = await admin
+  const { data: contact, error } = await admin
     .from("contacts")
     .update({
       pipeline_stage_id: input.stageId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.contactId)
-    .eq("organization_id", input.organizationId);
+    .eq("organization_id", input.organizationId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!contact) throw new Error("Contact not found in this organization");
 
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${input.contactId}`);

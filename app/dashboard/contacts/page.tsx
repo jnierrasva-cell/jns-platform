@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { ContactsClient } from "@/components/contacts-client";
 
@@ -15,8 +16,9 @@ export default async function ContactsPage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const admin = createAdminClient();
 
-  const { data: contacts } = await supabase
+  const { data: contacts } = await admin
     .from("contacts")
     .select(
       "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at, pipeline_stage_id",
