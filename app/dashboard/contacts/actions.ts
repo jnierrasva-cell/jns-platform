@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgMember } from "@/lib/org/auth";
 import { sendSms } from "@/lib/sms/send";
 import { sendGmailMessage } from "@/lib/google/send-email";
@@ -15,7 +15,8 @@ export async function createContact(input: {
   status?: "lead" | "booked" | "customer" | "inactive";
   note?: string;
 }): Promise<{ ok: true; contactId: string } | { ok: false; error: string }> {
-  const { supabase, user } = await requireOrgMember(input.organizationId);
+  const { user } = await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
   const email = input.email?.trim().toLowerCase() || null;
   const phone = input.phone?.trim() || null;
@@ -34,7 +35,7 @@ export async function createContact(input: {
   }
 
   if (email) {
-    const { data: existing, error } = await supabase
+    const { data: existing, error } = await admin
       .from("contacts")
       .select("id")
       .eq("organization_id", input.organizationId)
@@ -54,7 +55,7 @@ export async function createContact(input: {
     }
   }
 
-  const { data: contact, error } = await supabase
+  const { data: contact, error } = await admin
     .from("contacts")
     .insert({
       organization_id: input.organizationId,
@@ -77,12 +78,15 @@ export async function createContact(input: {
 
   const note = input.note?.trim();
   if (note) {
-    await supabase.from("contact_notes").insert({
+    const { error: noteError } = await admin.from("contact_notes").insert({
       organization_id: input.organizationId,
       contact_id: contact.id,
       body: note,
       created_by: user.id,
     });
+    if (noteError) {
+      console.error("[createContact] note insert failed:", noteError);
+    }
   }
 
   revalidatePath("/dashboard/contacts");
@@ -344,9 +348,10 @@ export async function setContactPipelineStage(input: {
   contactId: string;
   stageId: string | null;
 }) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("contacts")
     .update({
       pipeline_stage_id: input.stageId,
