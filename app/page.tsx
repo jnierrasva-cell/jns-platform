@@ -522,7 +522,7 @@ export default function LandingPage() {
               href="/privacy"
               className="underline-offset-2 hover:text-zinc-700 hover:underline"
             >
-              Privacy
+              Privacy Policy
             </Link>
           </p>
         </div>
