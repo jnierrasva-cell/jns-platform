@@ -320,8 +320,11 @@ export default function LandingPage() {
 
             <p className="mt-6 max-w-3xl text-sm leading-6 text-zinc-600">
               Google access is used to provide these features for the
-              connecting workspace, not sold or used for advertising. An
-              administrator can disconnect Google in workspace Integrations.
+              connecting workspace, not sold or used for advertising or
+              generalized AI/model training. It is shared only as needed to
+              provide JNS features, including with Google and our hosting or
+              database providers. An administrator can disconnect Google in
+              workspace Integrations.
               Read our{" "}
               <Link
                 href="/privacy"

@@ -357,6 +357,15 @@ export function DashboardShell({
       </nav>
 
       <div className="border-t border-[#1e2a4a] p-2">
+        <Link
+          href="/privacy"
+          className={linkClass(pathname === "/privacy")}
+          title={!showLabels ? "Privacy Policy" : undefined}
+          onClick={() => setMobileOpenPath(null)}
+        >
+          <FileText size={16} className="shrink-0 text-slate-500" />
+          {showLabels && "Privacy Policy"}
+        </Link>
         {showLabels && (
           <p className="truncate px-2.5 text-xs text-slate-500">{userEmail}</p>
         )}

@@ -56,9 +56,10 @@ export default function PrivacyPage() {
                 <strong>Integration data:</strong> when you connect Google,
                 SMS, calendar, or other tools—tokens and data needed to run
                 features you enable. For Google, this includes the connected
-                account email; Gmail sender, subject, and message identifiers
-                used by inbox rules; and event details used to sync bookings or
-                classes with the calendar you select.
+                account email and OAuth tokens; Gmail message header
+                information used by inbox rules; and Google Calendar event
+                information and event identifiers used for bookings or class
+                sync.
               </li>
               <li>
                 <strong>Billing data:</strong> handled primarily by our payment
@@ -89,27 +90,71 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <h3 className="mt-5 text-sm font-semibold text-zinc-900">
-              Google account data
+              Google data we access and how we use it
             </h3>
             <p className="mt-2">
-              We use the connected Google account email to identify the
-              workspace&apos;s account. When inbox automation is enabled, JNS
-              processes new incoming Gmail message headers—including sender,
-              subject, and message identifiers—to apply workspace email rules,
-              link inquiries to contacts, and show unmatched inquiries for
-              review. This workflow reads message headers, not message bodies.
-              If an administrator enables an auto-acknowledgment rule, JNS may
-              send the configured template reply to a matching sender.
+              When you connect Google, we access the Google account email to
+              identify the connected account. If Gmail inbox automation is
+              enabled, JNS checks new incoming messages and reads message
+              headers, including sender name and email address, subject, and
+              message and thread identifiers. We use this information to apply
+              workspace email rules, link inquiries to contacts, and show
+              unmatched inquiries for review; this workflow does not read
+              message bodies. If an administrator enables an
+              auto-acknowledgment rule, JNS sends the configured template reply
+              to a matching sender using Gmail.
             </p>
             <p className="mt-2">
-              For Google Calendar features, JNS uses event details such as
-              titles, dates, times, descriptions, and invitee email addresses
-              to create, update, or remove the bookings and class events a
-              workspace chooses to sync. Google data is used to provide these
-              features, is not sold, and is not used for advertising. Workspace
-              administrators can disconnect Google from Integrations; you can
-              also contact us to request access, correction, or deletion of
-              personal data.
+              For Google Calendar features, JNS accesses the calendar events
+              needed to find and manage events created by JNS. We use event
+              titles, dates, times, descriptions, invitee email addresses, and
+              event identifiers to create, update, identify, or remove booking
+              and class events that the workspace chooses to sync.
+            </p>
+            <h3 className="mt-5 text-sm font-semibold text-zinc-900">
+              Google data storage, sharing, and protection
+            </h3>
+            <p className="mt-2">
+              We store Google OAuth access and refresh tokens, the connected
+              account email, and granted scopes in the workspace&apos;s
+              connection record so JNS can provide enabled integrations.
+              Processed Gmail header information (such as sender, subject, and
+              message identifiers) may be stored in workspace contact,
+              unmatched-inquiry, and email-activity records. Calendar event
+              identifiers may be stored with the corresponding synced class
+              record. We do not store Gmail message bodies through the inbox
+              automation workflow described above.
+            </p>
+            <p className="mt-2">
+              Google data is processed by Google when JNS makes the API
+              requests needed to provide these features. It may also be
+              processed or stored by our hosting and database providers on
+              JNS&apos;s instructions, and is available to workspace members
+              according to their organization&apos;s access settings. We do not
+              sell Google user data or disclose it for advertising. We do not
+              use Google Workspace API data to develop, improve, or train
+              generalized or non-personalized AI or machine-learning models.
+              We do not transfer Google user data for purposes unrelated to
+              providing or improving user-facing JNS features, except where
+              required by law.
+            </p>
+            <p className="mt-2">
+              We protect Google data using HTTPS in transit, server-side
+              handling of OAuth tokens, and access controls, together with the
+              security features of our hosting and database providers. We
+              retain OAuth tokens while the Google connection is active.
+              Disconnecting Google removes JNS&apos;s stored connection record
+              and stops JNS from using those tokens; it does not delete Gmail
+              activity or workspace records already created. Those records are
+              retained with the workspace while it is active and may be
+              deleted by request, subject to limited backup retention and legal
+              requirements. To revoke the app&apos;s authorization in Google,
+              also remove JNS from your Google Account&apos;s third-party
+              connections. Contact{" "}
+              <a href="mailto:support@jnsystem.app" className="underline">
+                support@jnsystem.app
+              </a>{" "}
+              to request access, correction, or deletion of personal data.
             </p>
           </section>
 
@@ -216,7 +261,9 @@ export default function PrivacyPage() {
             <p className="mt-2">
               We may update this Privacy Policy from time to time. We will post
               the new version on this page and revise the &quot;Last
-              updated&quot; date.
+              updated&quot; date. If we change how we access, use, store, or
+              share Google user data, we will update this policy and notify
+              affected users through the Service or their account email.
             </p>
           </section>
 
