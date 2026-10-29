@@ -24,7 +24,7 @@ export default async function BookingsPage() {
     .eq("id", orgId)
     .maybeSingle();
 
-  const { data: bookings } = await supabase
+  const { data: bookings } = await admin
     .from("bookings")
     .select(
       "id, title, starts_at, ends_at, status, source, notes, contact_id, reminder_sms_sent_at, contacts(id, email, first_name, last_name, phone)",

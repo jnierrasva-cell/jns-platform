@@ -3,6 +3,7 @@
 import { CalendarDays } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   createBooking,
   updateBookingStatus,
@@ -70,6 +71,7 @@ export function BookingsClient({
   twilioConnected: boolean;
   publicBookingPath?: string;
 }) {
+  const router = useRouter();
   const [title, setTitle] = useState("Appointment");
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
@@ -132,6 +134,7 @@ export function BookingsClient({
         setSendEmailNotification(false);
         setNotes("");
         setSuccess("Booking created.");
+        router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not create");
       }

@@ -62,7 +62,7 @@ export default async function OverviewPage() {
 
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const [
     googleRes,
@@ -119,11 +119,12 @@ export default async function OverviewPage() {
       .from("bookings")
       .select(
         "id, title, starts_at, status, contacts(first_name, last_name, email)",
+        { count: "exact" },
       )
       .eq("organization_id", orgId)
       .eq("status", "scheduled")
       .gte("starts_at", now.toISOString())
-      .lte("starts_at", in7Days.toISOString())
+      .lte("starts_at", in30Days.toISOString())
       .order("starts_at", { ascending: true })
       .limit(5),
     admin
@@ -284,8 +285,8 @@ export default async function OverviewPage() {
     },
     {
       href: "/dashboard/bookings",
-      label: "Bookings (7 days)",
-      value: upcomingBookings.length,
+      label: "Bookings (30 days)",
+      value: bookingsRes.count ?? 0,
       detail: "Scheduled ahead",
       icon: CalendarDays,
     },
@@ -585,7 +586,7 @@ export default async function OverviewPage() {
           <ul className="mt-3 divide-y divide-zinc-100">
             {upcomingBookings.length === 0 ? (
               <li className="py-5 text-center text-sm text-zinc-500">
-                No bookings in the next 7 days.
+                No bookings in the next 30 days.
               </li>
             ) : (
               upcomingBookings.map((b) => {
