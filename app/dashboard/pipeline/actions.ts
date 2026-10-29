@@ -1,25 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireOrgMember } from "@/lib/org/auth";
 
-async function requireOrgMember(organizationId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("organization_id", organizationId)
-    .maybeSingle();
-
-  if (!membership) throw new Error("Not a member of this organization");
-  return { supabase, user };
-}
+type ActionResult = { ok: true } | { ok: false; error: string };
 
 function slugify(input: string) {
   return input
@@ -33,78 +18,135 @@ function slugify(input: string) {
 export async function createPipelineStage(input: {
   organizationId: string;
   name: string;
-}) {
-  const { supabase } = await requireOrgMember(input.organizationId);
-  const name = input.name.trim();
-  if (!name) throw new Error("Stage name is required");
+}): Promise<ActionResult> {
+  try {
+    await requireOrgMember(input.organizationId);
+    const name = input.name.trim();
+    if (!name) return { ok: false, error: "Stage name is required" };
 
-  const { data: last } = await supabase
-    .from("pipeline_stages")
-    .select("position")
-    .eq("organization_id", input.organizationId)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    const admin = createAdminClient();
+    const { data: last, error: readError } = await admin
+      .from("pipeline_stages")
+      .select("position")
+      .eq("organization_id", input.organizationId)
+      .order("position", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  const position = (last?.position ?? -1) + 1;
-  const slug = `${slugify(name) || "stage"}-${Math.random().toString(36).slice(2, 5)}`;
+    if (readError) {
+      console.error("[createPipelineStage] position lookup failed:", readError);
+      return { ok: false, error: "Could not load pipeline stages. Please try again." };
+    }
 
-  const { error } = await supabase.from("pipeline_stages").insert({
-    organization_id: input.organizationId,
-    name,
-    slug,
-    position,
-  });
+    const position = (last?.position ?? -1) + 1;
+    const slug = `${slugify(name) || "stage"}-${Math.random().toString(36).slice(2, 5)}`;
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/pipeline");
-  revalidatePath("/dashboard/contacts");
+    const { error } = await admin.from("pipeline_stages").insert({
+      organization_id: input.organizationId,
+      name,
+      slug,
+      position,
+    });
+
+    if (error) {
+      console.error("[createPipelineStage] insert failed:", error);
+      return { ok: false, error: "Could not create stage. Please try again." };
+    }
+
+    revalidatePath("/dashboard/pipeline");
+    revalidatePath("/dashboard/contacts");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not create stage",
+    };
+  }
 }
 
 export async function renamePipelineStage(input: {
   organizationId: string;
   stageId: string;
   name: string;
-}) {
-  const { supabase } = await requireOrgMember(input.organizationId);
-  const name = input.name.trim();
-  if (!name) throw new Error("Stage name is required");
+}): Promise<ActionResult> {
+  try {
+    await requireOrgMember(input.organizationId);
+    const name = input.name.trim();
+    if (!name) return { ok: false, error: "Stage name is required" };
 
-  const { error } = await supabase
-    .from("pipeline_stages")
-    .update({ name })
-    .eq("id", input.stageId)
-    .eq("organization_id", input.organizationId);
+    const admin = createAdminClient();
+    const { data: stage, error } = await admin
+      .from("pipeline_stages")
+      .update({ name })
+      .eq("id", input.stageId)
+      .eq("organization_id", input.organizationId)
+      .select("id")
+      .maybeSingle();
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/pipeline");
-  revalidatePath("/dashboard/contacts");
+    if (error) {
+      console.error("[renamePipelineStage] update failed:", error);
+      return { ok: false, error: "Could not rename stage. Please try again." };
+    }
+    if (!stage) return { ok: false, error: "Stage not found in this organization" };
+
+    revalidatePath("/dashboard/pipeline");
+    revalidatePath("/dashboard/contacts");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not rename stage",
+    };
+  }
 }
 
 export async function deletePipelineStage(input: {
   organizationId: string;
   stageId: string;
-}) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+}): Promise<ActionResult> {
+  try {
+    await requireOrgMember(input.organizationId);
+    const admin = createAdminClient();
+    const { count, error: countError } = await admin
+      .from("contacts")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", input.organizationId)
+      .eq("pipeline_stage_id", input.stageId);
 
-  const { count } = await supabase
-    .from("contacts")
-    .select("*", { count: "exact", head: true })
-    .eq("pipeline_stage_id", input.stageId);
+    if (countError) {
+      console.error("[deletePipelineStage] contact count failed:", countError);
+      return { ok: false, error: "Could not check whether the stage is in use." };
+    }
+    if ((count ?? 0) > 0) {
+      return {
+        ok: false,
+        error: "Move contacts out of this stage before deleting it",
+      };
+    }
 
-  if ((count ?? 0) > 0) {
-    throw new Error("Move contacts out of this stage before deleting it");
+    const { data: stage, error } = await admin
+      .from("pipeline_stages")
+      .delete()
+      .eq("id", input.stageId)
+      .eq("organization_id", input.organizationId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("[deletePipelineStage] delete failed:", error);
+      return { ok: false, error: "Could not delete stage. Please try again." };
+    }
+    if (!stage) return { ok: false, error: "Stage not found in this organization" };
+
+    revalidatePath("/dashboard/pipeline");
+    revalidatePath("/dashboard/contacts");
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Could not delete stage",
+    };
   }
-
-  const { error } = await supabase
-    .from("pipeline_stages")
-    .delete()
-    .eq("id", input.stageId)
-    .eq("organization_id", input.organizationId);
-
-  if (error) throw new Error(error.message);
-  revalidatePath("/dashboard/pipeline");
-  revalidatePath("/dashboard/contacts");
 }
 
 export async function setContactPipelineStage(input: {
@@ -112,18 +154,22 @@ export async function setContactPipelineStage(input: {
   contactId: string;
   stageId: string | null;
 }) {
-  const { supabase } = await requireOrgMember(input.organizationId);
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
 
-  const { error } = await supabase
+  const { data: contact, error } = await admin
     .from("contacts")
     .update({
       pipeline_stage_id: input.stageId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.contactId)
-    .eq("organization_id", input.organizationId);
+    .eq("organization_id", input.organizationId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!contact) throw new Error("Contact not found in this organization");
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
   revalidatePath("/dashboard");

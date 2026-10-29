@@ -36,7 +36,11 @@ export function PipelineClient({
     setError(null);
     startTransition(async () => {
       try {
-        await createPipelineStage({ organizationId, name });
+        const result = await createPipelineStage({ organizationId, name });
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
         setName("");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not create stage");
@@ -73,7 +77,7 @@ export function PipelineClient({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Proposal sent"
-            className="mt-2 w-full rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+            className="mt-2 w-full rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
           />
         </div>
         <button
@@ -85,7 +89,11 @@ export function PipelineClient({
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
         {stages.length === 0 ? (
@@ -112,7 +120,7 @@ export function PipelineClient({
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                      className="flex-1 rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
                     />
                     <button
                       type="button"
@@ -120,11 +128,15 @@ export function PipelineClient({
                       onClick={() =>
                         startTransition(async () => {
                           try {
-                            await renamePipelineStage({
+                            const result = await renamePipelineStage({
                               organizationId,
                               stageId: stage.id,
                               name: editName,
                             });
+                            if (!result.ok) {
+                              setError(result.error);
+                              return;
+                            }
                             setEditingId(null);
                           } catch (err) {
                             setError(
@@ -179,10 +191,11 @@ export function PipelineClient({
                         onClick={() =>
                           startTransition(async () => {
                             try {
-                              await deletePipelineStage({
+                              const result = await deletePipelineStage({
                                 organizationId,
                                 stageId: stage.id,
                               });
+                              if (!result.ok) setError(result.error);
                             } catch (err) {
                               setError(
                                 err instanceof Error

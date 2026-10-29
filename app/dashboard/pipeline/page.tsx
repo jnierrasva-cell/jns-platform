@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { PipelineClient } from "@/components/pipeline-client";
 
@@ -15,8 +16,9 @@ export default async function PipelinePage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const admin = createAdminClient();
 
-  const { data: stages } = await supabase
+  const { data: stages } = await admin
     .from("pipeline_stages")
     .select("id, name, slug, position, is_won, is_lost")
     .eq("organization_id", orgId)
