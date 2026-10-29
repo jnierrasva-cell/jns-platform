@@ -14,7 +14,7 @@ export async function createContact(input: {
   phone?: string;
   status?: "lead" | "booked" | "customer" | "inactive";
   note?: string;
-}) {
+}): Promise<{ ok: true; contactId: string } | { ok: false; error: string }> {
   const { supabase, user } = await requireOrgMember(input.organizationId);
 
   const email = input.email?.trim().toLowerCase() || null;
@@ -24,25 +24,33 @@ export async function createContact(input: {
   const status = input.status ?? "lead";
 
   if (!email && !phone) {
-    throw new Error("Add an email or phone number");
+    return { ok: false, error: "Add an email or phone number" };
   }
   if (email && !email.includes("@")) {
-    throw new Error("Invalid email");
+    return { ok: false, error: "Enter a valid email address" };
   }
   if (phone && phone.replace(/[\s\-()]/g, "").length < 8) {
-    throw new Error("Enter a valid phone including country code");
+    return { ok: false, error: "Enter a valid phone including country code" };
   }
 
   if (email) {
-    const { data: existing } = await supabase
+    const { data: existing, error } = await supabase
       .from("contacts")
       .select("id")
       .eq("organization_id", input.organizationId)
       .ilike("email", email)
       .maybeSingle();
 
+    if (error) {
+      console.error("[createContact] duplicate check failed:", error);
+      return {
+        ok: false,
+        error: "Could not check for an existing contact. Please try again.",
+      };
+    }
+
     if (existing) {
-      throw new Error("A contact with this email already exists");
+      return { ok: false, error: "A contact with this email already exists" };
     }
   }
 
@@ -63,7 +71,8 @@ export async function createContact(input: {
     .single();
 
   if (error || !contact) {
-    throw new Error(error?.message ?? "Could not create contact");
+    console.error("[createContact] insert failed:", error);
+    return { ok: false, error: "Could not create contact. Please try again." };
   }
 
   const note = input.note?.trim();
@@ -78,7 +87,7 @@ export async function createContact(input: {
 
   revalidatePath("/dashboard/contacts");
   revalidatePath("/dashboard");
-  return { contactId: contact.id };
+  return { ok: true, contactId: contact.id };
 }
 
 export async function updateContact(input: {

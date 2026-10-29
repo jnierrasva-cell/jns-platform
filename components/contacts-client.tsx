@@ -232,20 +232,39 @@ export function ContactsClient({
           status,
           note,
         });
+        if (!result.ok) {
+          setFormError(result.error);
+          return;
+        }
         // Put new contacts on first pipeline stage when available
         if (stages[0]?.id) {
-          await setContactPipelineStage({
-            organizationId,
-            contactId: result.contactId,
-            stageId: stages[0].id,
-          });
+          try {
+            await setContactPipelineStage({
+              organizationId,
+              contactId: result.contactId,
+              stageId: stages[0].id,
+            });
+          } catch {
+            resetForm();
+            setShowAdd(false);
+            setError(
+              "Contact was created, but it could not be assigned to the first pipeline stage.",
+            );
+            router.refresh();
+            return;
+          }
         }
         resetForm();
         setShowAdd(false);
         router.push(`/dashboard/contacts/${result.contactId}`);
         router.refresh();
       } catch (err) {
-        setFormError(err instanceof Error ? err.message : "Could not create");
+        const message = err instanceof Error ? err.message : "";
+        setFormError(
+          message.startsWith("Minified React error #")
+            ? "Could not create contact. Please try again."
+            : message || "Could not create contact. Please try again.",
+        );
       }
     });
   }
@@ -634,7 +653,7 @@ export function ContactsClient({
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
                   New contact
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-zinc-900">
+                <h2 className="mt-1 text-xl font-semibold text-white">
                   Add to your CRM
                 </h2>
               </div>
@@ -656,7 +675,7 @@ export function ContactsClient({
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -664,7 +683,7 @@ export function ContactsClient({
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
                   />
                 </div>
               </div>
@@ -674,7 +693,7 @@ export function ContactsClient({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -694,7 +713,7 @@ export function ContactsClient({
                         | "inactive",
                     )
                   }
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-300/70"
                 >
                   <option value="lead">Lead</option>
                   <option value="booked">Booked</option>
@@ -708,10 +727,14 @@ export function ContactsClient({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
                 />
               </div>
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
+              {formError && (
+                <p role="alert" className="text-sm text-red-300">
+                  {formError}
+                </p>
+              )}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
