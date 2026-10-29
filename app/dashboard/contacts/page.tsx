@@ -26,7 +26,7 @@ export default async function ContactsPage() {
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
-  const { data: stages } = await supabase
+  const { data: stages } = await admin
     .from("pipeline_stages")
     .select("id, name, slug, position, is_won, is_lost")
     .eq("organization_id", orgId)
