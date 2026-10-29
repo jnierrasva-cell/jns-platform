@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { BookingsClient } from "@/components/bookings-client";
 
@@ -15,6 +16,7 @@ export default async function BookingsPage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const admin = createAdminClient();
 
   const { data: org } = await supabase
     .from("organizations")
@@ -30,7 +32,7 @@ export default async function BookingsPage() {
     .eq("organization_id", orgId)
     .order("starts_at", { ascending: true });
 
-  const { data: contacts } = await supabase
+  const { data: contacts } = await admin
     .from("contacts")
     .select("id, email, first_name, last_name, phone")
     .eq("organization_id", orgId)
