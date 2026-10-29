@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Last updated: October 24, 2026
+          Last updated: October 30, 2026
         </p>
 
         <div className="mt-10 space-y-8 text-sm leading-6 text-zinc-700">
@@ -55,7 +55,10 @@ export default function PrivacyPage() {
               <li>
                 <strong>Integration data:</strong> when you connect Google,
                 SMS, calendar, or other tools—tokens and data needed to run
-                features you enable
+                features you enable. For Google, this includes the connected
+                account email; Gmail sender, subject, and message identifiers
+                used by inbox rules; and event details used to sync bookings or
+                classes with the calendar you select.
               </li>
               <li>
                 <strong>Billing data:</strong> handled primarily by our payment
@@ -85,6 +88,29 @@ export default function PrivacyPage() {
                 allowed, product updates)
               </li>
             </ul>
+            <h3 className="mt-5 text-sm font-semibold text-zinc-900">
+              Google account data
+            </h3>
+            <p className="mt-2">
+              We use the connected Google account email to identify the
+              workspace&apos;s account. When inbox automation is enabled, JNS
+              processes new incoming Gmail message headers—including sender,
+              subject, and message identifiers—to apply workspace email rules,
+              link inquiries to contacts, and show unmatched inquiries for
+              review. This workflow reads message headers, not message bodies.
+              If an administrator enables an auto-acknowledgment rule, JNS may
+              send the configured template reply to a matching sender.
+            </p>
+            <p className="mt-2">
+              For Google Calendar features, JNS uses event details such as
+              titles, dates, times, descriptions, and invitee email addresses
+              to create, update, or remove the bookings and class events a
+              workspace chooses to sync. Google data is used to provide these
+              features, is not sold, and is not used for advertising. Workspace
+              administrators can disconnect Google from Integrations; you can
+              also contact us to request access, correction, or deletion of
+              personal data.
+            </p>
           </section>
 
           <section>

@@ -170,6 +170,9 @@ export default function LandingPage() {
             <a href="#how" className="transition hover:text-white">
               How it works
             </a>
+            <a href="#google-data" className="transition hover:text-white">
+              Google data
+            </a>
             <a href="#pricing" className="transition hover:text-white">
               Pricing
             </a>
@@ -259,6 +262,82 @@ export default function LandingPage() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        <section
+          id="google-data"
+          className="border-t border-zinc-200/80 bg-white"
+        >
+          <div className="mx-auto max-w-5xl px-5 py-20">
+            <p className="text-sm font-medium tracking-wide text-sky-800/80">
+              Google integrations
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-[1.75rem]">
+              What JNS does with Google data
+            </h2>
+            <p className="mt-3 max-w-3xl text-[15px] leading-7 text-zinc-600">
+              Journey Network Systems (JNS) is a workspace for service
+              businesses to manage contacts, bookings, intake forms, and
+              customer follow-up. Connecting Google is optional and lets a
+              workspace use the Google tools behind the features its
+              administrators choose to enable.
+            </p>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <article className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-6">
+                <h3 className="text-sm font-semibold text-zinc-900">
+                  Gmail for inbox follow-up
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                  JNS uses the connected account&apos;s email address to identify
+                  the account. When inbox automation is enabled, it checks new
+                  incoming messages&apos; sender, subject, and message identifiers
+                  to apply the workspace&apos;s email rules, link inquiries to
+                  contacts, or place unmatched inquiries in a review inbox.
+                  This workflow reads message headers, not message bodies.
+                </p>
+                <p className="mt-3 text-sm leading-6 text-zinc-600">
+                  If an administrator configures an auto-acknowledgment rule,
+                  JNS uses Gmail&apos;s send access to reply to a matching sender
+                  with the workspace&apos;s selected template. It does not send
+                  automatic replies unless that rule is enabled.
+                </p>
+              </article>
+              <article className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-6">
+                <h3 className="text-sm font-semibold text-zinc-900">
+                  Google Calendar for bookings and class sync
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                  When a workspace connects a calendar and uses booking or class
+                  sync, JNS creates, updates, or removes the related events on
+                  the calendar selected by the workspace. Event details can
+                  include the title, date and time, description, and invitee
+                  email addresses so the event reflects the booking or class.
+                </p>
+              </article>
+            </div>
+
+            <p className="mt-6 max-w-3xl text-sm leading-6 text-zinc-600">
+              Google access is used to provide these features for the
+              connecting workspace, not sold or used for advertising. An
+              administrator can disconnect Google in workspace Integrations.
+              Read our{" "}
+              <Link
+                href="/privacy"
+                className="font-medium text-zinc-900 underline underline-offset-2"
+              >
+                Privacy Policy
+              </Link>{" "}
+              for more about data handling, or contact{" "}
+              <a
+                href="mailto:support@jnsystem.app"
+                className="font-medium text-zinc-900 underline underline-offset-2"
+              >
+                support@jnsystem.app
+              </a>
+              .
+            </p>
           </div>
         </section>
 
