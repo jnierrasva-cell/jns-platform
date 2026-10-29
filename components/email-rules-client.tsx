@@ -43,10 +43,12 @@ function actionLabel(action: Rule["action"]) {
 export function EmailRulesClient({
   organizationId,
   rules,
+  rulesLoadError,
   templateKeys,
 }: {
   organizationId: string;
   rules: Rule[];
+  rulesLoadError: string | null;
   templateKeys: string[];
 }) {
   const router = useRouter();
@@ -291,7 +293,17 @@ export function EmailRulesClient({
             </tr>
           </thead>
           <tbody>
-            {rules.length === 0 ? (
+            {rulesLoadError ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-10 text-center text-sm text-red-600"
+                  role="alert"
+                >
+                  {rulesLoadError}
+                </td>
+              </tr>
+            ) : rules.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
