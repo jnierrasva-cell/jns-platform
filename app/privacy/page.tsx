@@ -200,8 +200,8 @@ export default function PrivacyPage() {
             </h2>
             <p className="mt-2">
               Privacy requests:{" "}
-              <a href="mailto:j.nierras.va@gmail.com" className="underline">
-                j.nierras.va@gmail.com
+              <a href="mailto:support@jnsystem.app" className="underline">
+                support@jnsystem.app
               </a>
               .
             </p>

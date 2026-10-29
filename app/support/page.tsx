@@ -30,10 +30,10 @@ export default function SupportPage() {
             you expected vs what happened. Screenshots help.
           </p>
           <a
-            href="mailto:j.nierras.va@gmail.com?subject=JNS%20support"
+            href="mailto:support@jnsystem.app?subject=JNS%20support"
             className="mt-4 inline-flex h-10 items-center rounded-lg bg-[#0B132B] px-4 text-sm font-medium text-white hover:bg-[#111e3a]"
           >
-            j.nierras.va@gmail.com
+            support@jnsystem.app
           </a>
         </div>
 
