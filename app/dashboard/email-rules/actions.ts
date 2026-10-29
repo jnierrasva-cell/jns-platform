@@ -16,6 +16,7 @@ export async function createEmailRule(input: {
   action: "auto_ack" | "skip" | "tag_only";
   tag?: string;
   templateKey?: string;
+  enabled?: boolean;
 }) {
   await requireOrgManager(input.organizationId);
   await assertEmailRules(input.organizationId);
@@ -38,7 +39,7 @@ export async function createEmailRule(input: {
       input.action === "auto_ack"
         ? input.templateKey?.trim() || "gmail_auto_ack"
         : null,
-    is_enabled: true,
+    is_enabled: Boolean(input.enabled),
   });
 
   if (error) throw new Error(error.message);
@@ -48,25 +49,30 @@ export async function createEmailRule(input: {
 export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
   const admin = createAdminClient();
 
-  const { data: rule } = await admin
+  const { data: rule, error: lookupError } = await admin
     .from("email_rules")
     .select("organization_id")
     .eq("id", ruleId)
     .maybeSingle();
 
+  if (lookupError) throw new Error(lookupError.message);
   if (!rule) throw new Error("Rule not found");
   await requireOrgManager(rule.organization_id);
   if (isEnabled) await assertEmailRules(rule.organization_id);
 
-  const { error } = await admin
+  const { data: updatedRule, error } = await admin
     .from("email_rules")
     .update({
       is_enabled: isEnabled,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", ruleId);
+    .eq("id", ruleId)
+    .eq("organization_id", rule.organization_id)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!updatedRule) throw new Error("Rule not found in this organization");
   revalidatePath("/dashboard/email-rules");
 }
 

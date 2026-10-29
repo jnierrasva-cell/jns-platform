@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createEmailRule,
   deleteEmailRule,
@@ -48,6 +49,7 @@ export function EmailRulesClient({
   rules: Rule[];
   templateKeys: string[];
 }) {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [priority, setPriority] = useState(10);
   const [fromEmail, setFromEmail] = useState("");
@@ -59,6 +61,7 @@ export function EmailRulesClient({
   );
   const [tag, setTag] = useState("");
   const [templateKey, setTemplateKey] = useState("gmail_auto_ack");
+  const [enableOnCreate, setEnableOnCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -72,6 +75,7 @@ export function EmailRulesClient({
     setAction("auto_ack");
     setTag("");
     setTemplateKey("gmail_auto_ack");
+    setEnableOnCreate(false);
   }
 
   function handleCreate(e: React.FormEvent) {
@@ -90,8 +94,10 @@ export function EmailRulesClient({
           action,
           tag,
           templateKey,
+          enabled: enableOnCreate,
         });
         resetForm();
+        router.refresh();
       } catch (err) {
         const message =
           err instanceof Error
@@ -248,6 +254,14 @@ export function EmailRulesClient({
             />
             Only when this is a new contact
           </label>
+          <label className="flex items-center gap-2 text-sm text-zinc-700 md:col-span-2">
+            <input
+              type="checkbox"
+              checked={enableOnCreate}
+              onChange={(e) => setEnableOnCreate(e.target.checked)}
+            />
+            Enable this rule immediately
+          </label>
         </div>
 
         {error && (
@@ -314,7 +328,13 @@ export function EmailRulesClient({
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
-                        className="text-xs text-zinc-600 underline"
+                        role="switch"
+                        aria-checked={rule.is_enabled}
+                        aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
+                        disabled={isPending}
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                          rule.is_enabled ? "bg-emerald-600" : "bg-zinc-300"
+                        }`}
                         onClick={() =>
                           startTransition(async () => {
                             try {
@@ -322,6 +342,8 @@ export function EmailRulesClient({
                                 rule.id,
                                 !rule.is_enabled,
                               );
+                              setError(null);
+                              router.refresh();
                             } catch (err) {
                               setError(
                                 err instanceof Error
@@ -332,10 +354,15 @@ export function EmailRulesClient({
                           })
                         }
                       >
-                        {rule.is_enabled ? "Disable" : "Enable"}
+                        <span
+                          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                            rule.is_enabled ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
                       </button>
                       <button
                         type="button"
+                        disabled={isPending}
                         className="text-xs text-red-600 underline"
                         onClick={() =>
                           startTransition(async () => {
