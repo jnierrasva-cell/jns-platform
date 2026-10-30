@@ -163,9 +163,39 @@ function ProductPreview() {
 }
 
 export default function LandingPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${PRODUCTION_SITE_URL.href}#organization`,
+        name: "Journey Network Systems",
+        alternateName: "JNS Systems",
+        url: PRODUCTION_SITE_URL.href,
+        logo: new URL("/jns-logo.png", PRODUCTION_SITE_URL).href,
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${PRODUCTION_SITE_URL.href}#website`,
+        name: "JNS Systems",
+        url: PRODUCTION_SITE_URL.href,
+        publisher: {
+          "@id": `${PRODUCTION_SITE_URL.href}#organization`,
+        },
+        inLanguage: "en",
+      },
+    ],
+  };
+
   return (
     <div className="min-h-full bg-zinc-50">
       <link rel="canonical" href={PRODUCTION_SITE_URL.href} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+        }}
+      />
       <header className="sticky top-0 z-40 border-b border-[#1e2a4a]/80 bg-[#0B132B]/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
           <BrandMark />

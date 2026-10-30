@@ -366,6 +366,13 @@ export default function CrmSoftwarePage() {
             >
               Explore client management software
             </Link>
+            {" "}or see how JNS connects follow-up tools in its{" "}
+            <Link
+              href="/business-workflow-automation"
+              className="font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
+            >
+              business workflow automation
+            </Link>
             .
           </p>
         </section>

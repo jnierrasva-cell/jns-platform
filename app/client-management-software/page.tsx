@@ -296,6 +296,23 @@ export default function ClientManagementSoftwarePage() {
               </article>
             ))}
           </div>
+          <p className="mt-6 text-sm leading-6 text-zinc-600">
+            See how JNS handles{" "}
+            <Link
+              href="/crm-software"
+              className="font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
+            >
+              CRM and pipeline tracking
+            </Link>{" "}
+            or{" "}
+            <Link
+              href="/business-workflow-automation"
+              className="font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
+            >
+              connected business workflows
+            </Link>
+            .
+          </p>
         </section>
 
         <section className="border-t border-[#1e2a4a] bg-[#0B132B]">
