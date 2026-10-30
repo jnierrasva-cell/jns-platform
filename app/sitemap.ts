@@ -1,36 +1,8 @@
 import type { MetadataRoute } from "next";
-
-const base =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-  "https://jns-platform.vercel.app";
+import { PRODUCTION_SITE_URL } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-  return [
-    { url: base, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    {
-      url: `${base}/login`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/terms`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${base}/privacy`,
-      lastModified: now,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${base}/support`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-  ];
+  return ["/", "/support", "/privacy", "/terms"].map((pathname) => ({
+    url: new URL(pathname, PRODUCTION_SITE_URL).toString(),
+  }));
 }

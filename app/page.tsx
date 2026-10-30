@@ -2,6 +2,14 @@ import Link from "next/link";
 import { ArrowRight, CalendarDays, Check, Mail, Plug, Users } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { PricingCheckoutButton } from "@/components/pricing-checkout-button";
+import { createPublicMetadata, PRODUCTION_SITE_URL } from "@/lib/seo";
+
+export const metadata = createPublicMetadata({
+  title: "JNS Systems | CRM & Business Management Software",
+  description:
+    "Manage client relationships and organize business workflows with JNS Systems. Explore tools for client management, bookings, forms, and follow-ups in one workspace.",
+  pathname: "/",
+});
 
 const features = [
   {
@@ -157,6 +165,7 @@ function ProductPreview() {
 export default function LandingPage() {
   return (
     <div className="min-h-full bg-zinc-50">
+      <link rel="canonical" href={PRODUCTION_SITE_URL.href} />
       <header className="sticky top-0 z-40 border-b border-[#1e2a4a]/80 bg-[#0B132B]/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
           <BrandMark />

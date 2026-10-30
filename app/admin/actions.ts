@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getApplicationOrigin } from "@/lib/seo";
 import { revalidatePath } from "next/cache";
 import { addOneMonth, normalizePlan, type PlanId } from "@/lib/billing/plans";
 
@@ -127,15 +128,11 @@ export async function generatePasswordResetLink(userId: string): Promise<{
     throw new Error("User email not found");
   }
 
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "https://jns-platform.vercel.app";
-
   const { data, error } = await admin.auth.admin.generateLink({
     type: "recovery",
     email: profile.email,
     options: {
-      redirectTo: `${origin}/auth/reset-password`,
+      redirectTo: `${getApplicationOrigin()}/auth/reset-password`,
     },
   });
 

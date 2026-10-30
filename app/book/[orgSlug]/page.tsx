@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PublicBookingClient } from "@/components/public-booking-client";
+import { createNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = createNoIndexMetadata("Booking page");
 
 export default async function PublicBookingPage({
   params,

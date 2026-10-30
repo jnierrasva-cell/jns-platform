@@ -1,8 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const base =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-  "https://jns-platform.vercel.app";
+import { PRODUCTION_SITE_URL } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -11,15 +8,15 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         disallow: [
-          "/dashboard/",
-          "/admin/",
-          "/api/",
-          "/onboarding/",
-          "/invite/",
-          "/auth/",
+          "/dashboard",
+          "/admin",
+          "/api",
+          "/onboarding",
+          "/invite",
+          "/auth/callback",
         ],
       },
     ],
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: new URL("/sitemap.xml", PRODUCTION_SITE_URL).toString(),
   };
 }

@@ -5,6 +5,7 @@ import { getActiveOrg } from "@/lib/org/active";
 import { getPlanGateState } from "@/lib/billing/org-plan";
 import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { TeamClient } from "@/components/team-client";
+import { getApplicationOrigin } from "@/lib/seo";
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -64,10 +65,6 @@ export default async function TeamPage() {
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "https://www.jnsystem.app";
-
   return (
     <div>
       {!gate.limits.teamInvites && (
@@ -81,7 +78,7 @@ export default async function TeamPage() {
         orgName={active.orgName}
         members={members}
         invites={invites ?? []}
-        appOrigin={origin}
+        appOrigin={getApplicationOrigin()}
       />
     </div>
   );

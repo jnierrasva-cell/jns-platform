@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { createPublicMetadata } from "@/lib/seo";
+
+export const metadata = createPublicMetadata({
+  title: "Terms of Service | JNS Systems",
+  description:
+    "Review the terms governing access to and use of the JNS Systems website, workspace software, and related services.",
+  pathname: "/terms",
+});
 
 export default function TermsPage() {
   return (

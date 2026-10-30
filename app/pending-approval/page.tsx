@@ -1,4 +1,7 @@
 import { BrandMark } from "@/components/brand-mark";
+import { createNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = createNoIndexMetadata("Account status");
 
 export default function PendingApprovalPage() {
   return (

@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { createPublicMetadata } from "@/lib/seo";
+
+export const metadata = createPublicMetadata({
+  title: "Privacy Policy | JNS Systems",
+  description:
+    "Read how JNS Systems handles account, workspace, customer, and integration information.",
+  pathname: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

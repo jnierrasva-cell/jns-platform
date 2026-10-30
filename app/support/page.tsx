@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { createPublicMetadata } from "@/lib/seo";
+
+export const metadata = createPublicMetadata({
+  title: "Support | JNS Systems",
+  description:
+    "Get help with your JNS Systems account, workspace, bookings, integrations, or other product issues.",
+  pathname: "/support",
+});
 
 export default function SupportPage() {
   return (

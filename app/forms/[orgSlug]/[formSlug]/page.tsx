@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { IntakeFormClient } from "@/components/intake-form-client";
 import { DEFAULT_FORM_FIELDS } from "@/lib/forms/fields";
+import { createNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = createNoIndexMetadata("Intake form");
 
 export default async function PublicIntakeFormPage({
   params,

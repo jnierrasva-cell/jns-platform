@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { createNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = createNoIndexMetadata("Reset password");
 
 export default async function ResetPasswordAlias({
   searchParams,

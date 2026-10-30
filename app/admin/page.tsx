@@ -3,6 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AdminClient } from "@/components/admin-client";
+import { createNoIndexMetadata } from "@/lib/seo";
+
+export const metadata = createNoIndexMetadata("Platform administration");
 
 async function assertPlatformAdmin(
   userId: string,

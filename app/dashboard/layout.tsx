@@ -1,3 +1,4 @@
+import { createNoIndexMetadata } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +8,8 @@ import { getPlanGateState } from "@/lib/billing/org-plan";
 import { PLAN_LIMITS } from "@/lib/billing/plans";
 import { needsProfileName } from "@/lib/names";
 import { CompleteProfileBanner } from "@/components/complete-profile-banner";
+
+export const metadata = createNoIndexMetadata("Workspace");
 
 export default async function DashboardLayout({
   children,
