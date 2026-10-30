@@ -5,32 +5,32 @@ import { PricingCheckoutButton } from "@/components/pricing-checkout-button";
 import { createPublicMetadata, PRODUCTION_SITE_URL } from "@/lib/seo";
 
 export const metadata = createPublicMetadata({
-  title: "JNS Systems | CRM & Business Management Software",
+  title: "JNS Systems | Client Management & Business Automation",
   description:
-    "Manage client relationships and organize business workflows with JNS Systems. Explore tools for client management, bookings, forms, and follow-ups in one workspace.",
+    "Manage client relationships, bookings, forms, and follow-ups in one workspace with JNS Systems. Organize your operations and simplify everyday business workflows.",
   pathname: "/",
 });
 
 const features = [
   {
     icon: Users,
-    title: "Contacts under your rules",
-    body: "Pipeline, notes, and history on each person. Email rules and unmatched keep junk from becoming leads.",
+    title: "Client records and pipeline",
+    body: "Keep contact details, notes, and pipeline history together. Email rules route inquiries, while unmatched messages stay in a review inbox.",
   },
   {
     icon: CalendarDays,
-    title: "Bookings on the calendar",
-    body: "Share a booking page, keep the schedule current, and send reminders from accounts you connect.",
+    title: "Bookings and reminders",
+    body: "Share a public booking page, manage appointments, and connect Google Calendar. SMS reminders are available with eligible plans and connected services.",
   },
   {
     icon: Mail,
-    title: "Intake that lands in one place",
-    body: "Forms become contacts you can act on — same record for follow-up, not another spreadsheet.",
+    title: "Intake forms into contacts",
+    body: "Collect inquiries through published forms and turn submissions into contact records for follow-up.",
   },
   {
     icon: Plug,
-    title: "Connected tools",
-    body: "Google, SMS, and class software when you need them — less copy-paste between tabs.",
+    title: "Follow-up and team workflows",
+    body: "Configure email rules and optional auto-replies, share team procedures, and connect the tools your workflows use.",
   },
 ];
 
@@ -210,12 +210,13 @@ export default function LandingPage() {
               For service businesses and the people who run them
             </p>
             <h1 className="mt-4 max-w-lg text-[2.25rem] font-semibold leading-[1.12] tracking-tight text-zinc-900 sm:text-5xl sm:leading-[1.1]">
-              One workspace for clients, bookings, and follow-up
+              Simplify Client Management and Business Operations
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-7 text-zinc-600">
-              Journey Network Systems keeps contacts, intake, schedule, and
-              team process in one place—so work doesn&apos;t scatter across
-              inboxes and spreadsheets.
+              JNS Systems is a workspace for service businesses to manage
+              clients from first inquiry through booking and follow-up. Keep
+              contact records, intake forms, pipeline activity, and team
+              processes connected in one place.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
@@ -243,11 +244,12 @@ export default function LandingPage() {
         <section id="product" className="border-t border-zinc-200/80 bg-white">
           <div className="mx-auto max-w-5xl px-5 py-20">
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-[1.75rem]">
-              Built for how service work actually runs
+              Client management and business workflows, together
             </h2>
             <p className="mt-3 max-w-2xl text-[15px] leading-7 text-zinc-600">
-              Not another bloated marketing suite. A clear ops home for people,
-              appointments, and follow-up you control.
+              Bring client records and pipeline activity together with bookings,
+              intake forms, and follow-ups. Connect the tools and team processes
+              you already use to organize everyday business operations.
             </p>
             <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 sm:grid-cols-2">
               {features.map((feature) => {
