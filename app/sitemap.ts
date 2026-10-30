@@ -5,6 +5,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     "/",
     "/client-management-software",
+    "/crm-software",
     "/support",
     "/privacy",
     "/terms",
