@@ -265,6 +265,13 @@ export default function LandingPage() {
               Explore JNS CRM software
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
+            <Link
+              href="/business-workflow-automation"
+              className="ml-5 mt-4 inline-flex items-center gap-1 text-sm font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
+            >
+              Explore business workflow automation
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
             <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 sm:grid-cols-2">
               {features.map((feature) => {
                 const Icon = feature.icon;
