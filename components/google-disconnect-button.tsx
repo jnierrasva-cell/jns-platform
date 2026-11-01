@@ -31,7 +31,7 @@ export function GoogleDisconnectButton({
         type="button"
         disabled={isPending}
         onClick={onDisconnect}
-        className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
+        className="rounded-2xl border border-slate-200/80 px-3 py-2 text-xs text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
       >
         {isPending ? "Disconnecting…" : "Disconnect Google"}
       </button>
