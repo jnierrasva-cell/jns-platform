@@ -14,7 +14,7 @@ function mapToText(raw: unknown): string {
     .join("\n");
 }
 
-export default async function IntegrationsPage() {
+export default async function ConnectionsPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,25 +66,25 @@ export default async function IntegrationsPage() {
 
   return (
     <div>
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-        Integrations
+      <span className="font-mono text-xs uppercase tracking-[0.15em] text-slate-500">
+        Connections
       </span>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold text-slate-900">
         Connected accounts
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         Connect the tools your automations run on. Each business uses their own
         accounts.
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-base font-semibold text-zinc-900">
+              <h2 className="text-base font-semibold text-slate-900">
                 Google (Gmail)
               </h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 text-sm text-slate-500">
                 Used for inbox watch, auto-acknowledgment, and calendar sync.
               </p>
             </div>
@@ -92,7 +92,7 @@ export default async function IntegrationsPage() {
               className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${
                 googleConnection
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-zinc-200 bg-zinc-50 text-zinc-500"
+                  : "border-slate-200/80 bg-slate-50 text-slate-500"
               }`}
             >
               {googleConnection ? "Connected" : "Not connected"}
@@ -101,9 +101,9 @@ export default async function IntegrationsPage() {
 
           {googleConnection ? (
             <div className="mt-5 space-y-3">
-              <p className="text-sm text-zinc-700">
+              <p className="text-sm text-slate-700">
                 Connected as{" "}
-                <span className="font-medium text-zinc-900">
+                <span className="font-medium text-slate-900">
                   {googleConnection.connected_email}
                 </span>
               </p>
@@ -114,12 +114,12 @@ export default async function IntegrationsPage() {
           ) : canManage ? (
             <a
               href="/api/google/connect"
-              className="mt-5 inline-flex rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="mt-5 inline-flex rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
             >
               Connect Google
             </a>
           ) : (
-            <p className="mt-5 text-sm text-zinc-500">
+            <p className="mt-5 text-sm text-slate-500">
               Ask the workspace owner to connect Google.
             </p>
           )}
