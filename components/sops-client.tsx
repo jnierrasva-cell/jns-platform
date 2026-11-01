@@ -2,6 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
+import { BookOpen } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import {
   prepareSopUpload,
@@ -192,97 +198,99 @@ export function SopsClient({
   }
 
   return (
-    <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-        SOPs / Workflow
-      </span>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-        Company processes
-      </h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-        Playbooks for <span className="font-medium">{orgName}</span>. Team
-        members can view shared SOPs. Owners and admins upload and manage
-        access. Prefer <span className="font-medium">PDF</span> for in-browser
-        viewing.
-      </p>
+    <div className="space-y-6 pb-6">
+      <header className="border-b border-border pb-6">
+        <p className="text-xs font-semibold uppercase text-text-muted">
+          Playbooks
+        </p>
+        <h1 className="mt-2 font-heading text-3xl font-bold text-foreground">
+          Company processes
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+          Playbooks for <span className="font-medium text-foreground">{orgName}</span>. Team
+          members can view shared SOPs. Owners and admins upload and manage
+          access. Prefer <span className="font-medium text-foreground">PDF</span> for in-browser
+          viewing.
+        </p>
+      </header>
 
       {error && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error}
         </p>
       )}
 
       {canManage && (
-        <section className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
-          <h2 className="text-sm font-medium text-zinc-900">Upload SOP</h2>
-          <form onSubmit={handleUpload} className="mt-4 space-y-3">
+        <section className="rounded-2xl border border-border bg-card p-5 text-card-foreground sm:p-6">
+          <h2 className="font-heading text-base font-bold text-foreground">Upload playbook</h2>
+          <form onSubmit={handleUpload} className="mt-5 space-y-4">
             <div>
-              <label className="text-sm text-zinc-700">SOP title</label>
-              <input
+              <label className="text-sm text-text-secondary">Playbook title</label>
+              <Input
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Client cancellation process"
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-1"
               />
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-text-muted">
                 This title is what the team sees (not the original file name).
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-sm text-zinc-700">Version</label>
-                <input
+                <label className="text-sm text-text-secondary">Version</label>
+                <Input
                   value={version}
                   onChange={(e) => setVersion(e.target.value)}
                   placeholder="1.0"
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1"
                 />
               </div>
               <div>
-                <label className="text-sm text-zinc-700">Who can view</label>
-                <select
+                <label className="text-sm text-text-secondary">Who can view</label>
+                <Select
                   value={visibility}
                   onChange={(e) =>
                     setVisibility(
                       e.target.value as "all_members" | "managers_only",
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1"
                 >
                   <option value="all_members">
                     Everyone in this workspace
                   </option>
                   <option value="managers_only">Owners & admins only</option>
-                </select>
+                </Select>
               </div>
             </div>
             <div>
-              <label className="text-sm text-zinc-700">Notes (optional)</label>
-              <textarea
+              <label className="text-sm text-text-secondary">Notes (optional)</label>
+              <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-1 min-h-20"
               />
             </div>
             <div>
-              <label className="text-sm text-zinc-700">File (PDF recommended)</label>
+              <label className="text-sm text-text-secondary">File (PDF recommended)</label>
               <input
                 type="file"
                 required
                 accept=".pdf,application/pdf,.doc,.docx,.png,.jpg,.jpeg"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="mt-1 block w-full text-sm text-zinc-600"
+                className="mt-1 block min-h-11 w-full rounded-xl border border-border bg-surface-inset px-3 py-2 text-sm text-text-secondary file:mr-3 file:min-h-9 file:rounded-lg file:border-0 file:bg-accent-cyan file:px-3 file:font-semibold file:text-[#0A0E1A]"
               />
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-text-muted">
                 Max 20MB. PDF opens in the browser; Word usually downloads.
               </p>
             </div>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              className="min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A] disabled:opacity-60"
             >
               {isPending ? "Uploading…" : "Upload"}
             </button>
@@ -290,21 +298,26 @@ export function SopsClient({
         </section>
       )}
 
-      <section className="mt-10">
-        <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-          Library ({sops.length})
-        </h2>
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-heading text-base font-bold text-foreground">
+            Library
+          </h2>
+          <Badge variant="secondary">{sops.length}</Badge>
+        </div>
+        <p className="sr-only">Playbooks available in {orgName}</p>
         {sops.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            No SOPs shared with you yet.
-            {canManage ? " Upload one above and set “Everyone in this workspace”." : ""}
-          </p>
+          <EmptyState
+            icon={BookOpen}
+            title="No playbooks shared yet"
+            description={canManage ? "Upload a process document for this workspace." : "Shared process documents will appear here."}
+          />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+          <div className="overflow-x-auto rounded-2xl border border-border bg-card text-card-foreground">
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
+              <thead className="border-b border-border bg-surface-inset text-xs font-semibold uppercase text-text-muted">
                 <tr>
-                  <th className="px-4 py-3 font-medium">SOP title</th>
+                  <th className="px-4 py-3 font-medium">Playbook</th>
                   <th className="px-4 py-3 font-medium">Version</th>
                   <th className="px-4 py-3 font-medium">Last edited</th>
                   <th className="px-4 py-3 font-medium text-right">Actions</th>
@@ -314,33 +327,28 @@ export function SopsClient({
                 {sops.map((sop) => {
                   const edited = sop.updated_at || sop.created_at;
                   return (
-                    <tr
-                      key={sop.id}
-                      className="border-b border-zinc-50 last:border-0"
-                    >
+                    <tr key={sop.id} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-zinc-900">{sop.title}</p>
+                        <p className="font-medium text-foreground">{sop.title}</p>
                         {sop.description ? (
-                          <p className="mt-0.5 text-xs text-zinc-500">
+                          <p className="mt-0.5 text-xs text-text-secondary">
                             {sop.description}
                           </p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">
+                      <td className="px-4 py-3 text-text-secondary">
                         {canManage ? (
-                          <input
+                          <Input
                             defaultValue={sop.version || "1.0"}
-                            onBlur={(e) =>
-                              handleVersionBlur(sop.id, e.target.value)
-                            }
-                            className="w-16 rounded border border-zinc-200 px-2 py-1 text-sm"
+                            onBlur={(e) => handleVersionBlur(sop.id, e.target.value)}
+                            className="w-24"
                             aria-label={`Version for ${sop.title}`}
                           />
                         ) : (
                           sop.version || "1.0"
                         )}
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">
+                      <td className="px-4 py-3 text-text-secondary">
                         {edited
                           ? new Date(edited).toLocaleDateString(undefined, {
                               year: "numeric",
@@ -355,7 +363,7 @@ export function SopsClient({
                             type="button"
                             disabled={isPending}
                             onClick={() => handleView(sop.id)}
-                            className="rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+                            className="min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-3 text-sm font-semibold text-[#0A0E1A] disabled:opacity-60"
                           >
                             View
                           </button>
@@ -365,37 +373,25 @@ export function SopsClient({
                                 type="button"
                                 disabled={isPending}
                                 onClick={() => handleDownload(sop.id)}
-                                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+                                className="min-h-11 rounded-xl border border-border px-3 text-sm text-text-secondary hover:bg-surface-inset disabled:opacity-60"
                               >
                                 Download
                               </button>
-                              <select
+                              <Select
                                 disabled={isPending}
-                                value={
-                                  sop.visibility === "managers_only"
-                                    ? "managers_only"
-                                    : "all_members"
-                                }
-                                onChange={(e) =>
-                                  handleVisibility(
-                                    sop.id,
-                                    e.target.value as
-                                      | "all_members"
-                                      | "managers_only",
-                                  )
-                                }
-                                className="rounded-lg border border-zinc-200 px-2 py-1.5 text-xs text-zinc-800"
+                                value={sop.visibility === "managers_only" ? "managers_only" : "all_members"}
+                                onChange={(e) => handleVisibility(sop.id, e.target.value as "all_members" | "managers_only")}
+                                aria-label={`Visibility for ${sop.title}`}
+                                className="min-h-11 w-40 px-2 text-xs"
                               >
                                 <option value="all_members">Team can view</option>
-                                <option value="managers_only">
-                                  Managers only
-                                </option>
-                              </select>
+                                <option value="managers_only">Managers only</option>
+                              </Select>
                               <button
                                 type="button"
                                 disabled={isPending}
                                 onClick={() => handleDelete(sop.id, sop.title)}
-                                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                                className="min-h-11 rounded-xl border border-danger/30 px-3 text-sm text-danger hover:bg-danger/10 disabled:opacity-60"
                               >
                                 Delete
                               </button>
