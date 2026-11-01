@@ -23,9 +23,9 @@ export function BreakerSwitch({
       onClick={onChange}
       className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 ${
         disabled
-          ? "cursor-not-allowed border-zinc-200 bg-zinc-100"
+          ? "cursor-not-allowed border-slate-200/80 bg-slate-100"
           : checked
-            ? "border-zinc-900 bg-zinc-900"
+            ? "border-zinc-900 bg-sky-600"
             : "border-zinc-300 bg-zinc-200 hover:border-zinc-400"
       }`}
     >
