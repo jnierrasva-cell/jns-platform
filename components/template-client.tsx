@@ -150,8 +150,8 @@ export function TemplateClient({
         Email templates
       </h1>
       <p className="mt-1 text-sm text-slate-500">
-        Use <code className="text-xs">{"{{first_name}}"}</code> and{" "}
-        <code className="text-xs">{"{{business_name}}"}</code>. Rules can pick
+        Use <code className="text-xs">{{"{{first_name}}"}</code> and{" "}
+        <code className="text-xs">{{"{{business_name}}"}</code>. Rules can pick
         which template to send.
       </p>
 
