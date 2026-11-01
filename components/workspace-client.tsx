@@ -131,28 +131,28 @@ export function WorkspaceClient({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
       <div>
-        <h1 className="text-lg font-semibold text-zinc-900">Workspace</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className="text-lg font-semibold text-slate-900">Workspace</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Manage your workspace name and branding.
         </p>
-        <p className="mt-1 text-xs font-medium capitalize text-zinc-400">
+        <p className="mt-1 text-xs font-medium capitalize text-slate-400">
           {orgKind} workspace
         </p>
       </div>
 
       {welcome && (
-        <p className="mt-4 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-900">
+        <p className="mt-4 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
           Your workspace is ready. Set its name and logo here.
         </p>
       )}
 
-      <div className="mt-6 border-t border-zinc-100 pt-6">
+      <div className="mt-6 border-t border-slate-100 pt-6">
         <form onSubmit={handleSaveName} className="max-w-xl">
           <label
             htmlFor="workspace-name"
-            className="text-sm font-medium text-zinc-700"
+            className="text-sm font-medium text-slate-700"
           >
             Workspace name
           </label>
@@ -164,12 +164,12 @@ export function WorkspaceClient({
               value={name}
               disabled={isPending}
               onChange={(event) => setName(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#0B132B] disabled:bg-zinc-50"
+              className="min-w-0 flex-1 rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-[#0B132B] disabled:bg-slate-50"
             />
             <button
               type="submit"
               disabled={isPending || !name.trim()}
-              className="rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
             >
               Save name
             </button>
@@ -177,15 +177,15 @@ export function WorkspaceClient({
         </form>
       </div>
 
-      <div className="mt-6 border-t border-zinc-100 pt-6">
-        <h2 className="text-sm font-medium text-zinc-700">Workspace logo</h2>
-        <p className="mt-1 text-sm text-zinc-500">
+      <div className="mt-6 border-t border-slate-100 pt-6">
+        <h2 className="text-sm font-medium text-slate-700">Workspace logo</h2>
+        <p className="mt-1 text-sm text-slate-500">
           Use an image up to 5MB. It will appear in your workspace sidebar.
         </p>
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
           {logoUrl ? (
-            <div className="flex h-20 w-40 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 p-2">
+            <div className="flex h-20 w-40 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50 p-2">
               <Image
                 src={logoUrl}
                 alt={`${name} logo`}
@@ -196,7 +196,7 @@ export function WorkspaceClient({
               />
             </div>
           ) : (
-            <div className="flex h-20 w-40 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-xs text-zinc-400">
+            <div className="flex h-20 w-40 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-slate-50 text-xs text-slate-400">
               No logo uploaded
             </div>
           )}
@@ -204,7 +204,7 @@ export function WorkspaceClient({
           <div className="flex flex-wrap items-center gap-2">
             <label
               htmlFor="workspace-logo"
-              className={`cursor-pointer rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 ${
+              className={`cursor-pointer rounded-2xl border border-slate-200/80 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 ${
                 isPending ? "pointer-events-none opacity-60" : ""
               }`}
             >
@@ -228,7 +228,7 @@ export function WorkspaceClient({
                 type="button"
                 onClick={handleRemoveLogo}
                 disabled={isPending}
-                className="rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                className="rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
               >
                 Remove logo
               </button>
