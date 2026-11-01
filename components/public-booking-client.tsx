@@ -52,8 +52,8 @@ export function PublicBookingClient({
 
   if (done) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B132B] px-4">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-sky-600 px-4">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/[0.03] p-8 text-center">
           <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
             Booked
           </p>
@@ -70,8 +70,8 @@ export function PublicBookingClient({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B132B] px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+    <div className="flex min-h-screen items-center justify-center bg-sky-600 px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/[0.03] p-8">
         <p className="font-mono text-xs uppercase tracking-[0.15em] text-[#06B6D4]">
           Book with
         </p>
@@ -89,7 +89,7 @@ export function PublicBookingClient({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-xl border border-white/15 bg-sky-600/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
             />
           </div>
 
@@ -100,7 +100,7 @@ export function PublicBookingClient({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-xl border border-white/15 bg-sky-600/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
             />
           </div>
 
@@ -117,7 +117,7 @@ export function PublicBookingClient({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                className="rounded-xl border border-white/15 bg-sky-600/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -127,7 +127,7 @@ export function PublicBookingClient({
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                className="rounded-xl border border-white/15 bg-sky-600/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
               />
             </div>
           </div>
@@ -138,16 +138,16 @@ export function PublicBookingClient({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="rounded-lg border border-white/15 bg-[#0B132B]/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+              className="rounded-xl border border-white/15 bg-sky-600/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
             />
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
             type="submit"
             disabled={isPending}
-            className="mt-2 rounded-lg bg-[#2563EB] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
+            className="mt-2 rounded-xl bg-[#2563EB] py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563EB]/25 transition hover:bg-[#1D4ED8] disabled:opacity-60"
           >
             {isPending ? "Booking…" : "Confirm booking"}
           </button>
