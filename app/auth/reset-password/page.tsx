@@ -90,32 +90,32 @@ export default function AuthResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
       <div className="w-full max-w-[380px]">
         <BrandMark />
-        <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-6">
-          <h1 className="text-lg font-semibold text-zinc-900">
+        <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6">
+          <h1 className="text-lg font-semibold text-slate-900">
             Set a new password
           </h1>
-          <p className="mt-1.5 text-sm text-zinc-500">
+          <p className="mt-1.5 text-sm text-slate-500">
             Choose a new password for your JNS account.
           </p>
 
-          {info && <p className="mt-4 text-sm text-zinc-500">{info}</p>}
+          {info && <p className="mt-4 text-sm text-slate-500">{info}</p>}
 
           {error && (
             <div className="mt-4 space-y-2">
               <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {error}
               </p>
-              <Link href="/login" className="text-sm text-zinc-600 underline">
+              <Link href="/login" className="text-sm text-slate-600 underline">
                 Back to sign in
               </Link>
             </div>
           )}
 
           {done && (
-            <p className="mt-6 text-sm text-zinc-600">
+            <p className="mt-6 text-sm text-slate-600">
               Password updated. Opening your workspace…
             </p>
           )}
@@ -123,7 +123,7 @@ export default function AuthResetPasswordPage() {
           {ready && !done && (
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label htmlFor="password" className="text-sm text-zinc-700">
+                <label htmlFor="password" className="text-sm text-slate-700">
                   New password
                 </label>
                 <input
@@ -134,11 +134,11 @@ export default function AuthResetPasswordPage() {
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="confirm" className="text-sm text-zinc-700">
+                <label htmlFor="confirm" className="text-sm text-slate-700">
                   Confirm password
                 </label>
                 <input
@@ -149,13 +149,13 @@ export default function AuthResetPasswordPage() {
                   autoComplete="new-password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
               >
                 {loading ? "Saving…" : "Update password"}
               </button>
