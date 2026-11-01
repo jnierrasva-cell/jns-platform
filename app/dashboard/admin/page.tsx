@@ -83,9 +83,9 @@ export default async function DashboardAdminPage() {
   if (loadError) {
     return (
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">JNS Admin</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">JNS Admin</h1>
         <p className="mt-4 text-sm text-red-600">{loadError}</p>
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-slate-500">
           Confirm service role key and that plan columns exist on organizations.
         </p>
         <Link href="/dashboard" className="mt-4 inline-block text-sm underline">
