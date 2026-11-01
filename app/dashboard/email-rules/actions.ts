@@ -44,6 +44,7 @@ export async function createEmailRule(input: {
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/email-rules");
+  revalidatePath("/dashboard/autopilot");
 }
 
 export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
@@ -74,6 +75,7 @@ export async function setEmailRuleEnabled(ruleId: string, isEnabled: boolean) {
   if (error) throw new Error(error.message);
   if (!updatedRule) throw new Error("Rule not found in this organization");
   revalidatePath("/dashboard/email-rules");
+  revalidatePath("/dashboard/autopilot");
 }
 
 export async function deleteEmailRule(ruleId: string) {
@@ -91,4 +93,5 @@ export async function deleteEmailRule(ruleId: string) {
   const { error } = await admin.from("email_rules").delete().eq("id", ruleId);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/email-rules");
+  revalidatePath("/dashboard/autopilot");
 }

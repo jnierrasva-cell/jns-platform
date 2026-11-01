@@ -61,6 +61,7 @@ export async function convertUnmatchedToLead(input: {
     .eq("id", row.id);
 
   revalidatePath("/dashboard/unmatched");
+  revalidatePath("/dashboard/autopilot");
   revalidatePath("/dashboard/contacts");
   return { contactId };
 }
@@ -84,4 +85,5 @@ export async function ignoreUnmatched(input: {
   if (error) throw new Error(error.message);
 
   revalidatePath("/dashboard/unmatched");
+  revalidatePath("/dashboard/autopilot");
 }

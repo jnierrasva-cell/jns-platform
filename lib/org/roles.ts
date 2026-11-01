@@ -4,6 +4,7 @@ export function isOrgManagerRole(role: string | null | undefined): boolean {
 
 /** Paths only managers should use (keep in sync with middleware + sidebar). */
 export const MANAGER_ONLY_PATH_PREFIXES = [
+  "/dashboard/autopilot",
   "/dashboard/automation",
   "/dashboard/email-rules",
   "/dashboard/templates",

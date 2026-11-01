@@ -7,6 +7,7 @@ import { isOrgManagerRole } from "@/lib/org/roles";
 const MANAGER_PREFIXES = [
   "/dashboard/workspace",
   "/dashboard/unmatched",
+  "/dashboard/autopilot",
   "/dashboard/automation",
   "/dashboard/email-rules",
   "/dashboard/templates",

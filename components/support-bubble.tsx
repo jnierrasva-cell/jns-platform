@@ -7,17 +7,29 @@ import { sendSupportFeedback } from "@/app/dashboard/support/actions";
 export function SupportBubble({
   userEmail,
   orgName,
+  open: controlledOpen,
+  onOpenChange,
+  hideTriggerOnMobile = false,
 }: {
   userEmail?: string | null;
   orgName?: string | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTriggerOnMobile?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
   const [hintVisible, setHintVisible] = useState(false);
   const [subject, setSubject] = useState("JNS feedback / something to check");
   const [message, setMessage] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+
+  function changeOpen(nextOpen: boolean) {
+    if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   useEffect(() => {
     const t = window.setTimeout(() => setHintVisible(true), 1200);
@@ -52,7 +64,7 @@ export function SupportBubble({
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
         <div className="pointer-events-auto w-[min(100vw-2.5rem,24rem)] rounded-2xl border border-zinc-200 bg-white p-4 shadow-lg shadow-zinc-900/10">
           <div className="flex items-start justify-between gap-2">
@@ -67,7 +79,7 @@ export function SupportBubble({
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => changeOpen(false)}
               className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
               aria-label="Close"
             >
@@ -181,8 +193,8 @@ export function SupportBubble({
       {!open && hintVisible && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          className="pointer-events-auto max-w-[14rem] rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-left text-xs leading-5 text-zinc-700 shadow-md shadow-zinc-900/10 transition hover:border-zinc-300"
+          onClick={() => changeOpen(true)}
+          className={`pointer-events-auto max-w-[14rem] rounded-2xl border border-border bg-card px-3.5 py-2.5 text-left text-xs leading-5 text-text-secondary shadow-[var(--shadow-soft)] transition hover:border-accent-cyan ${hideTriggerOnMobile ? "hidden sm:block" : ""}`}
         >
           Find something for us to check on?
         </button>
@@ -190,8 +202,8 @@ export function SupportBubble({
 
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#0B132B] text-white shadow-lg shadow-zinc-900/20 transition hover:bg-[#111e3a]"
+        onClick={() => changeOpen(!open)}
+        className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-[image:var(--accent-gradient)] text-[#0A0E1A] shadow-[var(--shadow-soft)] transition hover:brightness-110 ${hideTriggerOnMobile ? "hidden sm:flex" : ""}`}
         aria-label={open ? "Close support" : "Open support"}
         aria-expanded={open}
       >

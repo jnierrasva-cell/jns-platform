@@ -91,6 +91,7 @@ export async function setAutomationEnabled(
   }
 
   revalidatePath("/dashboard/automation");
+  revalidatePath("/dashboard/autopilot");
   revalidatePath("/dashboard");
 }
 
@@ -113,4 +114,5 @@ export async function saveAutomationSettings(input: {
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/automation");
+  revalidatePath("/dashboard/autopilot");
 }

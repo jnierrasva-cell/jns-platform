@@ -31,6 +31,7 @@ export async function saveEmailTemplate(input: {
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/templates");
+  revalidatePath("/dashboard/autopilot");
 }
 
 export async function deleteEmailTemplate(
@@ -51,6 +52,7 @@ export async function deleteEmailTemplate(
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard/templates");
+  revalidatePath("/dashboard/autopilot");
 }
 
 export async function sendTestAutoAck(

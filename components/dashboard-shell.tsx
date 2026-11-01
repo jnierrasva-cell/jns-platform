@@ -11,25 +11,27 @@ import {
   Users,
   Shield,
   LogOut,
-  Filter,
   CalendarDays,
   FileInput,
-  Inbox,
   Kanban,
   Building2,
   BookOpen,
   PanelLeftClose,
   PanelLeft,
-  Menu,
   X,
   FileText,
   CreditCard,
   ImageIcon,
+  MessageCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
 import Image from "next/image";
 import { SupportBubble } from "@/components/support-bubble";
+import { Badge } from "@/components/ui/badge";
+import { BottomTabBar, type BottomTabItem } from "@/components/ui/bottom-tab-bar";
+import { Sheet } from "@/components/ui/sheet";
+import { Sidebar } from "@/components/ui/sidebar";
 
 const STORAGE_KEY = "jns_sidebar_collapsed";
 const SIDEBAR_CHANGE_EVENT = "jns-sidebar-preference-change";
@@ -76,31 +78,31 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
+  badge?: string;
 };
 
-/** Day-to-day work — every org member */
+/** Day-to-day work available to every org member. */
 const WORK_NAV: NavItem[] = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Contacts", href: "/dashboard/contacts", icon: Contact },
-  { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
-  { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
-  { label: "Forms", href: "/dashboard/forms", icon: FileInput },
-  { label: "SOPs", href: "/dashboard/sops", icon: BookOpen },
+  { label: "Today", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Clients", href: "/dashboard/contacts", icon: Contact },
+  { label: "Journey", href: "/dashboard/pipeline", icon: Kanban },
+  { label: "Schedule", href: "/dashboard/bookings", icon: CalendarDays },
+  { label: "Intake forms", href: "/dashboard/forms", icon: FileInput },
+  { label: "Playbooks", href: "/dashboard/sops", icon: BookOpen },
 ];
 
-/**
- * Inbox ops + workspace setup — ceo / admin only.
- * Unmatched lives here so assistants are not dropped into email triage by default.
- */
-const SETUP_NAV: NavItem[] = [
-  { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
-  { label: "Unmatched email", href: "/dashboard/unmatched", icon: Inbox },
-  { label: "Automation", href: "/dashboard/automation", icon: Zap },
-  { label: "Who gets replies", href: "/dashboard/email-rules", icon: Filter },
-  { label: "Reply templates", href: "/dashboard/templates", icon: FileText },
-  { label: "Integrations", href: "/dashboard/integrations", icon: Plug },
-  { label: "Team", href: "/dashboard/team", icon: Users },
-];
+const AUTOPILOT_NAV: NavItem = {
+  label: "Autopilot",
+  href: "/dashboard/autopilot",
+  icon: Zap,
+  badge: "Pro",
+};
+
+const CONNECTIONS_NAV: NavItem = {
+  label: "Connections",
+  href: "/dashboard/integrations",
+  icon: Plug,
+};
 
 export function DashboardShell({
   userEmail,
@@ -137,8 +139,8 @@ export function DashboardShell({
     () => true,
     () => false,
   );
-  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
-  const mobileOpen = mobileOpenPath === pathname;
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   function toggleCollapsed() {
     try {
@@ -160,18 +162,18 @@ export function DashboardShell({
     return pathname.startsWith(href);
   }
 
-  const showLabels = mobileOpen || !collapsed;
+  const showLabels = !collapsed;
 
   const linkClass = (active: boolean) =>
-    `flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition ${
+    `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition ${
       !showLabels ? "justify-center px-2" : ""
     } ${
       active
-        ? "bg-[#111e3a] font-medium text-white"
-        : "text-slate-400 hover:bg-[#111e3a] hover:text-white"
+        ? "bg-accent-cyan/10 font-semibold text-foreground"
+        : "text-text-secondary hover:bg-surface hover:text-foreground"
     }`;
 
-  function renderNavItems(items: NavItem[]) {
+  function renderNavItems(items: NavItem[], onNavigate?: () => void) {
     return items.map((item) => {
       const active = isActive(item.href);
       const Icon = item.icon;
@@ -181,19 +183,77 @@ export function DashboardShell({
           href={item.href}
           className={linkClass(active)}
           title={!showLabels ? item.label : undefined}
-          onClick={() => setMobileOpenPath(null)}
+          aria-current={active ? "page" : undefined}
+          onClick={onNavigate}
         >
           <Icon
             size={16}
-            className={`shrink-0 ${
-              active ? "text-sky-400" : "text-slate-500"
-            }`}
+            className={`shrink-0 ${active ? "text-accent-cyan" : "text-text-muted"}`}
           />
-          {showLabels && item.label}
+          {showLabels && (
+            <>
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              {item.badge && (
+                <Badge variant="attention" className="min-h-6 px-2 text-[10px]">
+                  {item.badge}
+                </Badge>
+              )}
+            </>
+          )}
         </Link>
       );
     });
   }
+
+  const mobileItems: BottomTabItem[] = [
+    {
+      label: "Today",
+      href: "/dashboard",
+      icon: LayoutDashboard,
+      active: isActive("/dashboard"),
+    },
+    {
+      label: "Clients",
+      href: "/dashboard/contacts",
+      icon: Contact,
+      active: isActive("/dashboard/contacts"),
+    },
+    {
+      label: "Schedule",
+      href: "/dashboard/bookings",
+      icon: CalendarDays,
+      active: isActive("/dashboard/bookings"),
+    },
+    {
+      label: isOrgManager ? "Autopilot" : "Journey",
+      href: isOrgManager ? "/dashboard/autopilot" : "/dashboard/pipeline",
+      icon: isOrgManager ? Zap : Kanban,
+      active: isOrgManager
+        ? isActive("/dashboard/autopilot")
+        : isActive("/dashboard/pipeline"),
+    },
+  ];
+
+  const moreNav: NavItem[] = [
+    { label: "Journey", href: "/dashboard/pipeline", icon: Kanban },
+    { label: "Intake forms", href: "/dashboard/forms", icon: FileInput },
+    { label: "Playbooks", href: "/dashboard/sops", icon: BookOpen },
+    { label: "My workspaces", href: "/dashboard/orgs", icon: Building2 },
+    { label: "Support", href: "/support", icon: MessageCircle },
+    { label: "Privacy", href: "/privacy", icon: FileText },
+    { label: "Terms", href: "/terms", icon: FileText },
+    ...(isOrgManager
+      ? [
+          CONNECTIONS_NAV,
+          { label: "Team", href: "/dashboard/team", icon: Users },
+          { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
+          { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+        ]
+      : []),
+    ...(isPlatformAdmin
+      ? [{ label: "JNS Admin", href: "/dashboard/admin", icon: Shield }]
+      : []),
+  ];
 
   const planBadgeClass =
     planId === "none"
@@ -228,14 +288,6 @@ export function DashboardShell({
               <div className="origin-left scale-90">
                 <BrandMark href="/dashboard" />
               </div>
-              <button
-                type="button"
-                className="rounded-md p-1.5 text-slate-400 hover:bg-[#111e3a] hover:text-white md:hidden"
-                onClick={() => setMobileOpenPath(null)}
-                aria-label="Close menu"
-              >
-                <X size={18} />
-              </button>
             </div>
             {orgLogoUrl && (
               <div className="mt-3 flex h-10 items-center px-0.5">
@@ -250,7 +302,7 @@ export function DashboardShell({
               </div>
             )}
             <div className="mt-2 flex items-center gap-2 px-0.5">
-              <p className="truncate text-sm font-semibold text-white">
+              <p className="truncate text-sm font-semibold text-foreground">
                 {orgName}
               </p>
               {orgKind === "business" && (
@@ -262,7 +314,6 @@ export function DashboardShell({
             <Link
               href="/dashboard/billing"
               className="mt-1 inline-flex max-w-full items-center gap-1.5 px-0.5"
-              onClick={() => setMobileOpenPath(null)}
               title="View plan and billing"
             >
               <span
@@ -279,7 +330,7 @@ export function DashboardShell({
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-slate-400 transition hover:bg-[#111e3a] hover:text-white"
+          className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-text-secondary transition hover:bg-surface hover:text-foreground"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand" : "Collapse"}
         >
@@ -290,84 +341,47 @@ export function DashboardShell({
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         <SectionLabel collapsed={!showLabels}>Work</SectionLabel>
-        {renderNavItems(WORK_NAV)}
+        {renderNavItems(WORK_NAV.slice(0, 5))}
+        {isOrgManager && renderNavItems([AUTOPILOT_NAV])}
+        {renderNavItems([WORK_NAV[5]])}
 
         {isOrgManager && (
           <>
-            <SectionLabel collapsed={!showLabels}>Setup</SectionLabel>
-            {renderNavItems(SETUP_NAV)}
+            <SectionLabel collapsed={!showLabels}>Connections</SectionLabel>
+            {renderNavItems([CONNECTIONS_NAV])}
           </>
         )}
 
-        <SectionLabel collapsed={!showLabels}>Account</SectionLabel>
-        <Link
-          href="/dashboard/orgs"
-          className={linkClass(pathname.startsWith("/dashboard/orgs"))}
-          title={!showLabels ? "My workspaces" : undefined}
-          onClick={() => setMobileOpenPath(null)}
-        >
-          <Building2
-            size={16}
-            className={`shrink-0 ${
-              pathname.startsWith("/dashboard/orgs")
-                ? "text-sky-400"
-                : "text-slate-500"
-            }`}
-          />
-          {showLabels && "My workspaces"}
-        </Link>
-
+        <SectionLabel collapsed={!showLabels}>Settings</SectionLabel>
+        {renderNavItems([
+          { label: "My workspaces", href: "/dashboard/orgs", icon: Building2 },
+        ])}
         {isOrgManager && (
-          <Link
-            href="/dashboard/billing"
-            className={linkClass(pathname.startsWith("/dashboard/billing"))}
-            title={!showLabels ? "Billing" : undefined}
-            onClick={() => setMobileOpenPath(null)}
-          >
-            <CreditCard
-              size={16}
-              className={`shrink-0 ${
-                pathname.startsWith("/dashboard/billing")
-                  ? "text-sky-400"
-                  : "text-slate-500"
-              }`}
-            />
-            {showLabels && "Billing"}
-          </Link>
+          renderNavItems([
+            { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
+            { label: "Team", href: "/dashboard/team", icon: Users },
+            { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+          ])
         )}
 
         {isPlatformAdmin && (
-          <Link
-            href="/dashboard/admin"
-            className={linkClass(pathname.startsWith("/dashboard/admin"))}
-            title={!showLabels ? "JNS Admin" : undefined}
-            onClick={() => setMobileOpenPath(null)}
-          >
-            <Shield
-              size={16}
-              className={`shrink-0 ${
-                pathname.startsWith("/dashboard/admin")
-                  ? "text-sky-400"
-                  : "text-slate-500"
-              }`}
-            />
-            {showLabels && "JNS Admin"}
-          </Link>
+          renderNavItems([
+            { label: "JNS Admin", href: "/dashboard/admin", icon: Shield },
+          ])
         )}
       </nav>
 
-      <div className="border-t border-[#1e2a4a] p-2">
-        <Link
-          href="/privacy"
-          className={linkClass(pathname === "/privacy")}
-          title={!showLabels ? "Privacy Policy" : undefined}
-          onClick={() => setMobileOpenPath(null)}
-        >
-          <FileText size={16} className="shrink-0 text-slate-500" />
-          {showLabels && "Privacy Policy"}
+      <div className="border-t border-border p-2">
+        <Link href="/privacy" className={linkClass(pathname === "/privacy")}>
+          <FileText size={16} className="shrink-0 text-text-muted" />
+          {showLabels && "Privacy"}
+        </Link>
+        <Link href="/terms" className={linkClass(pathname === "/terms")}>
+          <FileText size={16} className="shrink-0 text-text-muted" />
+          {showLabels && "Terms"}
         </Link>
         {showLabels && (
-          <p className="truncate px-2.5 text-xs text-slate-500">{userEmail}</p>
+          <p className="truncate px-3 py-1 text-xs text-text-muted">{userEmail}</p>
         )}
         <button
           type="button"
@@ -375,7 +389,7 @@ export function DashboardShell({
           className={linkClass(false)}
           title={!showLabels ? "Sign out" : undefined}
         >
-          <LogOut size={16} className="shrink-0 text-slate-500" />
+          <LogOut size={16} className="shrink-0 text-text-muted" />
           {showLabels && "Sign out"}
         </button>
       </div>
@@ -384,52 +398,32 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-zinc-50 text-zinc-900">
-      {mobileOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
-          aria-label="Close menu"
-          onClick={() => setMobileOpenPath(null)}
-        />
-      )}
-
-      <aside
+      <Sidebar
+        aria-label="Primary navigation"
         className={[
-          "flex flex-col border-r border-[#1e2a4a] bg-[#0B132B]",
-          "fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] transition-transform duration-200 ease-out md:static md:z-auto md:max-w-none md:translate-x-0",
-          collapsed ? "md:w-[4.25rem]" : "md:w-56",
-          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          "hidden md:flex md:static md:z-auto md:max-w-none",
+          collapsed ? "md:w-[4.25rem]" : "md:w-64",
           ready ? "" : "md:opacity-0",
         ].join(" ")}
       >
         {sidebarInner}
-      </aside>
+      </Sidebar>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-zinc-200 bg-white px-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileOpenPath(pathname)}
-            className="rounded-md p-2 text-zinc-700 hover:bg-zinc-100"
-            aria-label="Open menu"
-          >
-            <Menu size={20} />
-          </button>
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-zinc-900">
+            <p className="truncate text-sm font-semibold text-foreground">
               {orgName}
             </p>
             {isOrgManager ? (
               <Link
                 href="/dashboard/billing"
-                className="mt-0.5 inline-flex"
+                className="mt-0.5 inline-flex min-h-6 items-center"
                 title="View plan and billing"
               >
                 <span
-                  className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
-                    planId === "none"
-                      ? "bg-zinc-100 text-zinc-600"
-                      : "bg-[#0B132B] text-white"
+                  className={`truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    planId === "none" ? "bg-muted text-text-secondary" : "bg-accent-cyan/10 text-accent-cyan"
                   }`}
                 >
                   {planLabel}
@@ -437,10 +431,8 @@ export function DashboardShell({
               </Link>
             ) : (
               <span
-                className={`mt-0.5 inline-flex truncate rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
-                  planId === "none"
-                    ? "bg-zinc-100 text-zinc-600"
-                    : "bg-[#0B132B] text-white"
+                className={`mt-0.5 inline-flex truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  planId === "none" ? "bg-muted text-text-secondary" : "bg-accent-cyan/10 text-accent-cyan"
                 }`}
               >
                 {planLabel}
@@ -449,14 +441,65 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-zinc-50">
-          <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background">
+          <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 sm:px-6 sm:pt-8 md:pb-8">
             {children}
           </div>
         </main>
       </div>
 
-      <SupportBubble userEmail={userEmail} orgName={orgName} />
+      <BottomTabBar
+        items={mobileItems}
+        onMore={() => setMoreOpen(true)}
+        moreOpen={moreOpen}
+      />
+
+      <Sheet.Root
+        open={moreOpen}
+        onOpenChange={setMoreOpen}
+        swipeDirection="down"
+      >
+        <Sheet.Portal>
+          <Sheet.Backdrop />
+          <Sheet.Viewport className="fixed inset-0 z-[70] flex items-end">
+            <Sheet.Popup className="h-auto max-h-[86dvh] w-full rounded-l-none rounded-t-2xl border-l-0 border-r-0 border-b-0 p-0">
+              <Sheet.Content className="mx-auto w-full max-w-lg overflow-y-auto p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+                <div className="mb-4 flex items-center justify-between">
+                  <Sheet.Title>More</Sheet.Title>
+                  <Sheet.Close
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-text-secondary hover:bg-muted hover:text-foreground"
+                    aria-label="Close More menu"
+                  >
+                    <X size={18} aria-hidden />
+                  </Sheet.Close>
+                </div>
+                <nav aria-label="More navigation" className="grid gap-1">
+                  {renderNavItems(moreNav, () => setMoreOpen(false))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      setSupportOpen(true);
+                    }}
+                    className={linkClass(false)}
+                  >
+                    <MessageCircle size={16} className="shrink-0 text-text-muted" />
+                    <span>Support chat</span>
+                  </button>
+                </nav>
+              </Sheet.Content>
+            </Sheet.Popup>
+          </Sheet.Viewport>
+        </Sheet.Portal>
+      </Sheet.Root>
+
+      <SupportBubble
+        userEmail={userEmail}
+        orgName={orgName}
+        open={supportOpen}
+        onOpenChange={setSupportOpen}
+        hideTriggerOnMobile
+      />
     </div>
   );
 }
