@@ -13,6 +13,7 @@ import {
   DEFAULT_FORM_FIELDS,
   type FormField,
 } from "@/lib/forms/fields";
+import { Badge } from "@/components/ui/badge";
 
 type FormRow = {
   id: string;
@@ -202,18 +203,22 @@ export function FormsClient({
   }
 
   return (
-    <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-        Forms
-      </span>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Intake forms</h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-        Public forms for <span className="font-medium">{orgName}</span>.
-        Customize questions, then share the link. Submissions become contacts.
-      </p>
+    <div className="space-y-6 pb-6">
+      <header className="border-b border-border pb-6">
+        <p className="text-xs font-semibold uppercase text-text-muted">
+          Intake forms
+        </p>
+        <h1 className="mt-2 font-heading text-3xl font-bold text-foreground">
+          Intake forms
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+          Public forms for <span className="font-medium text-foreground">{orgName}</span>.
+          Customize questions, then share the link. Submissions become clients.
+        </p>
+      </header>
 
       {error && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error}
         </p>
       )}
@@ -221,28 +226,28 @@ export function FormsClient({
       <form
         id="new-form"
         onSubmit={handleCreate}
-        className="mt-8 flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4"
+        className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-5"
       >
         <div className="min-w-[200px] flex-1">
-          <label className="text-sm text-zinc-700">New form name</label>
+          <label className="text-sm text-text-secondary">New form name</label>
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="e.g. Website inquiry"
-            className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-1 min-h-11 w-full rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground placeholder:text-text-muted outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
           />
         </div>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A] disabled:opacity-60"
         >
           {isPending ? "Creating…" : "Create form"}
         </button>
       </form>
 
       {forms.length === 0 ? (
-        <div className="mt-8">
+        <div>
           <EmptyState
             icon={FileInput}
             title="No forms yet"
@@ -256,9 +261,9 @@ export function FormsClient({
           />
         </div>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card text-card-foreground">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
+            <thead className="border-b border-border bg-surface-inset text-xs font-semibold uppercase text-text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Form name</th>
                 <th className="px-4 py-3 font-medium">Date created</th>
@@ -270,37 +275,37 @@ export function FormsClient({
               {forms.map((form) => (
                 <tr
                   key={form.id}
-                  className="border-b border-zinc-50 align-top last:border-0"
+                  className="border-b border-border align-top last:border-0"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-medium text-zinc-900">{form.name}</p>
-                    <p className="mt-0.5 text-xs text-zinc-400">
+                    <p className="font-medium text-foreground">{form.name}</p>
+                    <p className="mt-0.5 text-xs text-text-muted">
                       {form.is_published ? "Published" : "Unpublished"} · /forms/
                       {orgSlug}/{form.slug}
                     </p>
                     {editingId === form.id && (
-                      <div className="mt-4 space-y-3 rounded-lg border border-zinc-100 bg-zinc-50 p-3">
+                      <div className="mt-4 space-y-4 rounded-2xl border border-border bg-surface-inset p-4">
                         <div>
-                          <label className="text-xs text-zinc-600">Name</label>
+                          <label className="text-sm text-text-secondary">Name</label>
                           <input
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            className="mt-1 w-full rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                            className="mt-1 min-h-11 w-full rounded-xl border border-input bg-card px-3 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-600">
+                          <label className="text-sm text-text-secondary">
                             Headline (shown on public form)
                           </label>
                           <input
                             value={editHeadline}
                             onChange={(e) => setEditHeadline(e.target.value)}
                             placeholder={`e.g. Contact ${orgName}`}
-                            className="mt-1 w-full rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                            className="mt-1 min-h-11 w-full rounded-xl border border-input bg-card px-3 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-600">
+                          <label className="text-sm text-text-secondary">
                             Description
                           </label>
                           <textarea
@@ -308,29 +313,29 @@ export function FormsClient({
                             onChange={(e) => setEditDescription(e.target.value)}
                             rows={2}
                             placeholder="Short intro for visitors"
-                            className="mt-1 w-full rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                            className="mt-1 min-h-20 w-full rounded-xl border border-input bg-card px-3 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-600">
+                          <label className="text-sm text-text-secondary">
                             Success message
                           </label>
                           <textarea
                             value={editSuccess}
                             onChange={(e) => setEditSuccess(e.target.value)}
                             rows={2}
-                            className="mt-1 w-full rounded border border-zinc-200 px-2 py-1.5 text-sm"
+                            className="mt-1 min-h-20 w-full rounded-xl border border-input bg-card px-3 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                           />
                         </div>
                         <div>
                           <div className="mb-2 flex items-center justify-between">
-                            <label className="text-xs font-medium text-zinc-700">
+                            <label className="text-sm font-semibold text-foreground">
                               Questions / fields
                             </label>
                             <button
                               type="button"
                               onClick={addCustomField}
-                              className="text-xs text-zinc-600 underline"
+                              className="inline-flex min-h-11 items-center text-sm text-accent-cyan underline underline-offset-2"
                             >
                               + Add question
                             </button>
@@ -339,7 +344,7 @@ export function FormsClient({
                             {editFields.map((field, index) => (
                               <div
                                 key={field.id}
-                                className="grid grid-cols-1 gap-2 rounded border border-zinc-200 bg-white p-2 sm:grid-cols-12"
+                                className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-12"
                               >
                                 <input
                                   value={field.label}
@@ -348,7 +353,7 @@ export function FormsClient({
                                       label: e.target.value,
                                     })
                                   }
-                                  className="sm:col-span-4 rounded border border-zinc-200 px-2 py-1 text-sm"
+                                  className="min-h-11 rounded-lg border border-input bg-surface-inset px-3 text-sm text-foreground sm:col-span-4"
                                   placeholder="Label"
                                 />
                                 <select
@@ -358,14 +363,14 @@ export function FormsClient({
                                       type: e.target.value as FormField["type"],
                                     })
                                   }
-                                  className="sm:col-span-2 rounded border border-zinc-200 px-2 py-1 text-sm"
+                                  className="min-h-11 rounded-lg border border-input bg-surface-inset px-3 text-sm text-foreground sm:col-span-2"
                                 >
                                   <option value="text">Text</option>
                                   <option value="email">Email</option>
                                   <option value="phone">Phone</option>
                                   <option value="textarea">Long text</option>
                                 </select>
-                                <label className="flex items-center gap-1 text-xs text-zinc-600 sm:col-span-2">
+                                <label className="flex min-h-11 items-center gap-2 text-sm text-text-secondary sm:col-span-2">
                                   <input
                                     type="checkbox"
                                     checked={field.required}
@@ -377,7 +382,7 @@ export function FormsClient({
                                   />
                                   Required
                                 </label>
-                                <label className="flex items-center gap-1 text-xs text-zinc-600 sm:col-span-2">
+                                <label className="flex min-h-11 items-center gap-2 text-sm text-text-secondary sm:col-span-2">
                                   <input
                                     type="checkbox"
                                     checked={field.enabled}
@@ -392,7 +397,7 @@ export function FormsClient({
                                 <button
                                   type="button"
                                   onClick={() => removeField(index)}
-                                  className="text-xs text-red-600 sm:col-span-2"
+                                  className="min-h-11 text-sm text-danger underline underline-offset-2 sm:col-span-2"
                                 >
                                   Remove
                                 </button>
@@ -405,14 +410,14 @@ export function FormsClient({
                             type="button"
                             disabled={isPending}
                             onClick={() => handleSaveEdit(form.id)}
-                            className="rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white"
+                            className="min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A]"
                           >
                             Save
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingId(null)}
-                            className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs"
+                            className="min-h-11 rounded-xl border border-border px-4 text-sm text-text-secondary"
                           >
                             Cancel
                           </button>
@@ -420,22 +425,22 @@ export function FormsClient({
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600">
+                  <td className="px-4 py-3 text-text-secondary">
                     {new Date(form.created_at).toLocaleDateString(undefined, {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
                     })}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600">
-                    {form.submission_count}
+                  <td className="px-4 py-3 text-text-secondary">
+                    <Badge variant="secondary">{form.submission_count}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap justify-end gap-2">
                       <button
                         type="button"
                         onClick={() => copyLink(form)}
-                        className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs"
+                        className="min-h-11 rounded-xl border border-border px-3 text-sm text-text-secondary hover:bg-surface-inset"
                       >
                         {copiedId === form.id ? "Copied" : "Copy link"}
                       </button>
@@ -443,15 +448,15 @@ export function FormsClient({
                         type="button"
                         disabled={isPending}
                         onClick={() => exportForm(form)}
-                        className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs"
+                        className="min-h-11 rounded-xl border border-border px-3 text-sm text-text-secondary hover:bg-surface-inset"
                       >
-                        Extract CSV
+                        Export CSV
                       </button>
                       <button
                         type="button"
                         disabled={isPending}
                         onClick={() => duplicateForm(form)}
-                        className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs"
+                        className="min-h-11 rounded-xl border border-border px-3 text-sm text-text-secondary hover:bg-surface-inset"
                       >
                         Duplicate
                       </button>
@@ -462,7 +467,7 @@ export function FormsClient({
                             ? setEditingId(null)
                             : startEdit(form)
                         }
-                        className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs"
+                        className="min-h-11 rounded-xl border border-border px-3 text-sm text-text-secondary hover:bg-surface-inset"
                       >
                         {editingId === form.id ? "Close" : "Customize"}
                       </button>
@@ -470,7 +475,7 @@ export function FormsClient({
                         type="button"
                         disabled={isPending}
                         onClick={() => togglePublish(form)}
-                        className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs"
+                        className="min-h-11 rounded-xl border border-border px-3 text-sm text-text-secondary hover:bg-surface-inset"
                       >
                         {form.is_published ? "Unpublish" : "Publish"}
                       </button>
