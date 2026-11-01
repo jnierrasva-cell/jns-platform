@@ -427,21 +427,21 @@ export function ContactsClient({
 
   return (
     <div className="pb-4">
-      <div className="flex flex-col gap-4 border-b border-zinc-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-            CRM
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            Clients
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-            Contacts
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            Clients
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
             Filter and move people through{" "}
             <Link
               href="/dashboard/pipeline"
-              className="text-cyan-700 underline underline-offset-2"
+              className="text-sky-600 underline underline-offset-2"
             >
-              your custom pipeline
+              your journey
             </Link>
             .
           </p>
@@ -450,7 +450,7 @@ export function ContactsClient({
           <button
             type="button"
             onClick={exportCsv}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm text-slate-700 hover:text-slate-900"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -459,7 +459,7 @@ export function ContactsClient({
             id="import"
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm text-slate-700 hover:text-slate-900"
           >
             <Upload className="h-4 w-4" />
             Import CSV
@@ -481,10 +481,10 @@ export function ContactsClient({
               setShowAdd(true);
               setFormError(null);
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700"
           >
             <Plus className="h-4 w-4" />
-            Add contact
+            Add client
           </button>
         </div>
       </div>
@@ -495,8 +495,8 @@ export function ContactsClient({
           onClick={() => setStageFilter("all")}
           className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
             stageFilter === "all"
-              ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-              : "border-zinc-200 bg-white text-slate-400"
+              ? "border-sky-200 bg-sky-50 text-sky-700"
+              : "border-slate-200/80 bg-white text-slate-500"
           }`}
         >
           All
@@ -509,8 +509,8 @@ export function ContactsClient({
             onClick={() => setStageFilter(s.id)}
             className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
               stageFilter === s.id
-                ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-                : "border-zinc-200 bg-white text-slate-400"
+                ? "border-sky-200 bg-sky-50 text-sky-700"
+                : "border-slate-200/80 bg-white text-slate-500"
             }`}
           >
             {s.name}
@@ -524,7 +524,7 @@ export function ContactsClient({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, phone…"
-          className="w-full max-w-md rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+          className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
         />
       </div>
 
@@ -535,9 +535,9 @@ export function ContactsClient({
         {contacts.length === 0 ? (
           <EmptyState
             icon={ContactIcon}
-            title="No contacts yet"
+            title="No clients yet"
             description="People from forms, bookings, and email land here. Add someone manually or import a CSV to start."
-            actionLabel="Add contact"
+            actionLabel="Add client"
             onAction={() => setShowAdd(true)}
             secondaryLabel="Import CSV"
             secondaryHref="#import"
@@ -553,9 +553,9 @@ export function ContactsClient({
             }}
           />
         ) : (
-          <div className="overflow-visible rounded-xl border border-zinc-200 bg-white">
+          <div className="overflow-visible rounded-2xl border border-slate-200/80 bg-white">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
@@ -567,24 +567,24 @@ export function ContactsClient({
               </thead>
               <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id} className="border-b border-white/5 last:border-0">
+                  <tr key={c.id} className="border-b border-slate-100 last:border-0">
                     <td className="px-4 py-3">
                       <Link
                         href={`/dashboard/contacts/${c.id}`}
-                        className="font-medium text-zinc-900 hover:text-cyan-700"
+                        className="font-medium text-slate-900 hover:text-sky-600"
                       >
                         {displayName(c)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{c.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-slate-400">{c.phone ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-500">{c.phone ?? "—"}</td>
                     <td className="px-4 py-3">
                       <select
                         value={c.pipeline_stage_id ?? ""}
                         onChange={(e) =>
                           changePipelineStage(c.id, e.target.value)
                         }
-                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-800 outline-none"
+                        className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-800 outline-none"
                       >
                         <option value="">Unassigned</option>
                         {stages.map((s) => (
@@ -603,7 +603,7 @@ export function ContactsClient({
                         onClick={() =>
                           setMenuId((id) => (id === c.id ? null : c.id))
                         }
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                        className="rounded-xl p-1.5 text-slate-500 hover:bg-white/5 hover:text-slate-900"
                         aria-label="Actions"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -611,25 +611,25 @@ export function ContactsClient({
                       {menuId === c.id && (
                         <div
                           ref={menuRef}
-                          className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-zinc-200 bg-[#0f1a35] py-1 shadow-xl"
+                          className="absolute right-4 z-30 mt-1 w-44 rounded-2xl border border-slate-200/80 bg-white py-1 shadow-xl"
                         >
                           <button
                             type="button"
-                            className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                            className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-white/5"
                             onClick={() => openEmail(c)}
                           >
                             Send email
                           </button>
                           <button
                             type="button"
-                            className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                            className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-white/5"
                             onClick={() => openSms(c)}
                           >
                             Send SMS
                           </button>
                           <Link
                             href={`/dashboard/contacts/${c.id}`}
-                            className="block w-full px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/5"
+                            className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-white/5"
                             onClick={() => setMenuId(null)}
                           >
                             Open contact
@@ -647,14 +647,14 @@ export function ContactsClient({
 
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                   New contact
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-white">
-                  Add to your CRM
+                  Add to your Clients
                 </h2>
               </div>
               <button
@@ -663,7 +663,7 @@ export function ContactsClient({
                   setShowAdd(false);
                   resetForm();
                 }}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                className="rounded-xl p-1 text-slate-500 hover:bg-white/5 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -671,37 +671,37 @@ export function ContactsClient({
             <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-slate-200">First name</label>
+                  <label className="text-sm text-slate-700">First name</label>
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                    className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-slate-200">Last name</label>
+                  <label className="text-sm text-slate-700">Last name</label>
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                    className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Email</label>
+                <label className="text-sm text-slate-700">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                  className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Phone</label>
+                <label className="text-sm text-slate-700">Phone</label>
                 <CountryPhoneInput value={phone} onChange={setPhone} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Legacy status</label>
+                <label className="text-sm text-slate-700">Legacy status</label>
                 <select
                   value={status}
                   onChange={(e) =>
@@ -713,7 +713,7 @@ export function ContactsClient({
                         | "inactive",
                     )
                   }
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-300/70"
+                  className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 >
                   <option value="lead">Lead</option>
                   <option value="booked">Booked</option>
@@ -722,12 +722,12 @@ export function ContactsClient({
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Note (optional)</label>
+                <label className="text-sm text-slate-700">Note (optional)</label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                  className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               {formError && (
@@ -742,14 +742,14 @@ export function ContactsClient({
                     setShowAdd(false);
                     resetForm();
                   }}
-                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-slate-300"
+                  className="rounded-2xl border border-slate-200/80 px-4 py-2.5 text-sm text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   {isPending ? "Saving…" : "Save contact"}
                 </button>
@@ -761,16 +761,16 @@ export function ContactsClient({
 
       {compose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                   {compose.type === "email" ? "Send email" : "Send SMS"}
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-zinc-900">
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">
                   {displayName(compose.contact)}
                 </h2>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-500">
                   {compose.type === "email"
                     ? compose.contact.email
                     : compose.contact.phone}
@@ -779,7 +779,7 @@ export function ContactsClient({
               <button
                 type="button"
                 onClick={() => setCompose(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                className="rounded-xl p-1 text-slate-500 hover:bg-white/5 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -790,23 +790,23 @@ export function ContactsClient({
             >
               {compose.type === "email" && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-slate-200">Subject</label>
+                  <label className="text-sm text-slate-700">Subject</label>
                   <input
                     required
                     value={composeSubject}
                     onChange={(e) => setComposeSubject(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                    className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                 </div>
               )}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Message</label>
+                <label className="text-sm text-slate-700">Message</label>
                 <textarea
                   required
                   value={composeBody}
                   onChange={(e) => setComposeBody(e.target.value)}
                   rows={5}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                  className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               {composeError && (
@@ -819,14 +819,14 @@ export function ContactsClient({
                 <button
                   type="button"
                   onClick={() => setCompose(null)}
-                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-slate-300"
+                  className="rounded-2xl border border-slate-200/80 px-4 py-2.5 text-sm text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   {isPending ? "Sending…" : "Send"}
                 </button>
