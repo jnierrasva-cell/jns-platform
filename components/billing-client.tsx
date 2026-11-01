@@ -93,30 +93,30 @@ export function BillingClient({
 
   return (
     <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
         Workspace
       </span>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Billing</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Plan for <span className="font-medium text-zinc-800">{orgName}</span>
+      <h1 className="mt-1 text-2xl font-semibold text-slate-900">Billing</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Plan for <span className="font-medium text-slate-800">{orgName}</span>
       </p>
 
-      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
           Current access
         </p>
-        <p className="mt-2 text-lg font-semibold text-zinc-900">
+        <p className="mt-2 text-lg font-semibold text-slate-900">
           You are on {planLabel}
-          <span className="ml-2 text-sm font-normal text-zinc-500">
+          <span className="ml-2 text-sm font-normal text-slate-500">
             ({billingStatus || "none"}
             {provider ? ` · ${provider}` : ""})
           </span>
         </p>
-        <p className="mt-2 text-sm leading-6 text-zinc-600">
+        <p className="mt-2 text-sm leading-6 text-slate-600">
           Unlocks: {unlockSummary(planId)}
         </p>
         {endLabel && (
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="mt-1 text-sm text-slate-600">
             {isActive ? "Renews / ends" : "Ended"}: {endLabel}
           </p>
         )}
@@ -129,15 +129,15 @@ export function BillingClient({
       </div>
 
       {!canManage ? (
-        <p className="mt-6 text-sm text-zinc-500">
+        <p className="mt-6 text-sm text-slate-500">
           Only workspace owners and admins can change the subscription.
         </p>
       ) : (
         <>
-          <h2 className="mt-10 text-sm font-semibold text-zinc-900">
+          <h2 className="mt-10 text-sm font-semibold text-slate-900">
             Choose a monthly plan
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-slate-500">
             Secure checkout via Lemon Squeezy. You’ll return here after payment.
           </p>
 
@@ -147,8 +147,8 @@ export function BillingClient({
                 key={p.id}
                 className={`flex flex-col rounded-xl border p-5 ${
                   p.highlighted
-                    ? "border-[#0B132B] bg-[#0B132B] text-white"
-                    : "border-zinc-200 bg-white text-zinc-900"
+                    ? "border-[#0B132B] bg-sky-600 text-white"
+                    : "border-slate-200/80 bg-white text-slate-900"
                 }`}
               >
                 <h3 className="text-sm font-semibold">{p.name}</h3>
@@ -156,7 +156,7 @@ export function BillingClient({
                   {p.price}
                   <span
                     className={`text-sm font-normal ${
-                      p.highlighted ? "text-slate-400" : "text-zinc-500"
+                      p.highlighted ? "text-slate-400" : "text-slate-500"
                     }`}
                   >
                     /mo
@@ -165,7 +165,7 @@ export function BillingClient({
                 {effectivePlan === p.id && isActive && (
                   <p
                     className={`mt-2 text-xs font-medium ${
-                      p.highlighted ? "text-cyan-300" : "text-sky-700"
+                      p.highlighted ? "text-slate-400" : "text-sky-700"
                     }`}
                   >
                     Current plan
@@ -176,12 +176,12 @@ export function BillingClient({
                     <li key={feature} className="flex gap-2 text-sm">
                       <Check
                         className={`mt-0.5 h-4 w-4 shrink-0 ${
-                          p.highlighted ? "text-cyan-300" : "text-sky-600"
+                          p.highlighted ? "text-slate-400" : "text-sky-600"
                         }`}
                       />
                       <span
                         className={
-                          p.highlighted ? "text-slate-200" : "text-zinc-700"
+                          p.highlighted ? "text-slate-700" : "text-slate-700"
                         }
                       >
                         {feature}
@@ -196,17 +196,17 @@ export function BillingClient({
                       ? "Manage / renew"
                       : `Subscribe · ${p.name}`
                   }
-                  className={`mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-medium ${
+                  className={`mt-6 inline-flex h-10 w-full items-center justify-center rounded-xl text-sm font-medium ${
                     p.highlighted
                       ? "bg-white text-[#0B132B] hover:bg-slate-100"
-                      : "bg-[#0B132B] text-white hover:bg-[#111e3a]"
+                      : "bg-sky-600 text-white hover:bg-sky-700"
                   }`}
                 />
               </article>
             ))}
           </div>
 
-          <p className="mt-6 text-xs text-zinc-500">
+          <p className="mt-6 text-xs text-slate-500">
             Philippines bank / e-wallet: pay manually, then ask platform support
             to activate your plan—or use JNS Admin if you are the platform owner.
           </p>
