@@ -136,20 +136,20 @@ export function TemplateClient({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
           Templates
         </span>
         <Link
           href="/dashboard/automation"
-          className="text-xs text-zinc-600 underline underline-offset-2"
+          className="text-xs text-slate-600 underline underline-offset-2"
         >
           ← Automation
         </Link>
       </div>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold text-slate-900">
         Email templates
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         Use <code className="text-xs">{"{{first_name}}"}</code> and{" "}
         <code className="text-xs">{"{{business_name}}"}</code>. Rules can pick
         which template to send.
@@ -161,10 +161,10 @@ export function TemplateClient({
             key={t.template_key}
             type="button"
             onClick={() => selectTemplate(t.template_key)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+            className={`rounded-xl px-3 py-1.5 text-xs font-medium ${
               activeKey === t.template_key
-                ? "bg-[#0B132B] text-white"
-                : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                ? "bg-sky-600 text-white"
+                : "border border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50"
             }`}
           >
             {t.label}
@@ -174,18 +174,18 @@ export function TemplateClient({
 
       <div className="mt-4 flex flex-wrap items-end gap-2">
         <div>
-          <label className="text-xs text-zinc-500">New template key</label>
+          <label className="text-xs text-slate-500">New template key</label>
           <input
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             placeholder="booking_confirm"
-            className="mt-1 block rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-1 block rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
           />
         </div>
         <button
           type="button"
           onClick={handleAdd}
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm hover:bg-zinc-50"
+          className="rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm hover:bg-slate-50"
         >
           Add
         </button>
@@ -200,30 +200,30 @@ export function TemplateClient({
         <p className="mt-4 text-sm text-emerald-600">Saved.</p>
       )}
       {testResult && (
-        <p className="mt-2 text-sm text-zinc-600">{testResult}</p>
+        <p className="mt-2 text-sm text-slate-600">{testResult}</p>
       )}
 
       {active && (
         <form onSubmit={handleSave} className="mt-6 space-y-4">
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-slate-400">
             Key: <code>{activeKey}</code>
           </p>
           <div>
-            <label className="text-sm text-zinc-700">Subject</label>
+            <label className="text-sm text-slate-700">Subject</label>
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
               required
             />
           </div>
           <div>
-            <label className="text-sm text-zinc-700">Body</label>
+            <label className="text-sm text-slate-700">Body</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={10}
-              className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm"
+              className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 font-mono text-sm"
               required
             />
           </div>
@@ -231,7 +231,7 @@ export function TemplateClient({
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
             >
               {isPending ? "Saving…" : "Save template"}
             </button>
@@ -240,7 +240,7 @@ export function TemplateClient({
                 type="button"
                 disabled={isPending}
                 onClick={handleDelete}
-                className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                className="rounded-2xl border border-slate-200/80 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
               >
                 Delete
               </button>
@@ -251,16 +251,16 @@ export function TemplateClient({
 
       <form onSubmit={handleTest} className="mt-8 flex flex-wrap items-end gap-2">
         <div>
-          <label className="text-sm text-zinc-700">Test send to</label>
+          <label className="text-sm text-slate-700">Test send to</label>
           <input
             type="email"
             required
             value={testEmail}
             onChange={(e) => setTestEmail(e.target.value)}
-            className="mt-1 block rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-1 block rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
           />
           {!savedKeys.has(activeKey) && (
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-slate-500">
               Save this template before sending a test.
             </p>
           )}
@@ -268,7 +268,7 @@ export function TemplateClient({
         <button
           type="submit"
           disabled={isPending || !savedKeys.has(activeKey)}
-          className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm hover:bg-zinc-50 disabled:opacity-60"
+          className="rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm hover:bg-slate-50 disabled:opacity-60"
         >
           Send test
         </button>
