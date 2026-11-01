@@ -46,13 +46,13 @@ export function OrgsClient({ orgs }: { orgs: OrgRow[] }) {
 
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
         Workspaces
       </p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
         My orgs
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-slate-500">
         Open a workspace to use its contacts, bookings, and integrations. Your
         other orgs stay saved here.
       </p>
@@ -65,18 +65,18 @@ export function OrgsClient({ orgs }: { orgs: OrgRow[] }) {
 
       <div className="mt-8 grid gap-3">
         {orgs.length === 0 ? (
-          <p className="text-sm text-zinc-500">No organizations yet.</p>
+          <p className="text-sm text-slate-500">No organizations yet.</p>
         ) : (
           orgs.map((org) => {
             const isThisPending = pendingId === org.id;
             return (
               <div
                 key={org.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white p-4"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-4"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-zinc-900">
+                    <p className="text-sm font-medium text-slate-900">
                       {org.name}
                     </p>
                     {org.isActive && (
@@ -85,7 +85,7 @@ export function OrgsClient({ orgs }: { orgs: OrgRow[] }) {
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-xs text-slate-500">
                     Your role: {roleLabel(org.role)}
                   </p>
                 </div>
@@ -93,7 +93,7 @@ export function OrgsClient({ orgs }: { orgs: OrgRow[] }) {
                   type="button"
                   disabled={pendingId !== null || org.isActive}
                   onClick={() => openOrg(org.id)}
-                  className="rounded-md bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md bg-sky-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {org.isActive
                     ? "Opened"
