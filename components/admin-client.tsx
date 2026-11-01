@@ -258,11 +258,11 @@ export function AdminClient({
 
   return (
     <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
         Platform
       </span>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">JNS Admin</h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+      <h1 className="mt-1 text-2xl font-semibold text-slate-900">JNS Admin</h1>
+      <p className="mt-1 max-w-2xl text-sm text-slate-500">
         Platform access, workspace subscriptions, and a live snapshot for
         business decisions. Org roles stay under each workspace Team tab.
       </p>
@@ -271,15 +271,15 @@ export function AdminClient({
         {metricCards.map((m) => (
           <div
             key={m.label}
-            className="rounded-xl border border-zinc-200 bg-white p-4"
+            className="rounded-2xl border border-slate-200/80 bg-white p-4"
           >
-            <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
               {m.label}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-zinc-900">
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
               {m.value}
             </p>
-            <p className="mt-1 text-xs text-zinc-500">{m.detail}</p>
+            <p className="mt-1 text-xs text-slate-500">{m.detail}</p>
           </div>
         ))}
       </section>
@@ -295,11 +295,11 @@ export function AdminClient({
         </p>
       )}
       {resetInfo && (
-        <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm">
-          <p className="font-medium text-zinc-900">
+        <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50 p-4 text-sm">
+          <p className="font-medium text-slate-900">
             Reset link for {resetInfo.email}
           </p>
-          <p className="mt-1 break-all text-xs text-zinc-600">{resetInfo.link}</p>
+          <p className="mt-1 break-all text-xs text-slate-600">{resetInfo.link}</p>
           <button
             type="button"
             onClick={copyLink}
@@ -313,10 +313,10 @@ export function AdminClient({
       <section className="mt-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
               Workspace subscriptions
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-slate-500">
               Assign monthly plans manually (founding clients / PH bank pay).
               Lemon Squeezy will write the same fields when live.
             </p>
@@ -325,15 +325,15 @@ export function AdminClient({
             type="button"
             disabled={isPending}
             onClick={handleExpireOverdue}
-            className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
           >
             Mark overdue as expired
           </button>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
           <table className="w-full min-w-[800px] text-left text-sm">
-            <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
+            <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">Workspace</th>
                 <th className="px-4 py-3 font-medium">Current</th>
@@ -347,7 +347,7 @@ export function AdminClient({
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-4 py-8 text-center text-zinc-500"
+                    className="px-4 py-8 text-center text-slate-500"
                   >
                     No workspaces yet.
                   </td>
@@ -366,13 +366,13 @@ export function AdminClient({
                   return (
                     <tr
                       key={org.id}
-                      className="border-b border-zinc-50 last:border-0"
+                      className="border-b border-slate-50 last:border-0"
                     >
                       <td className="px-4 py-3">
-                        <p className="font-medium text-zinc-900">
+                        <p className="font-medium text-slate-900">
                           {org.name || "Untitled"}
                         </p>
-                        <p className="text-xs text-zinc-400">
+                        <p className="text-xs text-slate-400">
                           {org.slug || org.id.slice(0, 8)}
                           {org.billing_provider
                             ? ` · ${org.billing_provider}`
@@ -380,15 +380,15 @@ export function AdminClient({
                         </p>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium capitalize text-zinc-900">
+                        <span className="font-medium capitalize text-slate-900">
                           {org.plan || "none"}
                         </span>
-                        <span className="block text-xs text-zinc-500">
+                        <span className="block text-xs text-slate-500">
                           {org.billing_status || "—"}
                           {expired ? " · past end" : ""}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">
+                      <td className="px-4 py-3 text-slate-600">
                         {end && !Number.isNaN(end.getTime())
                           ? end.toLocaleDateString(undefined, {
                               year: "numeric",
@@ -411,7 +411,7 @@ export function AdminClient({
                                 },
                               }))
                             }
-                            className="rounded border border-zinc-200 px-2 py-1 text-xs"
+                            className="rounded border border-slate-200/80 px-2 py-1 text-xs"
                           >
                             <option value="none">No plan</option>
                             <option value="starter">Starter</option>
@@ -431,7 +431,7 @@ export function AdminClient({
                                   },
                                 }))
                               }
-                              className="rounded border border-zinc-200 px-2 py-1 text-xs"
+                              className="rounded border border-slate-200/80 px-2 py-1 text-xs"
                               title="Months from today"
                             >
                               <option value="1">1 month</option>
@@ -448,7 +448,7 @@ export function AdminClient({
                           type="button"
                           disabled={isPending}
                           onClick={() => applyPlan(org.id)}
-                          className="rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                          className="rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                         >
                           Apply
                         </button>
@@ -463,12 +463,12 @@ export function AdminClient({
       </section>
 
       <section className="mt-12">
-        <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+        <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
           Platform users ({activeUsers.length})
         </h2>
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
+            <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
                 <th className="px-4 py-3 font-medium">Role</th>
@@ -481,13 +481,13 @@ export function AdminClient({
               {activeUsers.map((p) => (
                 <tr
                   key={p.id}
-                  className="border-b border-zinc-50 last:border-0"
+                  className="border-b border-slate-50 last:border-0"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-medium text-zinc-900">
+                    <p className="font-medium text-slate-900">
                       {p.business_name || p.email || "—"}
                     </p>
-                    <p className="text-xs text-zinc-500">{p.email}</p>
+                    <p className="text-xs text-slate-500">{p.email}</p>
                   </td>
                   <td className="px-4 py-3">
                     <select
@@ -507,14 +507,14 @@ onChange={(e) => {
     }
   });
 }}
-                      className="rounded border border-zinc-200 px-2 py-1 text-xs"
+                      className="rounded border border-slate-200/80 px-2 py-1 text-xs"
                     >
                       <option value="user">user</option>
                       <option value="super_admin">super_admin</option>
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600">{p.status}</td>
-                  <td className="px-4 py-3 text-zinc-500">
+                  <td className="px-4 py-3 text-slate-600">{p.status}</td>
+                  <td className="px-4 py-3 text-slate-500">
                     {new Date(p.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
@@ -523,7 +523,7 @@ onChange={(e) => {
                         type="button"
                         disabled={isPending}
                         onClick={() => handleResetLink(p.id)}
-                        className="text-xs font-medium text-zinc-700 underline disabled:opacity-50"
+                        className="text-xs font-medium text-slate-700 underline disabled:opacity-50"
                       >
                         Reset link
                       </button>
@@ -558,20 +558,20 @@ onChange={(e) => {
 
       {rejectedUsers.length > 0 && (
         <section className="mt-10">
-          <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+          <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
             Blocked accounts
           </h2>
           <div className="flex flex-col gap-3">
             {rejectedUsers.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">
+                  <p className="text-sm font-medium text-slate-900">
                     {p.business_name || p.email}
                   </p>
-                  <p className="text-xs text-zinc-500">{p.email}</p>
+                  <p className="text-xs text-slate-500">{p.email}</p>
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -582,7 +582,7 @@ onChange={(e) => {
                         approveUser(p.id);
                       })
                     }
-                    className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                    className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                   >
                     Restore access
                   </button>
@@ -601,7 +601,7 @@ onChange={(e) => {
         </section>
       )}
 
-      <p className="mt-8 text-xs text-zinc-400">
+      <p className="mt-8 text-xs text-slate-400">
         <Link href="/dashboard" className="underline">
           ← Back to overview
         </Link>
