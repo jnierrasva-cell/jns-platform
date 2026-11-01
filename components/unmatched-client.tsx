@@ -35,7 +35,7 @@ export function UnmatchedClient({
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Unmatched email
         </h1>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
           These senders are not contacts and did not match an email rule. Convert
           real leads or ignore the rest — nothing here enters your pipeline
           automatically.
@@ -44,7 +44,7 @@ export function UnmatchedClient({
 
       <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
         {rows.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-slate-400">
+          <p className="px-4 py-12 text-center text-sm text-slate-500">
             No unmatched emails. Your CRM stays clean.
           </p>
         ) : (
@@ -60,7 +60,7 @@ export function UnmatchedClient({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 text-slate-400">
+                  <td className="px-4 py-3 text-slate-500">
                     {new Date(row.created_at).toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
@@ -87,7 +87,7 @@ export function UnmatchedClient({
                             });
                           })
                         }
-                        className="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-100"
+                        className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700"
                       >
                         Convert to lead
                       </button>
@@ -102,7 +102,7 @@ export function UnmatchedClient({
                             });
                           })
                         }
-                        className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs text-slate-400"
+                        className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs text-slate-500"
                       >
                         Ignore
                       </button>
