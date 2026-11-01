@@ -24,7 +24,17 @@ export default async function PipelinePage() {
     .eq("organization_id", orgId)
     .order("position", { ascending: true });
 
+  const { data: contacts } = await admin
+    .from("contacts")
+    .select("id, first_name, last_name, email, status, pipeline_stage_id")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false });
+
   return (
-    <PipelineClient organizationId={orgId} stages={stages ?? []} />
+    <PipelineClient
+      organizationId={orgId}
+      stages={stages ?? []}
+      contacts={contacts ?? []}
+    />
   );
 }
