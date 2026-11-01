@@ -69,7 +69,7 @@ export function IntakeFormClient({
   }
 
   const shell = (children: React.ReactNode) => (
-    <div className="min-h-screen bg-[#0B132B] text-white">
+    <div className="min-h-screen bg-sky-600 text-white">
       <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12 sm:px-6">
         {children}
         <p className="mt-10 text-center text-[11px] text-slate-500">
@@ -81,8 +81,8 @@ export function IntakeFormClient({
 
   if (done) {
     return shell(
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 text-center shadow-xl">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-cyan-300/90">
+      <div className="rounded-2xl border border-slate-200 bg-white/[0.04] p-8 text-center shadow-xl">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400/90">
           {businessName}
         </p>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
@@ -97,8 +97,8 @@ export function IntakeFormClient({
   }
 
   return shell(
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-xl sm:p-8">
-      <p className="text-xs font-medium uppercase tracking-[0.14em] text-cyan-300/90">
+    <div className="rounded-2xl border border-slate-200 bg-white/[0.04] p-6 shadow-xl sm:p-8">
+      <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400/90">
         {businessName}
       </p>
       <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
@@ -115,7 +115,7 @@ export function IntakeFormClient({
             <label className="text-sm font-medium text-slate-200">
               {field.label}
               {field.required ? (
-                <span className="text-cyan-300/80"> *</span>
+                <span className="text-slate-400/80"> *</span>
               ) : null}
             </label>
             {field.type === "textarea" ? (
@@ -124,10 +124,10 @@ export function IntakeFormClient({
                 onChange={(e) => setField(field.id, e.target.value)}
                 rows={4}
                 required={field.required}
-                className="rounded-lg border border-white/15 bg-[#060b18] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/15"
+                className="rounded-xl border border-white/15 bg-[#060b18] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/15"
               />
             ) : field.type === "phone" ? (
-              <div className="rounded-lg border border-white/15 bg-[#060b18] px-1 py-1">
+              <div className="rounded-xl border border-white/15 bg-[#060b18] px-1 py-1">
                 <CountryPhoneInput
                   value={values[field.id] || ""}
                   onChange={(v) => setField(field.id, v)}
@@ -139,14 +139,14 @@ export function IntakeFormClient({
                 value={values[field.id] || ""}
                 onChange={(e) => setField(field.id, e.target.value)}
                 required={field.required}
-                className="rounded-lg border border-white/15 bg-[#060b18] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/15"
+                className="rounded-xl border border-white/15 bg-[#060b18] px-3.5 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/15"
               />
             )}
           </div>
         ))}
 
         {error && (
-          <p className="rounded-lg border border-red-400/25 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+          <p className="rounded-xl border border-red-400/25 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
             {error}
           </p>
         )}
@@ -154,7 +154,7 @@ export function IntakeFormClient({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-lg bg-cyan-400 px-4 py-3 text-sm font-semibold text-[#0B132B] transition hover:bg-cyan-300 disabled:opacity-60"
+          className="w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-[#0B132B] transition hover:bg-cyan-300 disabled:opacity-60"
         >
           {isPending ? "Sending…" : "Submit"}
         </button>
