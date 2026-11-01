@@ -152,7 +152,7 @@ export function SopsClient({
   }
 
   function handleDelete(sopId: string, sopTitle: string) {
-    if (!window.confirm(`Delete SOP “${sopTitle}”?`)) return;
+    if (!window.confirm(`Delete playbook “${sopTitle}”?`)) return;
     setError(null);
     startTransition(async () => {
       const result = await deleteSop(sopId);
@@ -193,13 +193,13 @@ export function SopsClient({
 
   return (
     <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-        SOPs / Workflow
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
+        Playbooks
       </span>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-        Company processes
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+        Playbooks
       </h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+      <p className="mt-1 max-w-2xl text-sm text-slate-500">
         Playbooks for <span className="font-medium">{orgName}</span>. Team
         members can view shared SOPs. Owners and admins upload and manage
         access. Prefer <span className="font-medium">PDF</span> for in-browser
@@ -213,34 +213,34 @@ export function SopsClient({
       )}
 
       {canManage && (
-        <section className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
-          <h2 className="text-sm font-medium text-zinc-900">Upload SOP</h2>
+        <section className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-5">
+          <h2 className="text-sm font-medium text-slate-900">Upload playbook</h2>
           <form onSubmit={handleUpload} className="mt-4 space-y-3">
             <div>
-              <label className="text-sm text-zinc-700">SOP title</label>
+              <label className="text-sm text-slate-700">Playbook title</label>
               <input
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Client cancellation process"
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-slate-400">
                 This title is what the team sees (not the original file name).
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-sm text-zinc-700">Version</label>
+                <label className="text-sm text-slate-700">Version</label>
                 <input
                   value={version}
                   onChange={(e) => setVersion(e.target.value)}
                   placeholder="1.0"
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="text-sm text-zinc-700">Who can view</label>
+                <label className="text-sm text-slate-700">Who can view</label>
                 <select
                   value={visibility}
                   onChange={(e) =>
@@ -248,7 +248,7 @@ export function SopsClient({
                       e.target.value as "all_members" | "managers_only",
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
                 >
                   <option value="all_members">
                     Everyone in this workspace
@@ -258,31 +258,31 @@ export function SopsClient({
               </div>
             </div>
             <div>
-              <label className="text-sm text-zinc-700">Notes (optional)</label>
+              <label className="text-sm text-slate-700">Notes (optional)</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="text-sm text-zinc-700">File (PDF recommended)</label>
+              <label className="text-sm text-slate-700">File (PDF recommended)</label>
               <input
                 type="file"
                 required
                 accept=".pdf,application/pdf,.doc,.docx,.png,.jpg,.jpeg"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="mt-1 block w-full text-sm text-zinc-600"
+                className="mt-1 block w-full text-sm text-slate-600"
               />
-              <p className="mt-1 text-xs text-zinc-400">
+              <p className="mt-1 text-xs text-slate-400">
                 Max 20MB. PDF opens in the browser; Word usually downloads.
               </p>
             </div>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
             >
               {isPending ? "Uploading…" : "Upload"}
             </button>
@@ -291,20 +291,20 @@ export function SopsClient({
       )}
 
       <section className="mt-10">
-        <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+        <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
           Library ({sops.length})
         </h2>
         {sops.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            No SOPs shared with you yet.
+          <p className="text-sm text-slate-500">
+            No playbooks shared with you yet.
             {canManage ? " Upload one above and set “Everyone in this workspace”." : ""}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500">
+              <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3 font-medium">SOP title</th>
+                  <th className="px-4 py-3 font-medium">Playbook title</th>
                   <th className="px-4 py-3 font-medium">Version</th>
                   <th className="px-4 py-3 font-medium">Last edited</th>
                   <th className="px-4 py-3 font-medium text-right">Actions</th>
@@ -316,31 +316,31 @@ export function SopsClient({
                   return (
                     <tr
                       key={sop.id}
-                      className="border-b border-zinc-50 last:border-0"
+                      className="border-b border-slate-50 last:border-0"
                     >
                       <td className="px-4 py-3">
-                        <p className="font-medium text-zinc-900">{sop.title}</p>
+                        <p className="font-medium text-slate-900">{sop.title}</p>
                         {sop.description ? (
-                          <p className="mt-0.5 text-xs text-zinc-500">
+                          <p className="mt-0.5 text-xs text-slate-500">
                             {sop.description}
                           </p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">
+                      <td className="px-4 py-3 text-slate-600">
                         {canManage ? (
                           <input
                             defaultValue={sop.version || "1.0"}
                             onBlur={(e) =>
                               handleVersionBlur(sop.id, e.target.value)
                             }
-                            className="w-16 rounded border border-zinc-200 px-2 py-1 text-sm"
+                            className="w-16 rounded border border-slate-200/80 px-2 py-1 text-sm"
                             aria-label={`Version for ${sop.title}`}
                           />
                         ) : (
                           sop.version || "1.0"
                         )}
                       </td>
-                      <td className="px-4 py-3 text-zinc-600">
+                      <td className="px-4 py-3 text-slate-600">
                         {edited
                           ? new Date(edited).toLocaleDateString(undefined, {
                               year: "numeric",
@@ -355,7 +355,7 @@ export function SopsClient({
                             type="button"
                             disabled={isPending}
                             onClick={() => handleView(sop.id)}
-                            className="rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+                            className="rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                           >
                             View
                           </button>
@@ -365,7 +365,7 @@ export function SopsClient({
                                 type="button"
                                 disabled={isPending}
                                 onClick={() => handleDownload(sop.id)}
-                                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50"
+                                className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50"
                               >
                                 Download
                               </button>
@@ -384,7 +384,7 @@ export function SopsClient({
                                       | "managers_only",
                                   )
                                 }
-                                className="rounded-lg border border-zinc-200 px-2 py-1.5 text-xs text-zinc-800"
+                                className="rounded-2xl border border-slate-200/80 px-2 py-1.5 text-xs text-slate-800"
                               >
                                 <option value="all_members">Team can view</option>
                                 <option value="managers_only">
@@ -395,7 +395,7 @@ export function SopsClient({
                                 type="button"
                                 disabled={isPending}
                                 onClick={() => handleDelete(sop.id, sop.title)}
-                                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                                className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                               >
                                 Delete
                               </button>
