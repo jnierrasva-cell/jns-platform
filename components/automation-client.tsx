@@ -188,22 +188,22 @@ export function AutomationClient({
 
   return (
     <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-        Automation
+      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
+        Autopilot
       </span>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
         What actually runs
       </h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+      <p className="mt-1 max-w-2xl text-sm text-slate-500">
         Only live systems are listed here. {activeCount} of {services.length} on
         {isPending ? " · Saving…" : ""}.
       </p>
 
-      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
-        <h2 className="text-sm font-medium text-zinc-900">
+      <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5">
+        <h2 className="text-sm font-medium text-slate-900">
           Before you switch on
         </h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-slate-500">
           Auto-reply needs Google + rules. SMS needs Twilio. Toggles will error
           if a required connection is missing.
         </p>
@@ -213,12 +213,12 @@ export function AutomationClient({
               key={p.id}
               className="flex flex-wrap items-center justify-between gap-2 text-sm"
             >
-              <span className={p.done ? "text-zinc-700" : "text-zinc-900"}>
+              <span className={p.done ? "text-slate-700" : "text-slate-900"}>
                 {p.done ? "✓" : "○"} {p.label}
               </span>
               <Link
                 href={p.href}
-                className="text-xs font-medium text-zinc-600 underline hover:text-zinc-900"
+                className="text-xs font-medium text-slate-600 underline hover:text-slate-900"
               >
                 Open
               </Link>
@@ -239,7 +239,7 @@ export function AutomationClient({
       <div className="mt-8 flex flex-col gap-8">
         {categories.map(([category, categoryServices]) => (
           <section key={category}>
-            <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+            <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
               {category}
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -254,19 +254,19 @@ export function AutomationClient({
                     <div className="flex flex-wrap gap-3 px-0.5">
                       <Link
                         href="/dashboard/email-rules"
-                        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+                        className="text-xs text-slate-600 underline underline-offset-2 hover:text-slate-900"
                       >
                         Email rules
                       </Link>
                       <Link
                         href="/dashboard/templates"
-                        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+                        className="text-xs text-slate-600 underline underline-offset-2 hover:text-slate-900"
                       >
                         Templates
                       </Link>
                       <Link
                         href="/dashboard/unmatched"
-                        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+                        className="text-xs text-slate-600 underline underline-offset-2 hover:text-slate-900"
                       >
                         Unmatched
                       </Link>
@@ -275,7 +275,7 @@ export function AutomationClient({
                   {service.id === "sms-reminders" && (
                     <Link
                       href="/dashboard/integrations"
-                      className="px-0.5 text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+                      className="px-0.5 text-xs text-slate-600 underline underline-offset-2 hover:text-slate-900"
                     >
                       Twilio in Integrations
                     </Link>
@@ -288,30 +288,30 @@ export function AutomationClient({
       </div>
 
       {enabledKeys.has("email-auto-ack") && (
-        <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
-          <h2 className="text-sm font-medium text-zinc-900">
+        <section className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-6">
+          <h2 className="text-sm font-medium text-slate-900">
             Auto-reply options
           </h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-slate-500">
             Optional domain exclusions (e.g. noreply senders). Rules still
             decide who gets a reply.
           </p>
           <form onSubmit={saveEmailSettings} className="mt-4 space-y-4">
             <div>
-              <label className="text-sm text-zinc-700">
+              <label className="text-sm text-slate-700">
                 Exclude domains (comma-separated)
               </label>
               <input
                 value={excludeDomains}
                 onChange={(e) => setExcludeDomains(e.target.value)}
                 placeholder="mailchimp.com, noreply.example"
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
               />
             </div>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
             >
               Save email settings
             </button>
@@ -320,17 +320,17 @@ export function AutomationClient({
       )}
 
       {enabledKeys.has("sms-reminders") && (
-        <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
-          <h2 className="text-sm font-medium text-zinc-900">
+        <section className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-6">
+          <h2 className="text-sm font-medium text-slate-900">
             SMS reminder options
           </h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-slate-500">
             Placeholders: first_name, title, when (wrapped in double braces in
             the message box).
           </p>
           <form onSubmit={saveSmsSettings} className="mt-4 space-y-4">
             <div>
-              <label className="text-sm text-zinc-700">
+              <label className="text-sm text-slate-700">
                 Hours before appointment
               </label>
               <input
@@ -339,22 +339,22 @@ export function AutomationClient({
                 max={168}
                 value={hoursBefore}
                 onChange={(e) => setHoursBefore(e.target.value)}
-                className="mt-1 w-32 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                className="mt-1 w-32 rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="text-sm text-zinc-700">Message</label>
+              <label className="text-sm text-slate-700">Message</label>
               <textarea
                 value={smsMessage}
                 onChange={(e) => setSmsMessage(e.target.value)}
                 rows={4}
-                className="mt-1 w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm"
+                className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 font-mono text-sm"
               />
             </div>
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+              className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
             >
               Save SMS settings
             </button>
@@ -362,16 +362,16 @@ export function AutomationClient({
         </section>
       )}
 
-      <section className="mt-10 rounded-xl border border-zinc-200 bg-white p-6">
-        <h2 className="text-sm font-medium text-zinc-900">
+      <section className="mt-10 rounded-2xl border border-slate-200/80 bg-white p-6">
+        <h2 className="text-sm font-medium text-slate-900">
           Recent email activity
         </h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-slate-500">
           What this workspace logged recently. Empty until Google is connected
           and a rule fires.
         </p>
         {recentActivity.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">No activity yet.</p>
+          <p className="mt-4 text-sm text-slate-500">No activity yet.</p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-100">
             {recentActivity.map((row) => (
@@ -380,16 +380,16 @@ export function AutomationClient({
                 className="flex flex-col gap-0.5 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="font-medium text-zinc-900">
+                  <p className="font-medium text-slate-900">
                     {row.subject || row.service_key || "Email event"}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-slate-500">
                     {row.direction ?? "—"} · {row.status ?? "—"}
                     {row.to_email ? ` · to ${row.to_email}` : ""}
                     {row.from_email ? ` · from ${row.from_email}` : ""}
                   </p>
                 </div>
-                <p className="shrink-0 text-xs text-zinc-400">
+                <p className="shrink-0 text-xs text-slate-400">
                   {new Date(row.created_at).toLocaleString()}
                 </p>
               </li>
