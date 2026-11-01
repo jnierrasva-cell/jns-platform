@@ -275,7 +275,7 @@ export default async function OverviewPage() {
   const metrics: OverviewMetric[] = [
     {
       href: "/dashboard/contacts",
-      label: "Contacts",
+      label: "Clients",
       value: contacts.length,
       detail:
         newThisWeek > 0
@@ -285,21 +285,21 @@ export default async function OverviewPage() {
     },
     {
       href: "/dashboard/bookings",
-      label: "Bookings (30 days)",
+      label: "Schedule (30 days)",
       value: bookingsRes.count ?? 0,
       detail: "Scheduled ahead",
       icon: CalendarDays,
     },
     {
       href: "/dashboard/automation",
-      label: "Automations on",
+      label: "Autopilot on",
       value: activeAutomations,
       detail: "Enabled for this org",
       icon: Zap,
     },
     {
       href: "/dashboard/integrations",
-      label: "Integrations",
+      label: "Connections",
       value: integrationsCount,
       detail: integrationDetail,
       icon: Plug,
@@ -327,7 +327,7 @@ export default async function OverviewPage() {
           title: "Connect Google or SMS",
           description:
             "Automations and calendar features need at least one connection.",
-          action: "Integrations",
+          action: "Connections",
         }
       : unmatchedCount > 0
         ? {
@@ -339,9 +339,9 @@ export default async function OverviewPage() {
         : activeAutomations === 0
           ? {
               href: "/dashboard/automation",
-              title: "Turn on an automation",
+              title: "Turn on autopilot",
               description: "Auto-ack or reminders once tools are connected.",
-              action: "Automation",
+              action: "Autopilot",
             }
           : contacts.length === 0
             ? {
@@ -352,9 +352,9 @@ export default async function OverviewPage() {
               }
             : {
                 href: "/dashboard/pipeline",
-                title: "Work your pipeline",
+                title: "Work your journey",
                 description: "Move people forward and keep follow-ups tight.",
-                action: "Pipeline",
+                action: "Journey",
               };
 
   function contactName(c: {
@@ -368,28 +368,29 @@ export default async function OverviewPage() {
   }
 
   return (
-    <div>
-      <div className="border-b border-zinc-200 pb-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-          Overview
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+          Today
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             {active.orgName}
           </h1>
           <Link
             href="/dashboard/billing"
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
               planId === "none"
-                ? "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200"
-                : "bg-[#0B132B] text-white"
+                ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                : "bg-sky-50 text-sky-700 ring-1 ring-sky-200"
             }`}
           >
             {planLabel}
           </Link>
         </div>
-        <p className="mt-1 text-sm text-zinc-500">
-          Live snapshot for this workspace.
+        <p className="mt-1 text-sm text-slate-500">
+          Here is what is happening in your workspace today.
           {periodLabel
             ? ` Plan access through ${periodLabel}.`
             : planId === "none"
@@ -397,15 +398,16 @@ export default async function OverviewPage() {
               : ""}{" "}
           <Link
             href="/dashboard/billing"
-            className="font-medium text-zinc-800 underline underline-offset-2"
+            className="font-medium text-slate-800 underline underline-offset-2"
           >
             Billing
           </Link>
           {" · "}
-          Switch orgs under My orgs.
+          Switch orgs under My workspaces.
         </p>
       </div>
 
+      {/* Setup / first-run progress — existing data only */}
       {showSetupCard && !allCriticalDone && (
         <FirstRunPanel
           orgName={active.orgName}
@@ -415,7 +417,7 @@ export default async function OverviewPage() {
       )}
 
       {showSetupCard && allCriticalDone && (
-        <section className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/50 px-5 py-4">
+        <section className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 px-5 py-4">
           <p className="text-sm font-medium text-emerald-900">
             Inbox loop is ready
           </p>
@@ -426,121 +428,256 @@ export default async function OverviewPage() {
         </section>
       )}
 
-      <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {metrics.map((m) => {
-          const Icon = m.icon;
-          return (
-            <Link
-              key={m.href + m.label}
-              href={m.href}
-              className="rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:bg-zinc-50"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  {m.label}
+      {/* Metric cards — real numbers; sparklines are visual placeholders */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics
+          .filter((m) =>
+            ["Clients", "Schedule (30 days)", "Autopilot on", "Unmatched email"].includes(
+              m.label,
+            ),
+          )
+          .map((m) => {
+            const Icon = m.icon;
+            return (
+              <Link
+                key={m.href + m.label}
+                href={m.href}
+                className="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs font-medium text-slate-500">{m.label}</p>
+                  <Icon className="h-4 w-4 text-slate-300 group-hover:text-slate-400" aria-hidden />
+                </div>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                  {m.value}
                 </p>
-                <Icon className="h-4 w-4 text-zinc-400" aria-hidden />
-              </div>
-              <p className="mt-2 text-2xl font-semibold text-zinc-900">
-                {m.value}
-              </p>
-              <p className="mt-1 truncate text-xs text-zinc-500">{m.detail}</p>
-            </Link>
-          );
-        })}
+                <p className="mt-1 truncate text-xs text-slate-500">{m.detail}</p>
+                {/* Placeholder sparkline — no historical series in app yet */}
+                <div
+                  className="mt-3 h-8 w-full rounded-md bg-gradient-to-r from-sky-50 via-sky-100/80 to-sky-50 opacity-80"
+                  aria-hidden
+                  title="Trend chart placeholder"
+                />
+              </Link>
+            );
+          })}
       </section>
 
-      <section className="mt-6">
+      {/* Suggested next — existing logic */}
+      <section>
         <Link
           href={nextStep.href}
-          className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-zinc-300 hover:bg-zinc-50 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-1 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
               Suggested next
             </p>
-            <p className="mt-1 text-sm font-semibold text-zinc-900">
+            <p className="mt-1 text-sm font-semibold text-slate-900">
               {nextStep.title}
             </p>
-            <p className="mt-0.5 text-sm text-zinc-500">
+            <p className="mt-0.5 text-sm text-slate-500">
               {nextStep.description}
             </p>
           </div>
-          <span className="mt-3 inline-flex w-fit rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white sm:mt-0">
+          <span className="mt-3 inline-flex w-fit rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-medium text-white sm:mt-0">
             {nextStep.action}
           </span>
         </Link>
       </section>
 
-      {/* Pipeline snapshot */}
-      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-900">Pipeline</h2>
-          <Link
-            href="/dashboard/pipeline"
-            className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
-          >
-            Open pipeline
-          </Link>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {stageCounts
-            ? stageCounts.map((s) => (
-                <div
-                  key={s.id}
-                  className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-3"
-                >
-                  <p className="truncate text-xs text-zinc-500">{s.name}</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
-                    {s.count}
-                  </p>
-                </div>
-              ))
-            : (
-                <>
-                  {(
-                    [
-                      ["Lead", statusPipeline.lead],
-                      ["Booked", statusPipeline.booked],
-                      ["Customer", statusPipeline.customer],
-                      ["Inactive", statusPipeline.inactive],
-                    ] as const
-                  ).map(([name, count]) => (
-                    <div
-                      key={name}
-                      className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-3"
-                    >
-                      <p className="text-xs text-zinc-500">{name}</p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-900">
-                        {count}
-                      </p>
-                    </div>
-                  ))}
-                </>
-              )}
-        </div>
-      </section>
-
-      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+      {/* Today schedule + Journey + Activity */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Today = upcoming bookings */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-zinc-400" aria-hidden />
-              <h2 className="text-sm font-medium text-zinc-900">
-                Recent contacts
-              </h2>
-            </div>
+            <h2 className="text-sm font-semibold text-slate-900">Today</h2>
             <Link
-              href="/dashboard/contacts"
-              className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
+              href="/dashboard/bookings"
+              className="text-xs font-medium text-sky-600 hover:text-sky-700"
             >
               View all
             </Link>
           </div>
-          <ul className="mt-3 divide-y divide-zinc-100">
+          <ul className="mt-4 space-y-3">
+            {upcomingBookings.length === 0 ? (
+              <li className="rounded-xl bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
+                No upcoming schedule items.
+              </li>
+            ) : (
+              upcomingBookings.map((b) => {
+                const c = Array.isArray(b.contacts)
+                  ? b.contacts[0]
+                  : b.contacts;
+                const start = new Date(b.starts_at);
+                const timeLabel = start.toLocaleTimeString(undefined, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+                return (
+                  <li
+                    key={b.id}
+                    className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5"
+                  >
+                    <div className="w-14 shrink-0 pt-0.5 text-xs font-medium text-slate-500">
+                      {timeLabel}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {b.title}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {contactName(
+                          c as {
+                            first_name?: string | null;
+                            last_name?: string | null;
+                            email?: string | null;
+                          } | null,
+                        )}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
+
+        {/* Journey bars — existing stage/status counts */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900">Journey</h2>
+            <Link
+              href="/dashboard/pipeline"
+              className="text-xs font-medium text-sky-600 hover:text-sky-700"
+            >
+              Open board
+            </Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {stageCounts
+              ? stageCounts.map((s) => {
+                  const max = Math.max(
+                    ...stageCounts.map((x) => x.count),
+                    1,
+                  );
+                  const pct = Math.round((s.count / max) * 100);
+                  return (
+                    <div key={s.id}>
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <p className="truncate text-xs text-slate-600">
+                          {s.name}
+                        </p>
+                        <p className="text-xs font-semibold text-slate-900">
+                          {s.count}
+                        </p>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-sky-500 transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              : (
+                  [
+                    ["Lead", statusPipeline.lead, "bg-sky-500"],
+                    ["Booked", statusPipeline.booked, "bg-sky-400"],
+                    ["Customer", statusPipeline.customer, "bg-emerald-500"],
+                    ["Inactive", statusPipeline.inactive, "bg-slate-300"],
+                  ] as const
+                ).map(([name, count, barClass]) => {
+                  const max = Math.max(
+                    statusPipeline.lead,
+                    statusPipeline.booked,
+                    statusPipeline.customer,
+                    statusPipeline.inactive,
+                    1,
+                  );
+                  const pct = Math.round((count / max) * 100);
+                  return (
+                    <div key={name}>
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <p className="text-xs text-slate-600">{name}</p>
+                        <p className="text-xs font-semibold text-slate-900">
+                          {count}
+                        </p>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${barClass} transition-all`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+          </div>
+        </div>
+
+        {/* Recent activity — placeholder until real activity feed exists */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Recent activity
+            </h2>
+          </div>
+          <ul className="mt-4 space-y-3">
+            <li className="flex gap-2.5">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-500" />
+              <div className="min-w-0">
+                <p className="text-sm text-slate-800">
+                  {recentActivityCount > 0
+                    ? `${recentActivityCount} email event${recentActivityCount === 1 ? "" : "s"} in the last 7 days`
+                    : "No email activity in the last 7 days"}
+                </p>
+                <p className="text-xs text-slate-400">
+                  From existing automation activity count
+                </p>
+              </div>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+              <div className="min-w-0">
+                <p className="text-sm text-slate-800">
+                  {newThisWeek > 0
+                    ? `${newThisWeek} new client${newThisWeek === 1 ? "" : "s"} this week`
+                    : "No new clients this week"}
+                </p>
+                <p className="text-xs text-slate-400">From clients list</p>
+              </div>
+            </li>
+            <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3 text-xs text-slate-500">
+              Full activity feed is a placeholder. Item-level events are not
+              loaded on this page yet.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Secondary: remaining metrics + recent clients (existing data) */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Contact className="h-4 w-4 text-slate-400" aria-hidden />
+              <h2 className="text-sm font-semibold text-slate-900">
+                Recent clients
+              </h2>
+            </div>
+            <Link
+              href="/dashboard/contacts"
+              className="text-xs font-medium text-sky-600 hover:text-sky-700"
+            >
+              View all
+            </Link>
+          </div>
+          <ul className="mt-3 divide-y divide-slate-100">
             {recentContacts.length === 0 ? (
-              <li className="py-5 text-center text-sm text-zinc-500">
-                No contacts yet.
+              <li className="py-5 text-center text-sm text-slate-500">
+                No clients yet.
               </li>
             ) : (
               recentContacts.map((c) => (
@@ -551,15 +688,15 @@ export default async function OverviewPage() {
                   <div className="min-w-0">
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
-                      className="text-sm font-medium text-zinc-900 hover:underline"
+                      className="text-sm font-medium text-slate-900 hover:underline"
                     >
                       {contactName(c)}
                     </Link>
-                    <p className="text-xs capitalize text-zinc-500">
+                    <p className="text-xs capitalize text-slate-500">
                       {c.status || "—"}
                     </p>
                   </div>
-                  <p className="shrink-0 text-xs text-zinc-400">
+                  <p className="shrink-0 text-xs text-slate-400">
                     {new Date(c.created_at).toLocaleDateString()}
                   </p>
                 </li>
@@ -568,58 +705,44 @@ export default async function OverviewPage() {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-zinc-400" aria-hidden />
-              <h2 className="text-sm font-medium text-zinc-900">
-                Upcoming bookings
-              </h2>
-            </div>
-            <Link
-              href="/dashboard/bookings"
-              className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
-            >
-              View all
-            </Link>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Workspace snapshot
+            </h2>
           </div>
-          <ul className="mt-3 divide-y divide-zinc-100">
-            {upcomingBookings.length === 0 ? (
-              <li className="py-5 text-center text-sm text-zinc-500">
-                No bookings in the next 30 days.
-              </li>
-            ) : (
-              upcomingBookings.map((b) => {
-                const c = Array.isArray(b.contacts)
-                  ? b.contacts[0]
-                  : b.contacts;
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {metrics
+              .filter(
+                (m) =>
+                  !["Clients", "Schedule (30 days)", "Autopilot on", "Unmatched email"].includes(
+                    m.label,
+                  ),
+              )
+              .map((m) => {
+                const Icon = m.icon;
                 return (
-                  <li
-                    key={b.id}
-                    className="flex items-start justify-between gap-3 py-2.5"
+                  <Link
+                    key={m.href + m.label}
+                    href={m.href}
+                    className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3 transition hover:bg-slate-50"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-zinc-900">
-                        {b.title}
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="truncate text-xs text-slate-500">
+                        {m.label}
                       </p>
-                      <p className="text-xs text-zinc-500">
-                        {contactName(
-                          c as {
-                            first_name?: string | null;
-                            last_name?: string | null;
-                            email?: string | null;
-                          } | null,
-                        )}
-                      </p>
+                      <Icon className="h-3.5 w-3.5 shrink-0 text-slate-300" />
                     </div>
-                    <p className="shrink-0 text-xs text-zinc-400">
-                      {new Date(b.starts_at).toLocaleString()}
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {m.value}
                     </p>
-                  </li>
+                    <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                      {m.detail}
+                    </p>
+                  </Link>
                 );
-              })
-            )}
-          </ul>
+              })}
+          </div>
         </div>
       </section>
     </div>
