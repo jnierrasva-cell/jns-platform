@@ -15,7 +15,7 @@ export function ServiceCard({ service, isOn, onToggle }: ServiceCardProps) {
     <div className="jns-card flex flex-col gap-4 p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-[15px] font-medium text-zinc-900">
+          <h3 className="text-[15px] font-medium text-slate-900">
             {service.name}
           </h3>
           <div className="mt-1.5">
@@ -28,7 +28,7 @@ export function ServiceCard({ service, isOn, onToggle }: ServiceCardProps) {
           label={`Turn ${service.name} ${isOn ? "off" : "on"}`}
         />
       </div>
-      <p className="text-sm leading-relaxed text-zinc-500">
+      <p className="text-sm leading-relaxed text-slate-500">
         {service.description}
       </p>
     </div>
