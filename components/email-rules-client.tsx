@@ -119,46 +119,46 @@ export function EmailRulesClient({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
           Email
         </span>
         <Link
           href="/dashboard/automation"
-          className="text-xs text-zinc-600 underline underline-offset-2"
+          className="text-xs text-slate-600 underline underline-offset-2"
         >
           ← Automation
         </Link>
       </div>
 
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Email rules</h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+      <h1 className="mt-1 text-2xl font-semibold text-slate-900">Email rules</h1>
+      <p className="mt-1 max-w-2xl text-sm text-slate-500">
         Rules decide who gets a reply. Leave optional filters empty to match
         more mail. Lower priority number is checked first.
       </p>
 
       <form
         onSubmit={handleCreate}
-        className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
+        className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6"
       >
-        <h2 className="text-sm font-medium text-zinc-900">New rule</h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <h2 className="text-sm font-medium text-slate-900">New rule</h2>
+        <p className="mt-1 text-xs text-slate-500">
           Example: subject contains “cancel” → auto-reply. You do not need
           every field filled in.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Name</label>
+            <label className="text-sm text-slate-700">Name</label>
             <input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Cancellation requests"
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               Priority (1 = highest)
             </label>
             <input
@@ -167,53 +167,53 @@ export function EmailRulesClient({
               max={999}
               value={priority}
               onChange={(e) => setPriority(Number(e.target.value) || 1)}
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             />
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-slate-400">
               Use 1–10 for important rules. Default 10 is fine.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               From email (optional)
             </label>
             <input
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
               placeholder="one.person@email.com"
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               From domain (optional)
             </label>
             <input
               value={fromDomain}
               onChange={(e) => setFromDomain(e.target.value)}
               placeholder="ilovemypilates.com"
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               Subject contains (optional)
             </label>
             <input
               value={subjectContains}
               onChange={(e) => setSubjectContains(e.target.value)}
               placeholder="cancellation"
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Action</label>
+            <label className="text-sm text-slate-700">Action</label>
             <select
               value={action}
               onChange={(e) =>
                 setAction(e.target.value as "auto_ack" | "skip" | "tag_only")
               }
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             >
               <option value="auto_ack">Send auto-reply + contact</option>
               <option value="tag_only">Contact only (no reply)</option>
@@ -222,11 +222,11 @@ export function EmailRulesClient({
           </div>
           {action === "auto_ack" && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-zinc-700">Reply template</label>
+              <label className="text-sm text-slate-700">Reply template</label>
               <select
                 value={templateKey}
                 onChange={(e) => setTemplateKey(e.target.value)}
-                className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+                className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
               >
                 {(templateKeys.length > 0
                   ? templateKeys
@@ -240,15 +240,15 @@ export function EmailRulesClient({
             </div>
           )}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Tag (optional)</label>
+            <label className="text-sm text-slate-700">Tag (optional)</label>
             <input
               value={tag}
               onChange={(e) => setTag(e.target.value)}
               placeholder="cancellation"
-              className="rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm"
+              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 md:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
             <input
               type="checkbox"
               checked={onlyNewContact}
@@ -256,7 +256,7 @@ export function EmailRulesClient({
             />
             Only when this is a new contact
           </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 md:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
             <input
               type="checkbox"
               checked={enableOnCreate}
@@ -275,15 +275,15 @@ export function EmailRulesClient({
         <button
           type="submit"
           disabled={isPending}
-          className="mt-4 rounded-lg bg-[#0B132B] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+          className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
         >
           {isPending ? "Saving…" : "Add rule"}
         </button>
       </form>
 
-      <div className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
+      <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-100 text-xs text-zinc-500">
+          <thead className="border-b border-slate-100 text-xs text-slate-500">
             <tr>
               <th className="px-4 py-3">Rule</th>
               <th className="px-4 py-3">When</th>
@@ -307,7 +307,7 @@ export function EmailRulesClient({
               <tr>
                 <td
                   colSpan={5}
-                  className="px-4 py-10 text-center text-zinc-500"
+                  className="px-4 py-10 text-center text-slate-500"
                 >
                   No rules yet. Add one so auto-reply only fires when you want
                   it.
@@ -317,11 +317,11 @@ export function EmailRulesClient({
               rules.map((rule) => (
                 <tr
                   key={rule.id}
-                  className="border-b border-zinc-50 last:border-0"
+                  className="border-b border-slate-50 last:border-0"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-medium text-zinc-900">{rule.name}</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="font-medium text-slate-900">{rule.name}</p>
+                    <p className="text-xs text-slate-500">
                       {rule.is_enabled ? "Enabled" : "Disabled"}
                       {rule.tag ? ` · tag: ${rule.tag}` : ""}
                       {rule.template_key
@@ -329,13 +329,13 @@ export function EmailRulesClient({
                         : ""}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">
+                  <td className="px-4 py-3 text-slate-500">
                     {conditionSummary(rule)}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">
+                  <td className="px-4 py-3 text-slate-500">
                     {actionLabel(rule.action)}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{rule.priority}</td>
+                  <td className="px-4 py-3 text-slate-500">{rule.priority}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button
