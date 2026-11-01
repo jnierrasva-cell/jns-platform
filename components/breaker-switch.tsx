@@ -21,12 +21,12 @@ export function BreakerSwitch({
       aria-label={label}
       disabled={disabled}
       onClick={onChange}
-      className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 ${
+      className={`relative h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
         disabled
           ? "cursor-not-allowed border-slate-200/80 bg-slate-100"
           : checked
-            ? "border-zinc-900 bg-sky-600"
-            : "border-zinc-300 bg-zinc-200 hover:border-zinc-400"
+            ? "border-sky-600 bg-sky-600"
+            : "border-slate-300 bg-slate-200 hover:border-slate-400"
       }`}
     >
       <span
