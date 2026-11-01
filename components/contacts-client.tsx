@@ -21,6 +21,7 @@ import {
   setContactPipelineStage,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
+import { Input } from "@/components/ui/input";
 
 type Contact = {
   id: string;
@@ -426,22 +427,22 @@ export function ContactsClient({
   }
 
   return (
-    <div className="pb-4">
-      <div className="flex flex-col gap-4 border-b border-zinc-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-6 pb-6">
+      <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-            CRM
+          <p className="text-xs font-semibold uppercase text-text-muted">
+            Clients
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-            Contacts
+          <h1 className="mt-2 font-heading text-3xl font-bold text-foreground">
+            Clients
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-text-secondary">
             Filter and move people through{" "}
             <Link
               href="/dashboard/pipeline"
-              className="text-cyan-700 underline underline-offset-2"
+              className="text-accent-cyan underline underline-offset-2"
             >
-              your custom pipeline
+              your custom Journey
             </Link>
             .
           </p>
@@ -450,7 +451,7 @@ export function ContactsClient({
           <button
             type="button"
             onClick={exportCsv}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3.5 text-sm font-medium text-text-secondary hover:bg-surface-inset hover:text-foreground"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -459,7 +460,7 @@ export function ContactsClient({
             id="import"
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-slate-200 hover:text-zinc-900"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3.5 text-sm font-medium text-text-secondary hover:bg-surface-inset hover:text-foreground"
           >
             <Upload className="h-4 w-4" />
             Import CSV
@@ -481,63 +482,64 @@ export function ContactsClient({
               setShowAdd(true);
               setFormError(null);
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A] hover:brightness-110"
           >
             <Plus className="h-4 w-4" />
-            Add contact
+            Add client
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="mt-8 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" aria-label="Filter clients by journey stage">
         <button
           type="button"
           onClick={() => setStageFilter("all")}
-          className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+          className={`min-h-11 rounded-full border px-4 text-sm font-medium transition ${
             stageFilter === "all"
-              ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-              : "border-zinc-200 bg-white text-slate-400"
+              ? "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
+              : "border-border bg-card text-text-secondary hover:bg-surface-inset"
           }`}
         >
           All
-          <span className="ml-1.5 text-slate-500">{counts.all ?? 0}</span>
+          <span className="ml-1.5 tabular-nums text-text-muted">{counts.all ?? 0}</span>
         </button>
         {stages.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => setStageFilter(s.id)}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
+            className={`min-h-11 rounded-full border px-4 text-sm font-medium transition ${
               stageFilter === s.id
-                ? "border-blue-400/40 bg-blue-500/20 text-blue-100"
-                : "border-zinc-200 bg-white text-slate-400"
+                ? "border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan"
+                : "border-border bg-card text-text-secondary hover:bg-surface-inset"
             }`}
           >
             {s.name}
-            <span className="ml-1.5 text-slate-500">{counts[s.id] ?? 0}</span>
+            <span className="ml-1.5 tabular-nums text-text-muted">{counts[s.id] ?? 0}</span>
           </button>
         ))}
       </div>
 
-      <div className="mt-4">
-        <input
+      <div>
+        <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, phone…"
-          className="w-full max-w-md rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+          aria-label="Search clients by name, email, or phone"
+          className="max-w-md"
         />
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
+      {error && <p className="text-sm text-danger" role="alert">{error}</p>}
+      {info && <p className="text-sm text-success" role="status">{info}</p>}
 
-      <div className="mt-6">
+      <div>
         {contacts.length === 0 ? (
           <EmptyState
             icon={ContactIcon}
-            title="No contacts yet"
+            title="No clients yet"
             description="People from forms, bookings, and email land here. Add someone manually or import a CSV to start."
-            actionLabel="Add contact"
+            actionLabel="Add client"
             onAction={() => setShowAdd(true)}
             secondaryLabel="Import CSV"
             secondaryHref="#import"
@@ -553,38 +555,39 @@ export function ContactsClient({
             }}
           />
         ) : (
-          <div className="overflow-visible rounded-xl border border-zinc-200 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
+          <div className="overflow-x-auto rounded-2xl border border-border bg-card text-card-foreground">
+            <table className="w-full min-w-[700px] text-left text-sm">
+              <thead className="border-b border-border bg-surface-inset text-xs font-semibold uppercase text-text-muted">
                 <tr>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Pipeline</th>
+                  <th className="px-4 py-3">Journey</th>
                   <th className="px-4 py-3">Source</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id} className="border-b border-white/5 last:border-0">
+                  <tr key={c.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3">
                       <Link
                         href={`/dashboard/contacts/${c.id}`}
-                        className="font-medium text-zinc-900 hover:text-cyan-700"
+                        className="font-medium text-foreground hover:text-accent-cyan"
                       >
                         {displayName(c)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{c.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-slate-400">{c.phone ?? "—"}</td>
+                    <td className="px-4 py-3 text-text-secondary">{c.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-text-secondary">{c.phone ?? "—"}</td>
                     <td className="px-4 py-3">
                       <select
                         value={c.pipeline_stage_id ?? ""}
                         onChange={(e) =>
                           changePipelineStage(c.id, e.target.value)
                         }
-                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-800 outline-none"
+                        aria-label={`Journey stage for ${displayName(c)}`}
+                        className="min-h-11 max-w-40 rounded-xl border border-input bg-surface-inset px-3 text-xs font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                       >
                         <option value="">Unassigned</option>
                         {stages.map((s) => (
@@ -594,7 +597,7 @@ export function ContactsClient({
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-xs capitalize text-slate-500">
+                    <td className="px-4 py-3 text-xs capitalize text-text-muted">
                       {(c.source ?? "—").replace(/_/g, " ")}
                     </td>
                     <td className="relative z-10 px-4 py-3 text-right">
@@ -603,7 +606,7 @@ export function ContactsClient({
                         onClick={() =>
                           setMenuId((id) => (id === c.id ? null : c.id))
                         }
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                        className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-text-muted hover:bg-surface-inset hover:text-foreground"
                         aria-label="Actions"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -611,7 +614,7 @@ export function ContactsClient({
                       {menuId === c.id && (
                         <div
                           ref={menuRef}
-                          className="absolute right-4 z-30 mt-1 w-44 rounded-lg border border-zinc-200 bg-[#0f1a35] py-1 shadow-xl"
+                          className="absolute right-4 z-30 mt-1 w-44 rounded-xl border border-border bg-surface py-1 text-foreground shadow-[var(--shadow-soft)]"
                         >
                           <button
                             type="button"
@@ -646,15 +649,15 @@ export function ContactsClient({
       </div>
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                <p className="text-xs font-semibold uppercase text-text-muted">
                   New contact
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-white">
-                  Add to your CRM
+                <h2 className="mt-1 font-heading text-xl font-bold text-foreground">
+                  Add client
                 </h2>
               </div>
               <button
@@ -663,45 +666,45 @@ export function ContactsClient({
                   setShowAdd(false);
                   resetForm();
                 }}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-text-muted hover:bg-surface-inset hover:text-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-slate-200">First name</label>
+                  <label className="text-sm text-text-secondary">First name</label>
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                    className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-slate-200">Last name</label>
+                  <label className="text-sm text-text-secondary">Last name</label>
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                    className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Email</label>
+                <label className="text-sm text-text-secondary">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                  className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Phone</label>
+                <label className="text-sm text-text-secondary">Phone</label>
                 <CountryPhoneInput value={phone} onChange={setPhone} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Legacy status</label>
+                <label className="text-sm text-text-secondary">Legacy status</label>
                 <select
                   value={status}
                   onChange={(e) =>
@@ -713,7 +716,7 @@ export function ContactsClient({
                         | "inactive",
                     )
                   }
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-300/70"
+                  className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                 >
                   <option value="lead">Lead</option>
                   <option value="booked">Booked</option>
@@ -722,16 +725,16 @@ export function ContactsClient({
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Note (optional)</label>
+                <label className="text-sm text-text-secondary">Note (optional)</label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                  className="min-h-24 rounded-xl border border-input bg-surface-inset px-3.5 py-3 text-[15px] text-foreground placeholder:text-text-muted outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                 />
               </div>
               {formError && (
-                <p role="alert" className="text-sm text-red-300">
+                <p role="alert" className="text-sm text-danger">
                   {formError}
                 </p>
               )}
@@ -742,14 +745,14 @@ export function ContactsClient({
                     setShowAdd(false);
                     resetForm();
                   }}
-                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-slate-300"
+                  className="min-h-11 rounded-xl border border-border px-4 text-sm text-text-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A] disabled:opacity-60"
                 >
                   {isPending ? "Saving…" : "Save contact"}
                 </button>
@@ -760,17 +763,17 @@ export function ContactsClient({
       )}
 
       {compose && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-white/12 bg-[#101a37] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                <p className="text-xs font-semibold uppercase text-text-muted">
                   {compose.type === "email" ? "Send email" : "Send SMS"}
                 </p>
-                <h2 className="mt-1 text-xl font-semibold text-zinc-900">
+                <h2 className="mt-1 font-heading text-xl font-bold text-foreground">
                   {displayName(compose.contact)}
                 </h2>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-text-secondary">
                   {compose.type === "email"
                     ? compose.contact.email
                     : compose.contact.phone}
@@ -779,7 +782,7 @@ export function ContactsClient({
               <button
                 type="button"
                 onClick={() => setCompose(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/5 hover:text-zinc-900"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-text-muted hover:bg-surface-inset hover:text-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -790,43 +793,43 @@ export function ContactsClient({
             >
               {compose.type === "email" && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm text-slate-200">Subject</label>
+                  <label className="text-sm text-text-secondary">Subject</label>
                   <input
                     required
                     value={composeSubject}
                     onChange={(e) => setComposeSubject(e.target.value)}
-                    className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                    className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                   />
                 </div>
               )}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm text-slate-200">Message</label>
+                <label className="text-sm text-text-secondary">Message</label>
                 <textarea
                   required
                   value={composeBody}
                   onChange={(e) => setComposeBody(e.target.value)}
                   rows={5}
-                  className="rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-cyan-300/70"
+                  className="min-h-32 rounded-xl border border-input bg-surface-inset px-3.5 py-3 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
                 />
               </div>
               {composeError && (
-                <p className="text-sm text-red-600">{composeError}</p>
+                <p className="text-sm text-danger">{composeError}</p>
               )}
               {composeSuccess && (
-                <p className="text-sm text-emerald-700">{composeSuccess}</p>
+                <p className="text-sm text-success">{composeSuccess}</p>
               )}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setCompose(null)}
-                  className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-slate-300"
+                  className="min-h-11 rounded-xl border border-border px-4 text-sm text-text-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A] disabled:opacity-60"
                 >
                   {isPending ? "Sending…" : "Send"}
                 </button>

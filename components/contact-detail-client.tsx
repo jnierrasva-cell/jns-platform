@@ -8,6 +8,9 @@ import {
   setContactPipelineStage,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
+import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Contact = {
   id: string;
@@ -130,62 +133,60 @@ export function ContactDetailClient({
   }
 
   return (
-    <div className="mt-4">
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-        Contact
-      </span>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
-        {[firstName, lastName].filter(Boolean).join(" ") || email || "Contact"}
-      </h1>
+    <div className="space-y-8 pb-6">
+      <header className="border-b border-border pb-6">
+        <p className="text-xs font-semibold uppercase text-text-muted">
+          Client
+        </p>
+        <h1 className="mt-2 font-heading text-3xl font-bold text-foreground">
+          {[firstName, lastName].filter(Boolean).join(" ") || email || "Client"}
+        </h1>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {(contact.tags ?? []).map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex rounded-full border border-[#2563EB]/30 bg-zinc-900/10 px-2.5 py-0.5 text-xs text-blue-600"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(contact.tags ?? []).map((tag) => (
+            <Badge key={tag} variant="outline">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </header>
 
       <form
         onSubmit={handleSave}
-        className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
+        className="rounded-2xl border border-border bg-card p-5 text-card-foreground sm:p-6"
       >
-        <h2 className="text-sm font-medium text-zinc-900">Details</h2>
+        <h2 className="font-heading text-base font-bold text-foreground">Details</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">First name</label>
+            <label className="text-sm text-text-secondary">First name</label>
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Last name</label>
+            <label className="text-sm text-text-secondary">Last name</label>
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Email</label>
+            <label className="text-sm text-text-secondary">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="min-h-11 rounded-xl border border-input bg-surface-inset px-3.5 py-2.5 text-[15px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Pipeline stage</label>
-            <select
+            <label className="text-sm text-text-secondary">Journey stage</label>
+            <Select
               value={pipelineStageId}
               onChange={(e) => setPipelineStageId(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="">Unassigned</option>
               {stages.map((s) => (
@@ -193,93 +194,91 @@ export function ContactDetailClient({
                   {s.name}
                 </option>
               ))}
-            </select>
-            <p className="text-xs text-zinc-500">
+            </Select>
+            <p className="text-xs text-text-muted">
               Managed in{" "}
               <Link
                 href="/dashboard/pipeline"
-                className="text-cyan-700 underline underline-offset-2"
+                className="text-accent-cyan underline underline-offset-2"
               >
-                Pipeline
+                Journey
               </Link>
               .
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-zinc-700">Legacy status</label>
-            <select
+            <label className="text-sm text-text-secondary">Legacy status</label>
+            <Select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
             >
               <option value="lead">Lead</option>
               <option value="booked">Booked</option>
               <option value="customer">Customer</option>
               <option value="inactive">Inactive</option>
-            </select>
+            </Select>
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-zinc-700">Phone</label>
+            <label className="text-sm text-text-secondary">Phone</label>
             <CountryPhoneInput value={phone} onChange={setPhone} />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-text-muted">
               Country defaults from your browser timezone. Enter the local
               number only — country code is on the left.
             </p>
           </div>
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-        {saved && <p className="mt-3 text-sm text-emerald-600">Saved.</p>}
+        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+        {saved && <p className="mt-3 text-sm text-success">Saved.</p>}
 
         <button
           type="submit"
           disabled={isPending}
-          className="mt-5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+          className="mt-5 min-h-11 rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A] disabled:opacity-60"
         >
-          {isPending ? "Saving…" : "Save contact"}
+          {isPending ? "Saving…" : "Save client"}
         </button>
       </form>
 
-      <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
+      <section>
+        <h2 className="font-heading text-base font-bold text-foreground">
           Notes
         </h2>
         <form
           onSubmit={handleAddNote}
-          className="mt-4 rounded-xl border border-zinc-200 bg-white p-4"
+          className="mt-3 rounded-2xl border border-border bg-card p-4"
         >
-          <textarea
+          <Textarea
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
             rows={3}
             placeholder="Log a call, follow-up, or internal note…"
-            className="w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
           />
           {noteError && (
-            <p className="mt-2 text-sm text-red-400">{noteError}</p>
+            <p className="mt-2 text-sm text-danger">{noteError}</p>
           )}
           <button
             type="submit"
             disabled={isPending}
-            className="mt-3 rounded-lg border border-[#2563EB]/40 bg-zinc-900/15 px-4 py-2 text-sm font-medium text-blue-600 transition hover:bg-zinc-900/25 disabled:opacity-60"
+            className="mt-3 min-h-11 rounded-xl border border-border px-4 text-sm font-medium text-foreground hover:bg-surface-inset disabled:opacity-60"
           >
             {isPending ? "Adding…" : "Add note"}
           </button>
         </form>
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
           {notes.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-zinc-500">
+            <p className="px-4 py-8 text-center text-sm text-text-muted">
               No notes yet. Add the first one above.
             </p>
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-border">
               {notes.map((n) => (
                 <li key={n.id} className="px-4 py-3">
-                  <p className="text-sm whitespace-pre-wrap text-zinc-700">
+                  <p className="text-sm whitespace-pre-wrap text-foreground">
                     {n.body}
                   </p>
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-text-muted">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
                 </li>
@@ -287,33 +286,33 @@ export function ContactDetailClient({
             </ul>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
-          Bookings
+      <section>
+        <h2 className="font-heading text-base font-bold text-foreground">
+          Schedule
         </h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+        <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
           {bookings.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-zinc-500">
+            <p className="px-4 py-8 text-center text-sm text-text-muted">
               No bookings for this contact yet.
             </p>
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-border">
               {bookings.map((b) => (
                 <li
                   key={b.id}
                   className="flex items-center justify-between gap-4 px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-zinc-900">{b.title}</p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-sm font-medium text-foreground">{b.title}</p>
+                    <p className="text-xs text-text-secondary">
                       {new Date(b.starts_at).toLocaleString()} · {b.status}
                     </p>
                   </div>
                   <Link
                     href="/dashboard/bookings"
-                    className="text-xs text-blue-600 underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-sm text-accent-cyan underline underline-offset-2"
                   >
                     View
                   </Link>
@@ -322,32 +321,32 @@ export function ContactDetailClient({
             </ul>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-zinc-500">
+      <section>
+        <h2 className="font-heading text-base font-bold text-foreground">
           Email activity
         </h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+        <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
           {activity.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-zinc-500">
+            <p className="px-4 py-8 text-center text-sm text-text-muted">
               No email activity yet.
             </p>
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-border">
               {activity.map((row) => (
                 <li key={row.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">
+                      <p className="text-sm font-medium text-foreground">
                         {row.subject || "(no subject)"}
                       </p>
-                      <p className="mt-0.5 text-xs text-zinc-500">
+                      <p className="mt-0.5 text-xs text-text-secondary">
                         {row.direction === "inbound" ? "Received" : "Sent"} ·{" "}
                         {row.status}
                       </p>
                     </div>
-                    <p className="shrink-0 text-xs text-zinc-500">
+                    <p className="shrink-0 text-xs text-text-muted">
                       {new Date(row.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -356,7 +355,7 @@ export function ContactDetailClient({
             </ul>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
