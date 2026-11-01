@@ -56,7 +56,7 @@ export function CompleteProfileBanner() {
               placeholder="First name"
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
-              className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm outline-none focus:border-[#0B132B]"
+              className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
           <div>
@@ -70,7 +70,7 @@ export function CompleteProfileBanner() {
               placeholder="Last name"
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
-              className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm outline-none focus:border-[#0B132B]"
+              className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
           <button
