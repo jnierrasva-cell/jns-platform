@@ -14,6 +14,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { FirstRunPanel } from "@/components/first-run-panel";
+import { SetupProgressRing } from "@/components/setup-progress-ring";
+import { TodaySchedule } from "@/components/today-schedule";
+import { Badge } from "@/components/ui/badge";
 
 type OverviewMetric = {
   href: string;
@@ -78,6 +81,11 @@ export default async function OverviewPage() {
     rulesRes,
     templatesRes,
     activityRes,
+    inboundRes,
+    matchedRes,
+    sentRepliesRes,
+    unmatchedArrivalsRes,
+    bookedRes,
   ] = await Promise.all([
     admin
       .from("connections")
@@ -126,7 +134,7 @@ export default async function OverviewPage() {
       .gte("starts_at", now.toISOString())
       .lte("starts_at", in30Days.toISOString())
       .order("starts_at", { ascending: true })
-      .limit(5),
+      .limit(100),
     admin
       .from("unmatched_emails")
       .select("*", { count: "exact", head: true })
@@ -148,8 +156,44 @@ export default async function OverviewPage() {
       .eq("organization_id", orgId),
     admin
       .from("email_activity")
+      .select(
+        "id, service_key, direction, status, subject, to_email, from_email, created_at",
+        { count: "exact" },
+      )
+      .eq("organization_id", orgId)
+      .gte("created_at", weekAgo.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(6),
+    admin
+      .from("email_activity")
       .select("id", { count: "exact", head: true })
       .eq("organization_id", orgId)
+      .eq("direction", "inbound")
+      .gte("created_at", weekAgo.toISOString()),
+    admin
+      .from("email_activity")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("direction", "inbound")
+      .not("rule_id", "is", null)
+      .gte("created_at", weekAgo.toISOString()),
+    admin
+      .from("email_activity")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("direction", "outbound")
+      .eq("status", "sent")
+      .gte("created_at", weekAgo.toISOString()),
+    admin
+      .from("unmatched_emails")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .gte("created_at", weekAgo.toISOString()),
+    admin
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("status", "scheduled")
       .gte("created_at", weekAgo.toISOString()),
   ]);
 
@@ -160,7 +204,8 @@ export default async function OverviewPage() {
   const activeAutomations = automationRes.count ?? 0;
   const contacts = contactsRes.data ?? [];
   const stages = stagesRes.data ?? [];
-  const upcomingBookings = bookingsRes.data ?? [];
+  const scheduleBookings = bookingsRes.data ?? [];
+  const upcomingBookings = scheduleBookings.slice(0, 5);
   const unmatchedCount = unmatchedRes.count ?? 0;
 
   const googleConnected = Boolean(googleConnection?.connected_email);
@@ -168,6 +213,48 @@ export default async function OverviewPage() {
   const enabledRulesCount = rulesRes.count ?? 0;
   const templatesCount = templatesRes.count ?? 0;
   const recentActivityCount = activityRes.count ?? 0;
+  const recentActivity = activityRes.data ?? [];
+  const firstName =
+    typeof user.user_metadata.first_name === "string"
+      ? user.user_metadata.first_name.trim()
+      : "";
+  const greetingName = firstName || user.email?.split("@")[0] || "there";
+  const flowIsSample = [
+    inboundRes,
+    matchedRes,
+    sentRepliesRes,
+    unmatchedArrivalsRes,
+    bookedRes,
+  ].some((result) => result.error || result.count === null);
+  const inquiryFlow = flowIsSample
+    ? [
+        { label: "Email arrives", value: 18, detail: "Sample" },
+        { label: "Rule matched", value: 11, detail: "Sample" },
+        { label: "Reply sent", value: 7, detail: "Sample" },
+        { label: "Booked", value: 3, detail: "Sample" },
+      ]
+    : [
+        {
+          label: "Email arrives",
+          value: (inboundRes.count ?? 0) + (unmatchedArrivalsRes.count ?? 0),
+          detail: "Past 7 days",
+        },
+        {
+          label: "Rule matched",
+          value: matchedRes.count ?? 0,
+          detail: "Past 7 days",
+        },
+        {
+          label: "Reply sent",
+          value: sentRepliesRes.count ?? 0,
+          detail: "Past 7 days",
+        },
+        {
+          label: "Booked",
+          value: bookedRes.count ?? 0,
+          detail: "Past 7 days",
+        },
+      ];
 
   const setupSteps: SetupStep[] = [
     {
@@ -186,9 +273,9 @@ export default async function OverviewPage() {
       title: "Turn on inquiry auto-reply",
       description: autoAckOn
         ? "Auto-reply is enabled for this workspace."
-        : "Enable Inquiry auto-reply under Automation.",
-      href: "/dashboard/automation",
-      actionLabel: autoAckOn ? "Open Automation" : "Open Automation",
+        : "Enable inquiry auto-reply under Autopilot.",
+      href: "/dashboard/autopilot?tab=status",
+      actionLabel: "Open Autopilot",
       done: autoAckOn,
       critical: true,
     },
@@ -199,7 +286,7 @@ export default async function OverviewPage() {
         enabledRulesCount > 0
           ? `${enabledRulesCount} enabled rule${enabledRulesCount === 1 ? "" : "s"}`
           : "Rules decide who gets a reply — so not every message becomes a lead.",
-      href: "/dashboard/email-rules",
+      href: "/dashboard/autopilot?tab=rules",
       actionLabel: enabledRulesCount > 0 ? "Open rules" : "Open rules",
       done: enabledRulesCount > 0,
       critical: true,
@@ -211,7 +298,7 @@ export default async function OverviewPage() {
         templatesCount > 0
           ? `${templatesCount} template${templatesCount === 1 ? "" : "s"} ready`
           : "Templates are the text auto-reply sends.",
-      href: "/dashboard/templates",
+      href: "/dashboard/autopilot?tab=templates",
       actionLabel: templatesCount > 0 ? "Open templates" : "Open templates",
       done: templatesCount > 0,
       critical: false,
@@ -224,8 +311,8 @@ export default async function OverviewPage() {
         : googleConnected
           ? `Send a test message to ${googleConnection?.connected_email}, then check Automation activity.`
           : "Connect Google first, then email that inbox once.",
-      href: "/dashboard/automation",
-      actionLabel: "Open Automation",
+      href: "/dashboard/autopilot?tab=status",
+      actionLabel: "Open Autopilot",
       done: recentActivityCount > 0,
       critical: false,
     },
@@ -234,6 +321,8 @@ export default async function OverviewPage() {
   const criticalRemaining = setupSteps.filter(
     (s) => s.critical && !s.done,
   ).length;
+  const criticalTotal = setupSteps.filter((s) => s.critical).length || 1;
+  const criticalDone = criticalTotal - criticalRemaining;
   const allCriticalDone = criticalRemaining === 0;
   const showSetupCard = isManager;
 
@@ -275,7 +364,7 @@ export default async function OverviewPage() {
   const metrics: OverviewMetric[] = [
     {
       href: "/dashboard/contacts",
-      label: "Contacts",
+      label: "Clients",
       value: contacts.length,
       detail:
         newThisWeek > 0
@@ -285,21 +374,21 @@ export default async function OverviewPage() {
     },
     {
       href: "/dashboard/bookings",
-      label: "Bookings (30 days)",
+      label: "Schedule (30 days)",
       value: bookingsRes.count ?? 0,
       detail: "Scheduled ahead",
       icon: CalendarDays,
     },
     {
-      href: "/dashboard/automation",
-      label: "Automations on",
+      href: "/dashboard/autopilot?tab=status",
+      label: "Autopilot on",
       value: activeAutomations,
       detail: "Enabled for this org",
       icon: Zap,
     },
     {
       href: "/dashboard/integrations",
-      label: "Integrations",
+      label: "Connections",
       value: integrationsCount,
       detail: integrationDetail,
       icon: Plug,
@@ -312,8 +401,8 @@ export default async function OverviewPage() {
       icon: Users,
     },
     {
-      href: "/dashboard/unmatched",
-      label: "Unmatched email",
+      href: "/dashboard/autopilot?tab=unmatched",
+      label: "Needs reply",
       value: unmatchedCount,
       detail: unmatchedCount > 0 ? "Needs a rule or contact" : "Inbox clear",
       icon: Inbox,
@@ -331,14 +420,14 @@ export default async function OverviewPage() {
         }
       : unmatchedCount > 0
         ? {
-            href: "/dashboard/unmatched",
+              href: "/dashboard/autopilot?tab=unmatched",
             title: `${unmatchedCount} unmatched email${unmatchedCount === 1 ? "" : "s"}`,
             description: "Review and attach to a contact or add a rule.",
             action: "Unmatched",
           }
         : activeAutomations === 0
           ? {
-              href: "/dashboard/automation",
+              href: "/dashboard/autopilot?tab=status",
               title: "Turn on an automation",
               description: "Auto-ack or reminders once tools are connected.",
               action: "Automation",
@@ -368,43 +457,31 @@ export default async function OverviewPage() {
   }
 
   return (
-    <div>
-      <div className="border-b border-zinc-200 pb-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
-          Overview
-        </p>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            {active.orgName}
+    <div className="space-y-6 pb-6">
+      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-6">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase text-text-muted">
+            Today · {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+          <h1 className="mt-2 font-heading text-3xl font-bold text-foreground">
+            Welcome back, {greetingName}
           </h1>
-          <Link
-            href="/dashboard/billing"
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              planId === "none"
-                ? "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200"
-                : "bg-[#0B132B] text-white"
-            }`}
-          >
-            {planLabel}
-          </Link>
+          <p className="mt-2 text-sm text-text-secondary">
+            {active.orgName}
+            {periodLabel ? ` · Plan access through ${periodLabel}` : ""}
+            {planId === "none" ? " · No active subscription" : ""}
+          </p>
         </div>
-        <p className="mt-1 text-sm text-zinc-500">
-          Live snapshot for this workspace.
-          {periodLabel
-            ? ` Plan access through ${periodLabel}.`
-            : planId === "none"
-              ? " No active subscription — some tools are limited."
-              : ""}{" "}
-          <Link
-            href="/dashboard/billing"
-            className="font-medium text-zinc-800 underline underline-offset-2"
-          >
-            Billing
-          </Link>
-          {" · "}
-          Switch orgs under My orgs.
-        </p>
-      </div>
+        <Link
+          href="/dashboard/billing"
+          className="inline-flex min-h-11 items-center"
+          title="View plan and billing"
+        >
+          <Badge variant={planId === "pro" ? "attention" : "secondary"}>
+            {planLabel}
+          </Badge>
+        </Link>
+      </header>
 
       {showSetupCard && !allCriticalDone && (
         <FirstRunPanel
@@ -415,72 +492,110 @@ export default async function OverviewPage() {
       )}
 
       {showSetupCard && allCriticalDone && (
-        <section className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/50 px-5 py-4">
-          <p className="text-sm font-medium text-emerald-900">
-            Inbox loop is ready
-          </p>
-          <p className="mt-1 text-sm text-emerald-800/80">
-            Google, auto-reply, and at least one rule are in place. Use the
-            snapshot below to run the workspace day to day.
-          </p>
+        <section className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success/5 px-5 py-4">
+          <SetupProgressRing done={criticalDone} total={criticalTotal} />
+          <div>
+            <p className="text-sm font-semibold text-success">Inbox loop is ready</p>
+            <p className="mt-1 text-sm text-text-secondary">
+              Google, auto-reply, and at least one rule are in place.
+            </p>
+          </div>
         </section>
       )}
 
-      <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section
+        aria-label="Inquiry handled flow"
+        className="rounded-2xl border border-border bg-surface-inset px-5 py-5 sm:px-6"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase text-text-muted">
+              Inbox performance · past 7 days
+            </p>
+            <h2 className="mt-1 font-heading text-lg font-bold text-foreground">
+              Inquiry handled
+            </h2>
+          </div>
+          <Badge variant={flowIsSample ? "secondary" : "default"}>
+            {flowIsSample ? "Sample data" : "Live data"}
+          </Badge>
+        </div>
+        <ol className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-0">
+          {inquiryFlow.map((step, index) => (
+            <li
+              key={step.label}
+              className="min-w-0 border-t border-border pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 first:sm:border-l-0 first:sm:pl-0"
+            >
+              <p className="truncate text-xs font-medium text-text-secondary">
+                <span className="mr-1 text-accent-cyan">0{index + 1}</span>
+                {step.label}
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+                {step.value}
+              </p>
+              <p className="mt-0.5 text-xs text-text-muted">{step.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map((m) => {
           const Icon = m.icon;
           return (
             <Link
               key={m.href + m.label}
               href={m.href}
-              className="rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:bg-zinc-50"
+              className="min-h-32 rounded-2xl border border-border bg-card p-5 text-card-foreground transition hover:border-accent-cyan/50 hover:bg-surface-inset"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                <p className="text-xs font-semibold uppercase text-text-muted">
                   {m.label}
                 </p>
-                <Icon className="h-4 w-4 text-zinc-400" aria-hidden />
+                <Icon className="h-4 w-4 text-text-muted" aria-hidden />
               </div>
-              <p className="mt-2 text-2xl font-semibold text-zinc-900">
+              <p className="mt-3 text-2xl font-semibold tabular-nums text-foreground">
                 {m.value}
               </p>
-              <p className="mt-1 truncate text-xs text-zinc-500">{m.detail}</p>
+              <p className="mt-1 truncate text-xs text-text-secondary">{m.detail}</p>
             </Link>
           );
         })}
       </section>
 
-      <section className="mt-6">
+      <TodaySchedule bookings={scheduleBookings} />
+
+      <section>
         <Link
           href={nextStep.href}
-          className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-zinc-300 hover:bg-zinc-50 sm:flex-row sm:items-center sm:justify-between"
+          className="flex min-h-24 flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-5 transition hover:border-accent-cyan/50 hover:bg-surface-inset sm:flex-row sm:items-center"
         >
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+            <p className="text-xs font-semibold uppercase text-text-muted">
               Suggested next
             </p>
-            <p className="mt-1 text-sm font-semibold text-zinc-900">
+            <p className="mt-1 text-sm font-semibold text-foreground">
               {nextStep.title}
             </p>
-            <p className="mt-0.5 text-sm text-zinc-500">
+            <p className="mt-0.5 text-sm text-text-secondary">
               {nextStep.description}
             </p>
           </div>
-          <span className="mt-3 inline-flex w-fit rounded-lg bg-[#0B132B] px-3 py-1.5 text-xs font-medium text-white sm:mt-0">
+          <span className="inline-flex min-h-11 w-fit items-center rounded-xl bg-[image:var(--accent-gradient)] px-4 text-sm font-semibold text-[#0A0E1A]">
             {nextStep.action}
           </span>
         </Link>
       </section>
 
       {/* Pipeline snapshot */}
-      <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
+      <section className="rounded-2xl border border-border bg-card p-5 text-card-foreground">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-900">Pipeline</h2>
+          <h2 className="font-heading text-base font-bold text-foreground">Journey</h2>
           <Link
             href="/dashboard/pipeline"
-            className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-text-secondary underline underline-offset-2 hover:text-foreground"
           >
-            Open pipeline
+            Open Journey
           </Link>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -488,10 +603,10 @@ export default async function OverviewPage() {
             ? stageCounts.map((s) => (
                 <div
                   key={s.id}
-                  className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-3"
+                  className="rounded-xl border border-border bg-surface-inset px-3 py-3"
                 >
-                  <p className="truncate text-xs text-zinc-500">{s.name}</p>
-                  <p className="mt-1 text-lg font-semibold text-zinc-900">
+                  <p className="truncate text-xs text-text-secondary">{s.name}</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">
                     {s.count}
                   </p>
                 </div>
@@ -508,10 +623,10 @@ export default async function OverviewPage() {
                   ).map(([name, count]) => (
                     <div
                       key={name}
-                      className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-3"
+                      className="rounded-xl border border-border bg-surface-inset px-3 py-3"
                     >
-                      <p className="text-xs text-zinc-500">{name}</p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-900">
+                      <p className="text-xs text-text-secondary">{name}</p>
+                      <p className="mt-1 text-lg font-semibold text-foreground">
                         {count}
                       </p>
                     </div>
@@ -521,26 +636,26 @@ export default async function OverviewPage() {
         </div>
       </section>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5 text-card-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-zinc-400" aria-hidden />
-              <h2 className="text-sm font-medium text-zinc-900">
-                Recent contacts
+              <Contact className="h-4 w-4 text-text-muted" aria-hidden />
+              <h2 className="font-heading text-base font-bold text-foreground">
+                Recent clients
               </h2>
             </div>
             <Link
               href="/dashboard/contacts"
-              className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-text-secondary underline underline-offset-2 hover:text-foreground"
             >
               View all
             </Link>
           </div>
-          <ul className="mt-3 divide-y divide-zinc-100">
+          <ul className="mt-3 divide-y divide-border">
             {recentContacts.length === 0 ? (
-              <li className="py-5 text-center text-sm text-zinc-500">
-                No contacts yet.
+              <li className="py-5 text-center text-sm text-text-muted">
+                No clients yet.
               </li>
             ) : (
               recentContacts.map((c) => (
@@ -551,15 +666,15 @@ export default async function OverviewPage() {
                   <div className="min-w-0">
                     <Link
                       href={`/dashboard/contacts/${c.id}`}
-                      className="text-sm font-medium text-zinc-900 hover:underline"
+                      className="text-sm font-medium text-foreground hover:underline"
                     >
                       {contactName(c)}
                     </Link>
-                    <p className="text-xs capitalize text-zinc-500">
+                    <p className="text-xs capitalize text-text-secondary">
                       {c.status || "—"}
                     </p>
                   </div>
-                  <p className="shrink-0 text-xs text-zinc-400">
+                  <p className="shrink-0 text-xs text-text-muted">
                     {new Date(c.created_at).toLocaleDateString()}
                   </p>
                 </li>
@@ -568,24 +683,24 @@ export default async function OverviewPage() {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+        <div className="rounded-2xl border border-border bg-card p-5 text-card-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-zinc-400" aria-hidden />
-              <h2 className="text-sm font-medium text-zinc-900">
-                Upcoming bookings
+              <CalendarDays className="h-4 w-4 text-text-muted" aria-hidden />
+              <h2 className="font-heading text-base font-bold text-foreground">
+                Upcoming schedule
               </h2>
             </div>
             <Link
               href="/dashboard/bookings"
-              className="text-xs font-medium text-zinc-600 hover:text-zinc-900"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-text-secondary underline underline-offset-2 hover:text-foreground"
             >
               View all
             </Link>
           </div>
-          <ul className="mt-3 divide-y divide-zinc-100">
+          <ul className="mt-3 divide-y divide-border">
             {upcomingBookings.length === 0 ? (
-              <li className="py-5 text-center text-sm text-zinc-500">
+              <li className="py-5 text-center text-sm text-text-muted">
                 No bookings in the next 30 days.
               </li>
             ) : (
@@ -599,10 +714,10 @@ export default async function OverviewPage() {
                     className="flex items-start justify-between gap-3 py-2.5"
                   >
                     <div>
-                      <p className="text-sm font-medium text-zinc-900">
+                      <p className="text-sm font-medium text-foreground">
                         {b.title}
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-text-secondary">
                         {contactName(
                           c as {
                             first_name?: string | null;
@@ -612,7 +727,7 @@ export default async function OverviewPage() {
                         )}
                       </p>
                     </div>
-                    <p className="shrink-0 text-xs text-zinc-400">
+                    <p className="shrink-0 text-xs text-text-muted">
                       {new Date(b.starts_at).toLocaleString()}
                     </p>
                   </li>
@@ -621,6 +736,43 @@ export default async function OverviewPage() {
             )}
           </ul>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card p-5 text-card-foreground">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-heading text-base font-bold text-foreground">
+            Recent activity
+          </h2>
+          <Badge variant="secondary">Past 7 days</Badge>
+        </div>
+        {recentActivity.length === 0 ? (
+          <p className="mt-4 text-sm text-text-muted">No email activity yet.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-border">
+            {recentActivity.map((activity) => (
+              <li
+                key={activity.id}
+                className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-1 last:pb-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {activity.subject || activity.service_key || "Email event"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-secondary">
+                    {activity.direction ?? "Email"} · {activity.status ?? "Logged"}
+                    {activity.from_email ? ` · ${activity.from_email}` : ""}
+                  </p>
+                </div>
+                <time
+                  dateTime={activity.created_at}
+                  className="shrink-0 text-xs text-text-muted"
+                >
+                  {new Date(activity.created_at).toLocaleString()}
+                </time>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
