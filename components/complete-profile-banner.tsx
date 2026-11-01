@@ -33,10 +33,10 @@ export function CompleteProfileBanner() {
     <section className="mb-6 rounded-xl border border-sky-200 bg-sky-50 p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-900">
+          <h2 className="text-sm font-semibold text-slate-900">
             We never asked for your name
           </h2>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="mt-1 text-sm text-slate-600">
             Add your name to complete your profile.
           </p>
         </div>
@@ -56,7 +56,7 @@ export function CompleteProfileBanner() {
               placeholder="First name"
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
-              className="w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#0B132B]"
+              className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm outline-none focus:border-[#0B132B]"
             />
           </div>
           <div>
@@ -70,13 +70,13 @@ export function CompleteProfileBanner() {
               placeholder="Last name"
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
-              className="w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#0B132B]"
+              className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-sm outline-none focus:border-[#0B132B]"
             />
           </div>
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-[#0B132B] px-4 py-2 text-sm font-medium text-white hover:bg-[#111e3a] disabled:opacity-60"
+            className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
           >
             {isPending ? "Saving…" : "Save name"}
           </button>
