@@ -54,13 +54,13 @@ export function SupportBubble({
   return (
     <div className="pointer-events-none fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
-        <div className="pointer-events-auto w-[min(100vw-2.5rem,24rem)] rounded-2xl border border-zinc-200 bg-white p-4 shadow-lg shadow-zinc-900/10">
+        <div className="pointer-events-auto w-[min(100vw-2.5rem,24rem)] rounded-2xl border border-slate-200/80 bg-white p-4 shadow-lg shadow-zinc-900/10">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-zinc-900">
+              <p className="text-sm font-semibold text-slate-900">
                 We’re here if you need us
               </p>
-              <p className="mt-1.5 text-xs leading-5 text-zinc-500">
+              <p className="mt-1.5 text-xs leading-5 text-slate-500">
                 Spotted a bug, stuck on a step, or have an idea? Send us a
                 message and we’ll take a look.
               </p>
@@ -68,7 +68,7 @@ export function SupportBubble({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+              className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -76,7 +76,7 @@ export function SupportBubble({
           </div>
           {sent ? (
             <div
-              className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+              className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
               role="status"
             >
               Thanks for your feedback. We’ve received your message.
@@ -87,7 +87,7 @@ export function SupportBubble({
                 <div className="min-w-0">
                   <label
                     htmlFor="support-account-email"
-                    className="mb-1 block text-[11px] font-medium text-zinc-600"
+                    className="mb-1 block text-[11px] font-medium text-slate-600"
                   >
                     Your email
                   </label>
@@ -97,13 +97,13 @@ export function SupportBubble({
                     readOnly
                     value={userEmail?.trim() || ""}
                     placeholder="Not signed in"
-                    className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600"
+                    className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs text-slate-600"
                   />
                 </div>
                 <div className="min-w-0">
                   <label
                     htmlFor="support-workspace"
-                    className="mb-1 block text-[11px] font-medium text-zinc-600"
+                    className="mb-1 block text-[11px] font-medium text-slate-600"
                   >
                     Workspace
                   </label>
@@ -113,14 +113,14 @@ export function SupportBubble({
                     readOnly
                     value={orgName?.trim() || ""}
                     placeholder="Not available"
-                    className="w-full min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600"
+                    className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50 px-2.5 py-2 text-xs text-slate-600"
                   />
                 </div>
               </div>
               <div>
                 <label
                   htmlFor="support-subject"
-                  className="mb-1 block text-[11px] font-medium text-zinc-600"
+                  className="mb-1 block text-[11px] font-medium text-slate-600"
                 >
                   Subject
                 </label>
@@ -131,13 +131,13 @@ export function SupportBubble({
                   maxLength={160}
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 outline-none focus:border-[#0B132B]"
+                  className="w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#0B132B]"
                 />
               </div>
               <div>
                 <label
                   htmlFor="support-message"
-                  className="mb-1 block text-[11px] font-medium text-zinc-600"
+                  className="mb-1 block text-[11px] font-medium text-slate-600"
                 >
                   Message
                 </label>
@@ -149,13 +149,13 @@ export function SupportBubble({
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   placeholder="Tell us what happened or how we can help."
-                  className="w-full resize-y rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-[#0B132B]"
+                  className="w-full resize-y rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#0B132B]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex w-full items-center justify-center rounded-lg bg-[#0B132B] px-3 py-2.5 text-sm font-medium text-white hover:bg-[#111e3a] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center rounded-xl bg-sky-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPending ? "Sending…" : "Send feedback"}
               </button>
@@ -170,7 +170,7 @@ export function SupportBubble({
             <button
               type="button"
               onClick={() => setSent(false)}
-              className="mt-3 w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+              className="mt-3 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Send another message
             </button>
@@ -182,7 +182,7 @@ export function SupportBubble({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="pointer-events-auto max-w-[14rem] rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-left text-xs leading-5 text-zinc-700 shadow-md shadow-zinc-900/10 transition hover:border-zinc-300"
+          className="pointer-events-auto max-w-[14rem] rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-left text-xs leading-5 text-slate-700 shadow-md shadow-zinc-900/10 transition hover:border-zinc-300"
         >
           Find something for us to check on?
         </button>
@@ -191,7 +191,7 @@ export function SupportBubble({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#0B132B] text-white shadow-lg shadow-zinc-900/20 transition hover:bg-[#111e3a]"
+        className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg shadow-zinc-900/20 transition hover:bg-sky-700"
         aria-label={open ? "Close support" : "Open support"}
         aria-expanded={open}
       >
