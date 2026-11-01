@@ -12,10 +12,10 @@ export default function PageHeader({
   return (
     <div className="mb-8">
       <p className="jns-kicker">{eyebrow}</p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
         {title}
       </h1>
-      <p className="mt-2 text-sm text-zinc-500">{description}</p>
+      <p className="mt-2 text-sm text-slate-500">{description}</p>
     </div>
   );
 }
