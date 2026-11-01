@@ -13,7 +13,7 @@ export function PlanGateBanner({
       <p className="mt-1 text-amber-900/90">{body}</p>
       <Link
         href="/dashboard/billing"
-        className="mt-2 inline-block text-sm font-medium text-[#0B132B] underline underline-offset-2"
+        className="mt-2 inline-block text-sm font-medium text-sky-700 underline underline-offset-2"
       >
         Open Billing →
       </Link>
