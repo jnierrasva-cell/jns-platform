@@ -28,11 +28,11 @@ export function UnmatchedClient({
 
   return (
     <div className="pb-4">
-      <div className="border-b border-zinc-200 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+      <div className="border-b border-slate-200/80 pb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
           Inbox review
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
           Unmatched email
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
@@ -42,14 +42,14 @@ export function UnmatchedClient({
         </p>
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
+      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
         {rows.length === 0 ? (
           <p className="px-4 py-12 text-center text-sm text-slate-400">
             No unmatched emails. Your CRM stays clean.
           </p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">From</th>
@@ -59,19 +59,19 @@ export function UnmatchedClient({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-b border-white/5 last:border-0">
+                <tr key={row.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-4 py-3 text-slate-400">
                     {new Date(row.created_at).toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-zinc-900">
+                    <p className="font-medium text-slate-900">
                       {row.from_name || row.from_email}
                     </p>
                     {row.from_name && (
                       <p className="text-xs text-slate-500">{row.from_email}</p>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="px-4 py-3 text-slate-600">
                     {row.subject || "(no subject)"}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -87,7 +87,7 @@ export function UnmatchedClient({
                             });
                           })
                         }
-                        className="rounded-lg border border-blue-400/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-100"
+                        className="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-100"
                       >
                         Convert to lead
                       </button>
@@ -102,7 +102,7 @@ export function UnmatchedClient({
                             });
                           })
                         }
-                        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-slate-400"
+                        className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs text-slate-400"
                       >
                         Ignore
                       </button>
@@ -119,7 +119,7 @@ export function UnmatchedClient({
         Tip: create{" "}
         <Link
           href="/dashboard/email-rules"
-          className="text-cyan-700 underline underline-offset-2"
+          className="text-sky-600 underline underline-offset-2"
         >
           Email rules
         </Link>{" "}
