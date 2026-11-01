@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import { PRODUCTION_SITE_URL } from "@/lib/seo";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-sans",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -24,12 +32,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${bricolage.variable} ${dmSans.variable} dark h-full antialiased`}
+    >
       <body
-        className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900"
+        className="flex min-h-full flex-col bg-background font-sans text-foreground"
         suppressHydrationWarning
       >
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
