@@ -50,26 +50,26 @@ export function PipelineClient({
 
   return (
     <div className="pb-4">
-      <div className="border-b border-zinc-200 pb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-          Lead management
+      <div className="border-b border-slate-200/80 pb-8">
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          Journey
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-          Pipeline stages
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Journey stages
         </h1>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-          Build the lifecycle your business actually uses. Every org can have a
-          different process.
+        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+          Build the lifecycle your business actually uses. Every workspace can
+          have a different process.
         </p>
       </div>
 
       <form
         id="new-stage"
         onSubmit={handleCreate}
-        className="mt-8 flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white/[0.035] p-5 sm:flex-row sm:items-end"
+        className="mt-8 flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:flex-row sm:items-end"
       >
         <div className="flex-1">
-          <label className="text-sm font-medium text-slate-200">
+          <label className="text-sm font-medium text-slate-700">
             New stage name
           </label>
           <input
@@ -77,13 +77,13 @@ export function PipelineClient({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Proposal sent"
-            className="mt-2 w-full rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           />
         </div>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          className="min-h-[44px] rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
         >
           {isPending ? "Adding…" : "Add stage"}
         </button>
@@ -95,12 +95,12 @@ export function PipelineClient({
         </p>
       )}
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white/[0.035]">
+      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         {stages.length === 0 ? (
           <EmptyState
             icon={Kanban}
-            title="No pipeline stages yet"
-            description="Stages are your contact lifecycle (Lead → Booked → Client). Add the first stage so Contacts can move people through a clear path."
+            title="No journey stages yet"
+            description="Stages are your client lifecycle (Lead → Booked → Client). Add the first stage so Clients can move people through a clear path."
             actionLabel="Scroll to add stage"
             onAction={() => {
               document
@@ -109,7 +109,7 @@ export function PipelineClient({
             }}
           />
         ) : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-slate-100">
             {stages.map((stage, index) => (
               <li
                 key={stage.id}
@@ -120,7 +120,7 @@ export function PipelineClient({
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 rounded-lg border border-zinc-200 bg-[#0B132B]/80 px-3.5 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-300/70"
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                     />
                     <button
                       type="button"
@@ -147,14 +147,14 @@ export function PipelineClient({
                           }
                         })
                       }
-                      className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
+                      className="min-h-[44px] rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-700"
                     >
                       Save
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-slate-300"
+                      className="min-h-[44px] rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
                     >
                       Cancel
                     </button>
@@ -162,8 +162,8 @@ export function PipelineClient({
                 ) : (
                   <>
                     <div>
-                      <p className="font-medium text-zinc-900">
-                        <span className="mr-2 text-slate-500">{index + 1}.</span>
+                      <p className="font-medium text-slate-900">
+                        <span className="mr-2 text-slate-400">{index + 1}.</span>
                         {stage.name}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
@@ -181,7 +181,7 @@ export function PipelineClient({
                           setEditingId(stage.id);
                           setEditName(stage.name);
                         }}
-                        className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-slate-300"
+                        className="min-h-[44px] rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
                       >
                         Rename
                       </button>
@@ -205,7 +205,7 @@ export function PipelineClient({
                             }
                           })
                         }
-                        className="rounded-lg border border-red-400/20 px-3 py-2 text-xs text-red-600"
+                        className="min-h-[44px] rounded-xl border border-red-200 px-3 py-2 text-xs text-red-600 hover:bg-red-50"
                       >
                         Delete
                       </button>
