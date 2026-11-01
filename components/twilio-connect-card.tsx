@@ -75,13 +75,13 @@ export function TwilioConnectCard({
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-zinc-900">
+          <h2 className="text-base font-semibold text-slate-900">
             Twilio (SMS)
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-slate-500">
             Connect your own Twilio account to send appointment reminders.
           </p>
         </div>
@@ -89,7 +89,7 @@ export function TwilioConnectCard({
           className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${
             connected
               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-zinc-200 bg-zinc-50 text-zinc-500"
+              : "border-slate-200/80 bg-slate-50 text-slate-500"
           }`}
         >
           {connected ? "Connected" : "Not connected"}
@@ -98,15 +98,15 @@ export function TwilioConnectCard({
 
       {connected ? (
         <div className="mt-5 space-y-5">
-          <p className="text-sm text-zinc-700">
+          <p className="text-sm text-slate-700">
             From number:{" "}
-            <span className="font-medium text-zinc-900">{fromNumber}</span>
+            <span className="font-medium text-slate-900">{fromNumber}</span>
           </p>
 
           {canManage && (
             <>
               <form onSubmit={handleTestSend} className="flex flex-col gap-3">
-                <label className="text-sm font-medium text-zinc-700">
+                <label className="text-sm font-medium text-slate-700">
                   Send test SMS
                 </label>
                 <div className="flex flex-col gap-3 sm:flex-row">
@@ -115,12 +115,12 @@ export function TwilioConnectCard({
                     value={testPhone}
                     onChange={(e) => setTestPhone(e.target.value)}
                     placeholder="+1 your mobile"
-                    className="flex-1 rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                    className="flex-1 rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                   <button
                     type="submit"
                     disabled={isPending}
-                    className="rounded-lg border border-[#2563EB]/40 bg-zinc-900/15 px-4 py-2.5 text-sm font-medium text-blue-600 transition hover:bg-zinc-900/25 disabled:opacity-60"
+                    className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-medium text-sky-600 transition hover:bg-sky-100 disabled:opacity-60"
                   >
                     {isPending ? "Sending…" : "Send test"}
                   </button>
@@ -131,7 +131,7 @@ export function TwilioConnectCard({
                 type="button"
                 disabled={isPending}
                 onClick={handleDisconnect}
-                className="rounded-lg border border-zinc-200 px-3 py-2 text-xs text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 disabled:opacity-60"
+                className="rounded-2xl border border-slate-200/80 px-3 py-2 text-xs text-slate-500 transition hover:border-zinc-300 hover:text-slate-900 disabled:opacity-60"
               >
                 Disconnect Twilio
               </button>
@@ -145,7 +145,7 @@ export function TwilioConnectCard({
             value={accountSid}
             onChange={(e) => setAccountSid(e.target.value)}
             placeholder="Account SID (ACxxxx)"
-            className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+            className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           />
           <input
             required
@@ -153,30 +153,30 @@ export function TwilioConnectCard({
             value={authToken}
             onChange={(e) => setAuthToken(e.target.value)}
             placeholder="Auth Token"
-            className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+            className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           />
           <input
             required
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             placeholder="From number (+1...)"
-            className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+            className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           />
           <button
             type="submit"
             disabled={isPending}
-            className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+            className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
           >
             {isPending ? "Saving…" : "Connect Twilio"}
           </button>
         </form>
       ) : (
-        <p className="mt-5 text-sm text-zinc-500">
+        <p className="mt-5 text-sm text-slate-500">
           Ask the workspace owner to connect Twilio.
         </p>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {success && <p className="mt-3 text-sm text-emerald-600">{success}</p>}
     </div>
   );
