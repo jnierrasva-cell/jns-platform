@@ -217,45 +217,30 @@ export function DashboardShell({
 
   const sidebarInner = (
     <>
-      <div
-        className={`border-b border-slate-100 ${
-          !showLabels ? "px-2 py-3" : "px-4 py-4"
-        }`}
-      >
-        {!showLabels ? (
-          <Link
-            href="/dashboard"
-            className="flex items-center justify-center py-1"
-            aria-label="JNS home"
-            title="JNS"
+      <div className="border-b border-slate-100 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className={!showLabels ? "mx-auto" : ""}>
+            <BrandMark href="/dashboard" />
+          </div>
+          <button
+            type="button"
+            className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-700 md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
+            onClick={() => setMobileOpenPath(null)}
+            aria-label="Close menu"
           >
-            <span className="text-sm font-semibold tracking-tight text-slate-900">
-              JNS
-            </span>
-          </Link>
-        ) : (
+            <X size={18} />
+          </button>
+        </div>
+
+        {showLabels && (
           <>
-            <div className="flex items-center justify-between gap-2">
-              <div className="origin-left scale-90">
-                <BrandMark href="/dashboard" />
-              </div>
-              <button
-                type="button"
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-700 md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
-                onClick={() => setMobileOpenPath(null)}
-                aria-label="Close menu"
-              >
-                <X size={18} />
-              </button>
-            </div>
             {orgLogoUrl && (
-              <div className="mt-3 flex h-10 items-center px-0.5">
+              <div className="mt-3 flex justify-start">
                 <Image
                   src={orgLogoUrl}
-                  alt={`${orgName} logo`}
-                  width={160}
+                  alt=""
+                  width={120}
                   height={40}
-                  unoptimized
                   className="max-h-10 w-auto max-w-full object-contain object-left"
                 />
               </div>
@@ -460,12 +445,61 @@ export function DashboardShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-[#F4F6FB]">
+        <main className="min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-[#F4F6FB] pb-20 md:pb-0">
           <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
             {children}
           </div>
         </main>
       </div>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 backdrop-blur md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        aria-label="Primary"
+      >
+        <ul className="mx-auto flex h-16 max-w-lg items-stretch justify-between px-1">
+          {WORK_NAV.slice(0, 4).map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+            return (
+              <li key={item.href} className="flex flex-1">
+                <Link
+                  href={item.href}
+                  className={`flex min-h-[44px] w-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium ${
+                    active ? "text-sky-600" : "text-slate-500"
+                  }`}
+                  onClick={() => setMobileOpenPath(null)}
+                >
+                  <Icon
+                    size={20}
+                    className={active ? "text-sky-600" : "text-slate-400"}
+                  />
+                  <span className="truncate max-w-full">{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+          <li className="flex flex-1">
+            <button
+              type="button"
+              className={`flex min-h-[44px] w-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium ${
+                mobileOpen ? "text-sky-600" : "text-slate-500"
+              }`}
+              aria-label="More menu"
+              aria-expanded={mobileOpen}
+              onClick={() =>
+                setMobileOpenPath(mobileOpen ? null : pathname)
+              }
+            >
+              <Settings
+                size={20}
+                className={mobileOpen ? "text-sky-600" : "text-slate-400"}
+              />
+              <span>More</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
 
       <SupportBubble userEmail={userEmail} orgName={orgName} />
     </div>
