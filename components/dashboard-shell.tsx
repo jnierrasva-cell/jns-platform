@@ -195,7 +195,7 @@ export function DashboardShell({
             <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate">{item.label}</span>
               {item.badge && (
-                <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
                   {item.badge}
                 </span>
               )}
@@ -209,7 +209,11 @@ export function DashboardShell({
   const planBadgeClass =
     planId === "none"
       ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
-      : "bg-sky-50 text-sky-700 ring-1 ring-sky-200";
+      : planId === "business"
+        ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200"
+        : planId === "pro"
+          ? "bg-sky-50 text-sky-700 ring-1 ring-sky-200"
+          : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
 
   const sidebarInner = (
     <>
@@ -448,7 +452,6 @@ export function DashboardShell({
         </main>
       </div>
 
-      {/* Mobile bottom tabs — Home / Clients / Journey / Schedule / More */}
       <nav
         className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
