@@ -131,7 +131,7 @@ export function SupportBubble({
                   maxLength={160}
                   value={subject}
                   onChange={(event) => setSubject(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#0B132B]"
+                  className="w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               <div>
@@ -149,7 +149,7 @@ export function SupportBubble({
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   placeholder="Tell us what happened or how we can help."
-                  className="w-full resize-y rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#0B132B]"
+                  className="w-full resize-y rounded-2xl border border-slate-200/80 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               <button

@@ -6,7 +6,7 @@ export default function SecondaryButton({
   children,
 }: SecondaryButtonProps) {
   return (
-    <button className="rounded-xl border border-slate-300 px-5 py-3 text-slate-700 transition hover:bg-slate-100">
+    <button className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-5 py-3 text-slate-800 transition hover:bg-slate-50">
       {children}
     </button>
   );

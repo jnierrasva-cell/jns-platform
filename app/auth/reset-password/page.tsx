@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
 
+type SupabaseBrowser = ReturnType<typeof createClient>;
+
 export default function AuthResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -13,10 +15,13 @@ export default function AuthResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [done, setDone] = useState(false);
-
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<SupabaseBrowser | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    const client = createClient();
+    setSupabase(client);
+
     async function prepareSession() {
       try {
         const url = new URL(window.location.href);
@@ -25,43 +30,61 @@ export default function AuthResetPasswordPage() {
         // PKCE / email link: exchange code for a recovery session
         if (code) {
           const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(code);
+            await client.auth.exchangeCodeForSession(code);
           if (exchangeError) {
-            setError(exchangeError.message);
-            setInfo(null);
-            setReady(false);
+            if (!cancelled) {
+              setError(exchangeError.message);
+              setInfo(null);
+              setReady(false);
+            }
             return;
           }
           // Clean code out of the address bar
           window.history.replaceState({}, "", "/auth/reset-password");
         }
 
-        const { data } = await supabase.auth.getSession();
+        const { data } = await client.auth.getSession();
         if (!data.session) {
-          setError(
-            "This reset link is invalid or expired. Request a new one from Sign in → Forgot password.",
-          );
-          setInfo(null);
-          setReady(false);
+          if (!cancelled) {
+            setError(
+              "This reset link is invalid or expired. Request a new one from Sign in → Forgot password.",
+            );
+            setInfo(null);
+            setReady(false);
+          }
           return;
         }
 
-        setReady(true);
-        setInfo(null);
-        setError(null);
+        if (!cancelled) {
+          setReady(true);
+          setInfo(null);
+          setError(null);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not open reset link");
-        setInfo(null);
-        setReady(false);
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Could not open reset link",
+          );
+          setInfo(null);
+          setReady(false);
+        }
       }
     }
 
     prepareSession();
-  }, [supabase]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (!supabase) {
+      setError("Auth is still loading. Please try again.");
+      return;
+    }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
@@ -85,16 +108,18 @@ export default function AuthResetPasswordPage() {
 
     setDone(true);
     setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1000);
+      window.location.assign("/dashboard");
+    }, 1200);
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
-      <div className="w-full max-w-[380px]">
-        <BrandMark />
-        <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6">
-          <h1 className="text-lg font-semibold text-slate-900">
+    <main className="min-h-screen bg-[#F4F6FB] px-4 py-10">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 flex justify-center">
+          <BrandMark />
+        </div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
+          <h1 className="text-xl font-semibold text-slate-900">
             Set a new password
           </h1>
           <p className="mt-1.5 text-sm text-slate-500">

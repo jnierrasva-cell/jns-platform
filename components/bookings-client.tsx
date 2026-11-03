@@ -164,7 +164,7 @@ export function BookingsClient({
             Calendar
           </span>
           <h1 className="mt-1 text-2xl font-semibold text-slate-900">
-            Bookings
+            Schedule
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Times use your browser timezone automatically.
