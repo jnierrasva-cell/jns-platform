@@ -170,6 +170,7 @@ export async function setContactPipelineStage(input: {
 
   if (error) throw new Error(error.message);
   if (!contact) throw new Error("Contact not found in this organization");
+  revalidatePath("/dashboard/pipeline");
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
   revalidatePath("/dashboard");
