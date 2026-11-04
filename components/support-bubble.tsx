@@ -52,7 +52,7 @@ export function SupportBubble({
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="pointer-events-none fixed bottom-20 right-4 z-[60] flex flex-col items-end gap-3 md:bottom-6 md:right-6">
       {open && (
         <div className="pointer-events-auto w-[min(100vw-2.5rem,24rem)] rounded-2xl border border-slate-200/80 bg-white p-4 shadow-lg shadow-zinc-900/10">
           <div className="flex items-start justify-between gap-2">
