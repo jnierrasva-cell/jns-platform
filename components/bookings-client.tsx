@@ -356,74 +356,136 @@ export function BookingsClient({
           />
         </div>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">When</th>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">SMS</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((b) => (
-                <tr key={b.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 text-slate-700">
-                    <div>{formatLocal(b.starts_at)}</div>
-                    {b.ends_at && (
-                      <div className="text-xs text-slate-500">
+        <>
+          <ul className="mt-8 space-y-3 md:hidden">
+            {bookings.map((b) => (
+              <li
+                key={b.id}
+                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900">{b.title}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {formatLocal(b.starts_at)}
+                    </p>
+                    {b.ends_at ? (
+                      <p className="text-xs text-slate-400">
                         → {formatLocal(b.ends_at)}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{b.title}</td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {contactLabel(getContact(b))}
-                  </td>
-                  <td className="px-4 py-3 capitalize text-slate-500">
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-xs text-slate-500">
+                      {contactLabel(getContact(b))}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] capitalize text-slate-600">
                     {b.status}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">
-                    {b.reminder_sms_sent_at
-                      ? `Sent ${formatLocal(b.reminder_sms_sent_at)}`
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {b.status === "scheduled" && (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          className="text-xs text-sky-600 underline underline-offset-2"
-                          onClick={() =>
-                            startTransition(async () => {
-                              await updateBookingStatus(b.id, "completed");
-                            })
-                          }
-                        >
-                          Complete
-                        </button>
-                        <button
-                          type="button"
-                          className="text-xs text-red-600 underline underline-offset-2"
-                          onClick={() =>
-                            startTransition(async () => {
-                              await updateBookingStatus(b.id, "cancelled");
-                            })
-                          }
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </td>
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Reminder:{" "}
+                  {b.reminder_sms_sent_at
+                    ? `Sent ${formatLocal(b.reminder_sms_sent_at)}`
+                    : "—"}
+                </p>
+                {b.status === "scheduled" && (
+                  <div className="mt-3 flex gap-3">
+                    <button
+                      type="button"
+                      className="min-h-[44px] text-xs font-medium text-sky-600 underline underline-offset-2"
+                      onClick={() =>
+                        startTransition(async () => {
+                          await updateBookingStatus(b.id, "completed");
+                        })
+                      }
+                    >
+                      Complete
+                    </button>
+                    <button
+                      type="button"
+                      className="min-h-[44px] text-xs font-medium text-red-600 underline underline-offset-2"
+                      onClick={() =>
+                        startTransition(async () => {
+                          await updateBookingStatus(b.id, "cancelled");
+                        })
+                      }
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 hidden overflow-x-auto rounded-2xl border border-slate-200/80 bg-white md:block">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">When</th>
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">SMS</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {bookings.map((b) => (
+                  <tr key={b.id} className="border-b border-slate-100 last:border-0">
+                    <td className="px-4 py-3 text-slate-700">
+                      <div>{formatLocal(b.starts_at)}</div>
+                      {b.ends_at && (
+                        <div className="text-xs text-slate-500">
+                          → {formatLocal(b.ends_at)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-900">{b.title}</td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {contactLabel(getContact(b))}
+                    </td>
+                    <td className="px-4 py-3 capitalize text-slate-500">
+                      {b.status}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-500">
+                      {b.reminder_sms_sent_at
+                        ? `Sent ${formatLocal(b.reminder_sms_sent_at)}`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {b.status === "scheduled" && (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            className="text-xs text-sky-600 underline underline-offset-2"
+                            onClick={() =>
+                              startTransition(async () => {
+                                await updateBookingStatus(b.id, "completed");
+                              })
+                            }
+                          >
+                            Complete
+                          </button>
+                          <button
+                            type="button"
+                            className="text-xs text-red-600 underline underline-offset-2"
+                            onClick={() =>
+                              startTransition(async () => {
+                                await updateBookingStatus(b.id, "cancelled");
+                              })
+                            }
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
