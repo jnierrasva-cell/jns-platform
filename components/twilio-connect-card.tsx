@@ -24,6 +24,7 @@ export function TwilioConnectCard({
   const [testPhone, setTestPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showSetup, setShowSetup] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleConnect(e: React.FormEvent) {
@@ -78,11 +79,18 @@ export function TwilioConnectCard({
     <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">
-            Twilio (SMS)
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-semibold text-slate-900">
+              Twilio (SMS)
+            </h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+              Optional
+            </span>
+          </div>
           <p className="mt-1 text-sm text-slate-500">
-            Connect your own Twilio account to send appointment reminders.
+            Only needed for SMS reminders and texting contacts. Inbox, bookings,
+            and email auto-reply work without Twilio. You use your own Twilio
+            account — JNS does not bill SMS usage.
           </p>
         </div>
         <span
@@ -139,40 +147,95 @@ export function TwilioConnectCard({
           )}
         </div>
       ) : canManage ? (
-        <form onSubmit={handleConnect} className="mt-5 flex flex-col gap-3">
-          <input
-            required
-            value={accountSid}
-            onChange={(e) => setAccountSid(e.target.value)}
-            placeholder="Account SID (ACxxxx)"
-            className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-          />
-          <input
-            required
-            type="password"
-            value={authToken}
-            onChange={(e) => setAuthToken(e.target.value)}
-            placeholder="Auth Token"
-            className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-          />
-          <input
-            required
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            placeholder="From number (+1...)"
-            className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-          />
+        <div className="mt-5 space-y-4">
           <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
+            type="button"
+            onClick={() => setShowSetup((v) => !v)}
+            className="text-sm font-medium text-sky-700 underline-offset-2 hover:underline"
           >
-            {isPending ? "Saving…" : "Connect Twilio"}
+            {showSetup ? "Hide setup guide" : "How to connect (2–3 minutes)"}
           </button>
-        </form>
+
+          {showSetup && (
+            <ol className="list-decimal space-y-2 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 pl-8 text-sm leading-6 text-slate-600">
+              <li>
+                Create or open a Twilio account at{" "}
+                <a
+                  href="https://www.twilio.com/try-twilio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-sky-700 underline underline-offset-2"
+                >
+                  twilio.com/try-twilio
+                </a>
+                .
+              </li>
+              <li>
+                In the Twilio Console, open{" "}
+                <a
+                  href="https://console.twilio.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-sky-700 underline underline-offset-2"
+                >
+                  Account → API keys & tokens
+                </a>{" "}
+                (or the dashboard home) and copy <strong>Account SID</strong> and{" "}
+                <strong>Auth Token</strong>.
+              </li>
+              <li>
+                Buy or pick a phone number under Phone Numbers → Manage → Active
+                numbers. Copy it in E.164 form (example: +14155551234).
+              </li>
+              <li>
+                Paste SID, token, and number below, then Connect. Send a test SMS
+                to yourself to confirm.
+              </li>
+              <li className="text-slate-500">
+                US numbers may require A2P 10DLC registration with Twilio before
+                reliable delivery to US mobiles — complete that in the Twilio
+                console if texts fail.
+              </li>
+            </ol>
+          )}
+
+          <form onSubmit={handleConnect} className="flex flex-col gap-3">
+            <input
+              required
+              value={accountSid}
+              onChange={(e) => setAccountSid(e.target.value)}
+              placeholder="Account SID (ACxxxx)"
+              autoComplete="off"
+              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            />
+            <input
+              required
+              type="password"
+              value={authToken}
+              onChange={(e) => setAuthToken(e.target.value)}
+              placeholder="Auth Token"
+              autoComplete="off"
+              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            />
+            <input
+              required
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              placeholder="From number (+1...)"
+              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            />
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
+            >
+              {isPending ? "Saving…" : "Connect Twilio"}
+            </button>
+          </form>
+        </div>
       ) : (
         <p className="mt-5 text-sm text-slate-500">
-          Ask the workspace owner to connect Twilio.
+          Ask the workspace owner to connect Twilio if you need SMS.
         </p>
       )}
 

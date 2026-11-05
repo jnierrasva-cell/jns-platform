@@ -69,8 +69,8 @@ export default async function TeamPage() {
     <div>
       {!gate.limits.teamInvites && (
         <PlanGateBanner
-          title="Team invites need a paid plan"
-          body="Starter and above can invite members. Subscribe under Billing to unlock seats."
+          title="Team invites need Starter or higher"
+          body="Starter includes invites for up to 2 users. Pro and Business add more seats. Subscribe under Billing to unlock."
         />
       )}
       <TeamClient

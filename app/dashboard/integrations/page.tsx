@@ -74,7 +74,8 @@ export default async function ConnectionsPage() {
       </h1>
       <p className="mt-1 text-sm text-slate-500">
         Connect the tools your automations run on. Each business uses their own
-        accounts.
+        accounts. Google is the main connection for inbox follow-up; Twilio is
+        optional and only needed for SMS.
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
