@@ -5,6 +5,7 @@ import {
   Download,
   MoreVertical,
   Plus,
+  Search,
   Upload,
   X,
 } from "lucide-react";
@@ -247,7 +248,7 @@ export function ContactsClient({
             resetForm();
             setShowAdd(false);
             setError(
-              "Contact was created, but it could not be assigned to the first pipeline stage.",
+              "Contact was created, but it could not be assigned to the first journey stage.",
             );
             router.refresh();
             return;
@@ -361,7 +362,7 @@ export function ContactsClient({
     setMenuId(null);
     setError(null);
     if (!googleConnected) {
-      setError("Connect Google in Integrations to send email from JNS.");
+      setError("Connect Google in Connections to send email from JNS.");
       return;
     }
     if (!c.email) {
@@ -379,7 +380,7 @@ export function ContactsClient({
     setMenuId(null);
     setError(null);
     if (!twilioConnected) {
-      setError("Connect Twilio in Integrations to send SMS from JNS.");
+      setError("Connect Twilio in Connections to send SMS from JNS.");
       return;
     }
     if (!c.phone) {
@@ -426,30 +427,30 @@ export function ContactsClient({
 
   return (
     <div className="pb-4">
-      <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
             Clients
           </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             Clients
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
             Filter and move people through{" "}
             <Link
               href="/dashboard/pipeline"
-              className="text-sky-600 underline underline-offset-2"
+              className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
             >
               your journey
             </Link>
             .
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <button
             type="button"
             onClick={exportCsv}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm text-slate-700 hover:text-slate-900"
+            className="inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
           >
             <Download className="h-4 w-4" />
             Export CSV
@@ -458,7 +459,7 @@ export function ContactsClient({
             id="import"
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm text-slate-700 hover:text-slate-900"
+            className="inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
           >
             <Upload className="h-4 w-4" />
             Import CSV
@@ -480,7 +481,7 @@ export function ContactsClient({
               setShowAdd(true);
               setFormError(null);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700"
+            className="inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
           >
             <Plus className="h-4 w-4" />
             Add client
@@ -488,44 +489,65 @@ export function ContactsClient({
         </div>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setStageFilter("all")}
-          className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
-            stageFilter === "all"
-              ? "border-sky-200 bg-sky-50 text-sky-700"
-              : "border-slate-200/80 bg-white text-slate-500"
-          }`}
-        >
-          All
-          <span className="ml-1.5 text-slate-500">{counts.all ?? 0}</span>
-        </button>
-        {stages.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setStageFilter(s.id)}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium ${
-              stageFilter === s.id
-                ? "border-sky-200 bg-sky-50 text-sky-700"
-                : "border-slate-200/80 bg-white text-slate-500"
-            }`}
+      <section className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm sm:p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div
+            role="group"
+            aria-label="Filter clients by journey stage"
+            className="flex flex-wrap gap-2"
           >
-            {s.name}
-            <span className="ml-1.5 text-slate-500">{counts[s.id] ?? 0}</span>
-          </button>
-        ))}
-      </div>
+            <button
+              type="button"
+              aria-pressed={stageFilter === "all"}
+              onClick={() => setStageFilter("all")}
+              className={`inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-3.5 text-xs font-medium transition ${
+                stageFilter === "all"
+                  ? "border-sky-200 bg-sky-50 text-sky-700"
+                  : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              All
+              <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[11px] text-slate-500">
+                {counts.all ?? 0}
+              </span>
+            </button>
+            {stages.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-pressed={stageFilter === s.id}
+                onClick={() => setStageFilter(s.id)}
+                className={`inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-3.5 text-xs font-medium transition ${
+                  stageFilter === s.id
+                    ? "border-sky-200 bg-sky-50 text-sky-700"
+                    : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {s.name}
+                <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[11px] text-slate-500">
+                  {counts[s.id] ?? 0}
+                </span>
+              </button>
+            ))}
+          </div>
 
-      <div className="mt-4">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name, email, phone…"
-          className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
-        />
-      </div>
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center xl:justify-end">
+            <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
+              <Search
+                aria-hidden
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                aria-label="Search clients"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search name, email, phone…"
+                className="min-h-[44px] w-full rounded-xl border border-slate-200/80 bg-white pl-9 pr-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {info && <p className="mt-3 text-sm text-emerald-700">{info}</p>}
@@ -552,38 +574,61 @@ export function ContactsClient({
             }}
           />
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+            <table
+              aria-label="Clients"
+              className="w-full min-w-[720px] table-fixed text-left text-sm"
+            >
+              <thead className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Pipeline</th>
-                  <th className="px-4 py-3">Source</th>
-                  <th className="px-4 py-3"></th>
+                  <th scope="col" className="w-[20%] px-3 py-3.5">
+                    Name
+                  </th>
+                  <th scope="col" className="w-[24%] px-3 py-3.5">
+                    Email
+                  </th>
+                  <th scope="col" className="w-[16%] px-3 py-3.5">
+                    Phone
+                  </th>
+                  <th scope="col" className="w-[20%] px-3 py-3.5">
+                    Journey
+                  </th>
+                  <th scope="col" className="w-[11%] px-3 py-3.5">
+                    Source
+                  </th>
+                  <th scope="col" className="w-[9%] px-2 py-3.5">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-3">
+                  <tr
+                    key={c.id}
+                    className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/70"
+                  >
+                    <td className="px-3 py-3">
                       <Link
                         href={`/dashboard/contacts/${c.id}`}
-                        className="font-medium text-slate-900 hover:text-sky-600"
+                        className="block truncate font-medium text-slate-900 hover:text-sky-700"
                       >
                         {displayName(c)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{c.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-slate-500">{c.phone ?? "—"}</td>
-                    <td className="px-4 py-3">
+                    <td className="truncate px-3 py-3 text-slate-600">
+                      {c.email ?? "—"}
+                    </td>
+                    <td className="truncate px-3 py-3 text-slate-500">
+                      {c.phone ?? "—"}
+                    </td>
+                    <td className="px-3 py-3">
                       <select
+                        aria-label={`Journey stage for ${displayName(c)}`}
                         value={c.pipeline_stage_id ?? ""}
                         onChange={(e) =>
                           changePipelineStage(c.id, e.target.value)
                         }
-                        className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-800 outline-none"
+                        className="min-h-[44px] max-w-full rounded-lg border border-sky-200 bg-sky-50 px-2.5 text-xs font-medium text-sky-800 outline-none transition focus:ring-2 focus:ring-sky-100"
                       >
                         <option value="">Unassigned</option>
                         {stages.map((s) => (
@@ -593,16 +638,16 @@ export function ContactsClient({
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-xs capitalize text-slate-500">
+                    <td className="truncate px-3 py-3 text-xs capitalize text-slate-500">
                       {(c.source ?? "—").replace(/_/g, " ")}
                     </td>
-                    <td className="relative z-10 px-4 py-3 text-right">
+                    <td className="relative z-10 px-2 py-2 text-right">
                       <button
                         type="button"
                         onClick={() =>
                           setMenuId((id) => (id === c.id ? null : c.id))
                         }
-                        className="rounded-xl p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                        className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                         aria-label="Actions"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -614,21 +659,21 @@ export function ContactsClient({
                         >
                           <button
                             type="button"
-                            className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
+                            className="block min-h-[44px] w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
                             onClick={() => openEmail(c)}
                           >
                             Send email
                           </button>
                           <button
                             type="button"
-                            className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
+                            className="block min-h-[44px] w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
                             onClick={() => openSms(c)}
                           >
                             Send SMS
                           </button>
                           <Link
                             href={`/dashboard/contacts/${c.id}`}
-                            className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
+                            className="block min-h-[44px] w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
                             onClick={() => setMenuId(null)}
                           >
                             Open contact
@@ -652,7 +697,7 @@ export function ContactsClient({
               <button
                 type="button"
                 onClick={() => setShowAdd(false)}
-                className="rounded-xl p-1 text-slate-500 hover:bg-slate-50"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -664,7 +709,7 @@ export function ContactsClient({
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                    className="min-h-[44px] rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -672,7 +717,7 @@ export function ContactsClient({
                   <input
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                    className="min-h-[44px] rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                 </div>
               </div>
@@ -682,7 +727,7 @@ export function ContactsClient({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                  className="min-h-[44px] rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -702,7 +747,7 @@ export function ContactsClient({
                         | "inactive",
                     )
                   }
-                  className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                  className="min-h-[44px] rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                 >
                   <option value="lead">Lead</option>
                   <option value="booked">Booked</option>
@@ -723,7 +768,7 @@ export function ContactsClient({
               <button
                 type="submit"
                 disabled={isPending}
-                className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                className="min-h-[44px] rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {isPending ? "Saving…" : "Create client"}
               </button>
@@ -742,7 +787,7 @@ export function ContactsClient({
               <button
                 type="button"
                 onClick={() => setCompose(null)}
-                className="rounded-xl p-1 text-slate-500 hover:bg-slate-50"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -758,7 +803,7 @@ export function ContactsClient({
                     required
                     value={composeSubject}
                     onChange={(e) => setComposeSubject(e.target.value)}
-                    className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+                    className="min-h-[44px] rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
                   />
                 </div>
               )}
@@ -782,14 +827,14 @@ export function ContactsClient({
                 <button
                   type="button"
                   onClick={() => setCompose(null)}
-                  className="rounded-2xl border border-slate-200/80 px-4 py-2.5 text-sm text-slate-600"
+                  className="min-h-[44px] rounded-2xl border border-slate-200/80 px-4 py-2.5 text-sm text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="min-h-[44px] rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
                 >
                   {isPending ? "Sending…" : "Send"}
                 </button>
