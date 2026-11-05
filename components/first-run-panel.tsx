@@ -119,15 +119,15 @@ export function FirstRunPanel({
 
       {planIsNone && (
         <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-3 text-xs text-slate-500 sm:px-6">
-          Some automation features need a paid plan. Explore free—when ready,
-          open{" "}
+          Contacts, bookings, email rules, and auto-reply work on the free
+          tier. Upgrade under{" "}
           <Link
             href="/dashboard/billing"
             className="font-medium text-slate-800 underline underline-offset-2"
           >
             Billing
-          </Link>
-          .
+          </Link>{" "}
+          when you need team seats, SMS reminders, or higher limits.
         </div>
       )}
     </section>
