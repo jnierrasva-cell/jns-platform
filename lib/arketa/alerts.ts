@@ -5,6 +5,45 @@ import { log } from "@/lib/log";
 /** Alert org managers after this many consecutive hard failures. */
 export const ARKETA_ALERT_THRESHOLD = 2;
 
+async function resolveManagerEmails(organizationId: string): Promise<string[]> {
+  const admin = createAdminClient();
+  const emails = new Set<string>();
+
+  const { data: members } = await admin
+    .from("org_members")
+    .select("user_id, role")
+    .eq("organization_id", organizationId)
+    .in("role", ["ceo", "admin"]);
+
+  const userIds = (members ?? []).map((m) => m.user_id as string);
+
+  // Prefer auth.users via service role
+  for (const uid of userIds) {
+    try {
+      const { data, error } = await admin.auth.admin.getUserById(uid);
+      if (!error && data.user?.email) {
+        emails.add(data.user.email.toLowerCase());
+      }
+    } catch {
+      // continue
+    }
+  }
+
+  if (emails.size === 0) {
+    const { data: google } = await admin
+      .from("connections")
+      .select("connected_email")
+      .eq("organization_id", organizationId)
+      .eq("provider", "google")
+      .maybeSingle();
+    if (google?.connected_email) {
+      emails.add(String(google.connected_email).toLowerCase());
+    }
+  }
+
+  return Array.from(emails);
+}
+
 /**
  * Email ceo/admin members when consecutive failures first cross the threshold.
  * Dedupes with last_failure_alert_at so we do not spam every cron tick.
@@ -22,56 +61,24 @@ export async function maybeAlertArketaSyncFailure(input: {
 
   const { data: loc } = await admin
     .from("arketa_locations")
-    .select("last_failure_alert_at, consecutive_failures")
+    .select("last_failure_alert_at")
     .eq("id", input.locationId)
     .maybeSingle();
 
   const lastAlert = loc?.last_failure_alert_at
     ? new Date(loc.last_failure_alert_at as string).getTime()
     : 0;
-  const hoursSinceAlert = (Date.now() - lastAlert) / (1000 * 60 * 60);
+  const hoursSinceAlert = lastAlert
+    ? (Date.now() - lastAlert) / (1000 * 60 * 60)
+    : Infinity;
 
-  // Alert on threshold crossing, then at most once per 24h while still failing
   const shouldAlert =
     input.consecutiveFailures === ARKETA_ALERT_THRESHOLD ||
     (input.consecutiveFailures > ARKETA_ALERT_THRESHOLD && hoursSinceAlert >= 24);
 
   if (!shouldAlert) return;
 
-  const { data: members } = await admin
-    .from("org_members")
-    .select("user_id, role")
-    .eq("organization_id", input.organizationId)
-    .in("role", ["ceo", "admin"]);
-
-  const userIds = (members ?? []).map((m) => m.user_id as string);
-  if (userIds.length === 0) return;
-
-  const { data: profiles } = await admin
-    .from("profiles")
-    .select("id, email")
-    .in("id", userIds);
-
-  // profiles may not have email — fall back to auth is not available here;
-  // also try org_members joined paths via auth.users is not exposed.
-  // Collect emails from profiles if present.
-  let emails = (profiles ?? [])
-    .map((p) => (p as { email?: string | null }).email)
-    .filter((e): e is string => Boolean(e && e.includes("@")));
-
-  // Fallback: connections / known google email for the org
-  if (emails.length === 0) {
-    const { data: google } = await admin
-      .from("connections")
-      .select("connected_email")
-      .eq("organization_id", input.organizationId)
-      .eq("provider", "google")
-      .maybeSingle();
-    if (google?.connected_email) {
-      emails = [google.connected_email as string];
-    }
-  }
-
+  const emails = await resolveManagerEmails(input.organizationId);
   if (emails.length === 0) {
     log.warn("arketa-alert", "no manager emails to notify", {
       organizationId: input.organizationId,
@@ -80,9 +87,9 @@ export async function maybeAlertArketaSyncFailure(input: {
     return;
   }
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    process.env.VERCEL_URL
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "")
+    ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
+    : process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : "https://jnsystem.app";
 

@@ -9,6 +9,7 @@ import {
 } from "@/lib/arketa/sync";
 import { encryptSecret, decryptSecret } from "@/lib/crypto/secrets";
 import { fetchWithRetry } from "@/lib/http/retry";
+import { validateGoogleCalendarId } from "@/lib/google/validate-calendar";
 
 const ARKETA_BASE =
   "https://us-central1-sutra-prod.cloudfunctions.net/partnerApi/v0";
@@ -113,8 +114,7 @@ export async function saveArketaLocation(input: {
     const partnerId = input.partnerId.trim();
     let apiKey = input.apiKey.trim();
     const googleCalendarId = input.googleCalendarId?.trim() || null;
-    const timezone =
-      input.timezone?.trim() || "America/Los_Angeles";
+    const timezone = input.timezone?.trim() || "America/Los_Angeles";
     const instructor_email_map = parseInstructorMap(
       input.instructorEmailMapText,
     );
@@ -124,7 +124,6 @@ export async function saveArketaLocation(input: {
 
     const admin = createAdminClient();
 
-    // Edit: empty API key keeps the existing key (decrypt only for verify if needed)
     if (input.id && !apiKey) {
       const { data: existing } = await admin
         .from("arketa_locations")
@@ -150,6 +149,16 @@ export async function saveArketaLocation(input: {
     if (!apiKey) return { ok: false, error: "API key is required" };
 
     await verifyArketaCredentials(partnerId, apiKey);
+
+    if (googleCalendarId) {
+      const calCheck = await validateGoogleCalendarId({
+        organizationId: input.organizationId,
+        calendarId: googleCalendarId,
+      });
+      if (!calCheck.ok) {
+        return { ok: false, error: calCheck.error };
+      }
+    }
 
     const row = {
       organization_id: input.organizationId,
@@ -220,7 +229,7 @@ export async function testArketaLocation(
 
     const { data, error } = await admin
       .from("arketa_locations")
-      .select("partner_id, api_key, label")
+      .select("partner_id, api_key, label, google_calendar_id")
       .eq("id", locationId)
       .eq("organization_id", organizationId)
       .single();
@@ -243,9 +252,20 @@ export async function testArketaLocation(
       apiKey,
     );
 
+    let calendarNote = "";
+    if (data.google_calendar_id) {
+      const cal = await validateGoogleCalendarId({
+        organizationId,
+        calendarId: data.google_calendar_id,
+      });
+      calendarNote = cal.ok
+        ? ` Calendar “${cal.summary}” is reachable.`
+        : ` Calendar check: ${cal.error}`;
+    }
+
     return {
       ok: true,
-      message: `Credentials work for “${data.label}”. Arketa returned ${classCount} class(es) in the next 7 days.`,
+      message: `Credentials work for “${data.label}”. Arketa returned ${classCount} class(es) in the next 7 days.${calendarNote}`,
     };
   } catch (err) {
     return {
