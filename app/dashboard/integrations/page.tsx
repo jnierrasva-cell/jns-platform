@@ -171,6 +171,9 @@ export default async function ConnectionsPage() {
           organizationId={orgId}
           canManage={canManage}
           locations={arketaLocations}
+          googleConnectedEmail={
+            (googleConnection?.connected_email as string | null) ?? null
+          }
         />
       </div>
     </div>
