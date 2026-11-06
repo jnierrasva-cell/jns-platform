@@ -5,9 +5,9 @@ import { PricingCheckoutButton } from "@/components/pricing-checkout-button";
 import { createPublicMetadata, PRODUCTION_SITE_URL } from "@/lib/seo";
 
 export const metadata = createPublicMetadata({
-  title: "JNS Systems | Client Management & Business Automation",
+  title: "JNS – Simple CRM for Service Businesses | Inbox & Bookings",
   description:
-    "Manage client relationships, bookings, forms, and follow-ups in one workspace with JNS Systems. Organize your operations and simplify everyday business workflows.",
+    "Stop losing inquiries in your inbox. JNS turns them into a clean client list — bookings, forms, and follow-up without the bloated marketing suite.",
   pathname: "/",
 });
 
@@ -40,10 +40,10 @@ const plans = [
     name: "Starter",
     price: "$35",
     blurb: "Solo operators who need one place for clients and bookings.",
-    cta: "Get started",
+    cta: "Start free",
     highlighted: false,
     features: [
-      "1 workspace, up to 2 users",
+      "1 workspace · team invites up to 2 users",
       "Contacts, pipeline, and notes",
       "Bookings and public booking page",
       "Forms (core fields) and CSV export",
@@ -62,7 +62,7 @@ const plans = [
       "Everything in Starter",
       "Gmail connect, auto-reply, email rules and templates",
       "Unmatched inbox (not every email becomes a lead)",
-      "Team invites and roles",
+      "More seats (up to 10) and roles",
       "Custom forms, duplicate, and branding",
       "Team SOPs",
       "SMS reminders (usage billed separately)",
@@ -73,7 +73,7 @@ const plans = [
     name: "Business",
     price: "$179",
     blurb: "Growing teams that need more seats and a serious ops home.",
-    cta: "Talk to us",
+    cta: "Start with Business",
     highlighted: false,
     features: [
       "Everything in Pro",
@@ -227,7 +227,7 @@ export default function LandingPage() {
               href="/login"
               className="inline-flex h-8 items-center rounded-lg bg-white px-3.5 text-sm font-medium text-[#0B132B] transition hover:bg-slate-100"
             >
-              Get started
+              Start free
             </Link>
           </div>
         </div>
@@ -237,23 +237,22 @@ export default function LandingPage() {
         <section className="mx-auto grid max-w-5xl gap-12 px-5 pb-20 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-14 lg:pt-24">
           <div>
             <p className="text-sm font-medium tracking-wide text-sky-800/80">
-              For service businesses and the people who run them
+              For service businesses, VAs, and small teams
             </p>
             <h1 className="mt-4 max-w-lg text-[2.25rem] font-semibold leading-[1.12] tracking-tight text-zinc-900 sm:text-5xl sm:leading-[1.1]">
-              Simplify Client Management and Business Operations
+              Stop losing inquiries in your inbox
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-7 text-zinc-600">
-              JNS Systems is a workspace for service businesses to manage
-              clients from first inquiry through booking and follow-up. Keep
-              contact records, intake forms, pipeline activity, and team
-              processes connected in one place.
+              JNS turns inquiries into a clean client list — bookings, forms,
+              and follow-up you control. Not another bloated marketing suite.
+              Start free; upgrade when you need team seats or SMS.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href="/login"
                 className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#0B132B] px-5 text-sm font-medium text-white shadow-sm transition hover:bg-[#111e3a]"
               >
-                Get started
+                Start free
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a
@@ -264,8 +263,8 @@ export default function LandingPage() {
               </a>
             </div>
             <p className="mt-5 text-xs leading-5 text-zinc-500">
-              Choose a plan at signup or anytime under Billing in your
-              workspace.
+              Free workspaces include contacts, bookings, email rules, and
+              auto-reply. Subscribe anytime under Billing.
             </p>
           </div>
           <ProductPreview />
@@ -352,17 +351,17 @@ export default function LandingPage() {
                   Gmail for inbox follow-up
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  JNS uses the connected account&apos;s email address to identify
+                  JNS uses the connected account's email address to identify
                   the account. When inbox automation is enabled, it checks new
-                  incoming messages&apos; sender, subject, and message identifiers
-                  to apply the workspace&apos;s email rules, link inquiries to
+                  incoming messages' sender, subject, and message identifiers
+                  to apply the workspace's email rules, link inquiries to
                   contacts, or place unmatched inquiries in a review inbox.
                   This workflow reads message headers, not message bodies.
                 </p>
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
                   If an administrator configures an auto-acknowledgment rule,
-                  JNS uses Gmail&apos;s send access to reply to a matching sender
-                  with the workspace&apos;s selected template. It does not send
+                  JNS uses Gmail's send access to reply to a matching sender
+                  with the workspace's selected template. It does not send
                   automatic replies unless that rule is enabled.
                 </p>
               </article>
@@ -448,18 +447,17 @@ export default function LandingPage() {
             </h2>
             <p className="mt-3 max-w-2xl text-[15px] leading-7 text-zinc-600">
               Monthly plans for solo operators through growing teams. SMS is
-              usage-based. Subscribe from the homepage when signed in, or from
-              Billing inside your workspace.
+              usage-based. Free workspaces can run contacts, bookings, email
+              rules, and auto-reply; upgrade under Billing anytime.
             </p>
-
             <div className="mt-12 grid gap-6 lg:grid-cols-3">
               {plans.map((plan) => (
                 <article
-                  key={plan.name}
-                  className={`flex flex-col rounded-2xl border p-7 ${
+                  key={plan.id}
+                  className={`flex flex-col rounded-2xl border p-6 ${
                     plan.highlighted
-                      ? "border-[#0B132B] bg-[#0B132B] text-white shadow-xl shadow-[#0B132B]/20"
-                      : "border-zinc-200 bg-zinc-50/80 text-zinc-900"
+                      ? "border-[#0B132B] bg-[#0B132B] text-white shadow-lg"
+                      : "border-zinc-200 bg-white"
                   }`}
                 >
                   <div className="flex items-baseline justify-between gap-2">
@@ -471,49 +469,47 @@ export default function LandingPage() {
                       {plan.name}
                     </h3>
                     {plan.highlighted ? (
-                      <span className="rounded-full bg-cyan-400/20 px-2.5 py-0.5 text-[11px] font-medium text-cyan-200">
-                        Most used
+                      <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                        Popular
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl font-semibold tracking-tight">
-                      {plan.price}
-                    </span>
+                  <p
+                    className={`mt-3 text-3xl font-semibold tracking-tight ${
+                      plan.highlighted ? "text-white" : "text-zinc-900"
+                    }`}
+                  >
+                    {plan.price}
                     <span
-                      className={`text-sm ${
-                        plan.highlighted ? "text-slate-400" : "text-zinc-500"
+                      className={`text-sm font-normal ${
+                        plan.highlighted ? "text-slate-300" : "text-zinc-500"
                       }`}
                     >
-                      / month
+                      /mo
                     </span>
                   </p>
                   <p
-                    className={`mt-2.5 text-sm leading-6 ${
+                    className={`mt-2 text-sm leading-6 ${
                       plan.highlighted ? "text-slate-300" : "text-zinc-600"
                     }`}
                   >
                     {plan.blurb}
                   </p>
-                  <ul className="mt-7 flex-1 space-y-2.5">
-                    {plan.features.map((item) => (
-                      <li key={item} className="flex gap-2.5 text-sm leading-5">
+                  <ul className="mt-6 flex-1 space-y-2.5">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex gap-2 text-sm">
                         <Check
                           className={`mt-0.5 h-4 w-4 shrink-0 ${
-                            plan.highlighted
-                              ? "text-cyan-300"
-                              : "text-sky-600"
+                            plan.highlighted ? "text-sky-300" : "text-sky-600"
                           }`}
                           aria-hidden="true"
                         />
                         <span
                           className={
-                            plan.highlighted
-                              ? "text-slate-200"
-                              : "text-zinc-700"
+                            plan.highlighted ? "text-slate-200" : "text-zinc-700"
                           }
                         >
-                          {item}
+                          {f}
                         </span>
                       </li>
                     ))}
@@ -547,15 +543,15 @@ export default function LandingPage() {
                 Ready to open a workspace
               </h2>
               <p className="mt-2 max-w-md text-sm leading-6 text-slate-400">
-                Create an account, name your business, and subscribe when you
-                need Pro tools—or start and upgrade from Billing anytime.
+                Create an account, name your business, and run the inbox loop
+                free — upgrade from Billing when you need more seats or SMS.
               </p>
             </div>
             <Link
               href="/login"
               className="inline-flex h-11 shrink-0 items-center rounded-lg bg-white px-5 text-sm font-medium text-[#0B132B] transition hover:bg-slate-100"
             >
-              Go to sign in
+              Start free
             </Link>
           </div>
         </section>

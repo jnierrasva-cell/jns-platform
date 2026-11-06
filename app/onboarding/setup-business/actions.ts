@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
 
 export async function createOrganization(
   businessName: string,
@@ -71,6 +72,9 @@ export async function createOrganization(
   if (profileError) {
     return { ok: false, error: profileError.message };
   }
+
+  // Seed Lead / Booked / Customer / Inactive so Pipeline is never empty on day one
+  await ensureDefaultPipelineStages(orgId as string);
 
   return { ok: true, next: "/dashboard/workspace?welcome=1" };
 }

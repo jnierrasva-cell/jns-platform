@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { PipelineClient } from "@/components/pipeline-client";
+import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
 
 export default async function PipelinePage() {
   const supabase = await createClient();
@@ -17,6 +18,9 @@ export default async function PipelinePage() {
 
   const orgId = active.organizationId;
   const admin = createAdminClient();
+
+  // Backfill defaults for orgs created before seeding existed
+  await ensureDefaultPipelineStages(orgId);
 
   const { data: stages } = await admin
     .from("pipeline_stages")

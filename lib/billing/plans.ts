@@ -19,8 +19,10 @@ export const PLAN_LIMITS = {
   none: {
     label: "No plan",
     maxUsers: 1,
-    emailAutomation: false,
-    emailRules: false,
+    // Free workspaces can complete the core inbox loop (connect Google,
+    // one rule, auto-reply). Soft caps can be added later.
+    emailAutomation: true,
+    emailRules: true,
     teamInvites: false,
     customForms: false,
     smsReminders: false,
@@ -28,8 +30,8 @@ export const PLAN_LIMITS = {
   starter: {
     label: "Starter",
     maxUsers: 2,
-    emailAutomation: false,
-    emailRules: false,
+    emailAutomation: true,
+    emailRules: true,
     teamInvites: true,
     customForms: true,
     smsReminders: false,

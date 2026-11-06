@@ -16,7 +16,7 @@ const PLANS = [
     features: [
       "Contacts, pipeline, bookings",
       "Forms & CSV",
-      "Up to 2 users",
+      "Team invites · up to 2 users",
       "Google Calendar",
     ],
   },
@@ -28,7 +28,7 @@ const PLANS = [
     features: [
       "Everything in Starter",
       "Email rules & auto-reply",
-      "Team invites",
+      "More seats (up to 10) & roles",
       "SMS reminders (usage extra)",
     ],
   },
@@ -38,7 +38,7 @@ const PLANS = [
     price: "$179",
     features: [
       "Everything in Pro",
-      "More seats",
+      "More seats (up to 25)",
       "Higher limits",
       "Priority onboarding",
     ],
@@ -48,7 +48,7 @@ const PLANS = [
 function unlockSummary(planId: PlanId): string {
   const limits = PLAN_LIMITS[planId];
   if (planId === "none") {
-    return "No paid plan active — contacts and bookings still work; email automation, rules, and team invites stay locked until you subscribe.";
+    return "Free tier: contacts, bookings, email rules, and auto-reply. Team invites and SMS unlock on a paid plan.";
   }
 
   const parts: string[] = [`up to ${limits.maxUsers} seats`];

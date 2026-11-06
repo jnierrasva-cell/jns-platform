@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { possessiveWorkspaceName } from "@/lib/names";
+import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
 
 export async function setAccountType(
   type: "individual" | "business",
@@ -86,6 +87,9 @@ export async function setAccountType(
     .from("profiles")
     .update({ active_organization_id: orgId as string })
     .eq("id", user.id);
+
+  // Seed default pipeline stages for individual workspaces too
+  await ensureDefaultPipelineStages(orgId as string);
 
   return { ok: true, next: "/dashboard" };
 }

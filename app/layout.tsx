@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import { PRODUCTION_SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
-const inter = Inter({
+const dmSans = DM_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-heading",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -24,9 +31,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${dmSans.variable} ${bricolage.variable} h-full antialiased`}
+    >
       <body
-        className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900"
+        className="flex min-h-full flex-col bg-[#F4F6FB] font-sans text-slate-900"
         suppressHydrationWarning
       >
         {children}
