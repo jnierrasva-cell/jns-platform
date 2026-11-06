@@ -41,10 +41,12 @@ export function ArketaConnectCard({
   organizationId,
   canManage,
   locations,
+  googleConnectedEmail,
 }: {
   organizationId: string;
   canManage: boolean;
   locations: ArketaLocationRow[];
+  googleConnectedEmail?: string | null;
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +148,6 @@ export function ArketaConnectCard({
         setSuccess(
           `${result.label}: created ${result.created}, updated ${result.updated}, removed ${result.deleted}, skipped ${result.skipped}`,
         );
-        // Refresh to pick up last_sync_* from server
         window.setTimeout(() => {
           window.location.href = "/dashboard/integrations";
         }, 1200);
@@ -156,20 +157,28 @@ export function ArketaConnectCard({
     });
   }
 
-  function handleClearResync(id: string) {
+  function handleClearResync(loc: ArketaLocationRow) {
     setError(null);
     setSuccess(null);
-    if (
-      !window.confirm(
-        "Clear old JNS/Arketa events on this calendar (next ~3 weeks), then sync once. Continue?",
-      )
-    ) {
-      return;
-    }
+    const cal = loc.google_calendar_id || "(no calendar id)";
+    const google = googleConnectedEmail || "(Google not connected)";
+    const ok = window.confirm(
+      [
+        `Clear JNS/Arketa events on this calendar (~next 3 weeks), then sync once.`,
+        "",
+        `Location: ${loc.label}`,
+        `Calendar ID: ${cal}`,
+        `Google account: ${google}`,
+        "",
+        "This deletes matching events on that calendar only. Continue?",
+      ].join("\n"),
+    );
+    if (!ok) return;
+
     startTransition(async () => {
       const result = await clearAndResyncArketaLocationAction(
         organizationId,
-        id,
+        loc.id,
       );
       if (result.ok) {
         setSuccess(
@@ -316,7 +325,7 @@ export function ArketaConnectCard({
                       <button
                         type="button"
                         disabled={isPending || !loc.google_calendar_id}
-                        onClick={() => handleClearResync(loc.id)}
+                        onClick={() => handleClearResync(loc)}
                         className="rounded-xl border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
                       >
                         Clear & resync
@@ -385,6 +394,10 @@ export function ArketaConnectCard({
                 placeholder="Google Calendar ID"
                 className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               />
+              <p className="text-[11px] text-slate-500">
+                Calendar ID is verified against the connected Google account on
+                save.
+              </p>
               <div>
                 <label className="text-xs font-medium text-slate-600">
                   Timezone (IANA)

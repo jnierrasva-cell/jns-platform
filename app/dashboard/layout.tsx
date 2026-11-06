@@ -13,6 +13,7 @@ import {
 import { needsProfileName } from "@/lib/names";
 import { CompleteProfileBanner } from "@/components/complete-profile-banner";
 import { TrialBanner } from "@/components/trial-banner";
+import { ArketaSyncAlertBanner } from "@/components/arketa-sync-alert-banner";
 
 export const metadata = createNoIndexMetadata("Workspace");
 
@@ -157,6 +158,42 @@ export default async function DashboardLayout({
     lastName?.trim() || metadataLastName,
   );
 
+  let arketaIssues: {
+    id: string;
+    label: string;
+    last_sync_status: string | null;
+    last_sync_error: string | null;
+    consecutive_failures: number;
+  }[] = [];
+
+  if (isOrgManager) {
+    try {
+      const admin = createAdminClient();
+      const { data: rows } = await admin
+        .from("arketa_locations")
+        .select(
+          "id, label, last_sync_status, last_sync_error, consecutive_failures",
+        )
+        .eq("organization_id", active.organizationId);
+
+      arketaIssues = (rows ?? [])
+        .filter((r) => {
+          const status = String(r.last_sync_status || "").toLowerCase();
+          const fails = Number(r.consecutive_failures ?? 0);
+          return status === "error" || fails >= 2;
+        })
+        .map((r) => ({
+          id: r.id as string,
+          label: r.label as string,
+          last_sync_status: (r.last_sync_status as string | null) ?? null,
+          last_sync_error: (r.last_sync_error as string | null) ?? null,
+          consecutive_failures: Number(r.consecutive_failures ?? 0),
+        }));
+    } catch {
+      // non-fatal
+    }
+  }
+
   return (
     <DashboardShell
       userEmail={user.email ?? ""}
@@ -173,6 +210,7 @@ export default async function DashboardLayout({
         {(trialActive || trialExpired) && remaining !== null && (
           <TrialBanner daysLeft={remaining} endsLabel={endsLabel} />
         )}
+        {isOrgManager && <ArketaSyncAlertBanner issues={arketaIssues} />}
         {children}
       </>
     </DashboardShell>
