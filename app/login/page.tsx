@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { safeNextPath } from "@/lib/auth/redirect.mjs";
 import { BrandMark } from "@/components/brand-mark";
@@ -32,6 +33,7 @@ function LoginForm() {
     () => searchParams.get("email")?.trim() ?? "",
   );
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(() =>
     searchParams.get("error") === "auth_callback"
       ? "We couldn’t complete sign in. The link may have expired; please try again."
@@ -146,6 +148,7 @@ function LoginForm() {
 
   function chooseMode(nextMode: Mode) {
     setMode(nextMode);
+    setShowPassword(false);
     setError(null);
     setConfirmSent(false);
     setResetSent(false);
@@ -277,17 +280,38 @@ function LoginForm() {
                     <label className="text-sm font-medium text-zinc-700">
                       Password
                     </label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      autoComplete={
-                        mode === "signin" ? "current-password" : "new-password"
-                      }
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#0B132B] focus:ring-2 focus:ring-[#0B132B]/10"
-                    />
+                    <div className="relative mt-1.5">
+                      <input
+                        type={
+                          mode === "signin" && showPassword ? "text" : "password"
+                        }
+                        required
+                        minLength={8}
+                        autoComplete={
+                          mode === "signin" ? "current-password" : "new-password"
+                        }
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 pr-11 text-sm text-zinc-900 outline-none transition focus:border-[#0B132B] focus:ring-2 focus:ring-[#0B132B]/10"
+                      />
+                      {mode === "signin" && (
+                        <button
+                          type="button"
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                          aria-pressed={showPassword}
+                          onClick={() => setShowPassword((visible) => !visible)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-zinc-500 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B132B]"
+                        >
+                          {showPassword ? (
+                            <EyeOff aria-hidden="true" size={18} />
+                          ) : (
+                            <Eye aria-hidden="true" size={18} />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
