@@ -8,6 +8,14 @@ const requiredVariables = [
   "RESEND_FROM_EMAIL",
 ];
 
+/** Recommended for production (not required for local bootstrap). */
+const recommendedVariables = [
+  "CRON_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "ENCRYPTION_KEY",
+];
+
 let localEnv = "";
 try {
   localEnv = await readFile(new URL("../.env.local", import.meta.url), "utf8");
@@ -24,9 +32,12 @@ for (const line of localEnv.split(/\r?\n/)) {
   localValues.set(match[1], value);
 }
 
-const missing = requiredVariables.filter(
-  (name) => !(process.env[name]?.trim() || localValues.get(name)),
-);
+function isSet(name) {
+  return Boolean(process.env[name]?.trim() || localValues.get(name));
+}
+
+const missing = requiredVariables.filter((name) => !isSet(name));
+const missingRecommended = recommendedVariables.filter((name) => !isSet(name));
 
 if (missing.length > 0) {
   console.error("Missing required environment variables:");
@@ -35,4 +46,14 @@ if (missing.length > 0) {
 } else {
   console.log("Required Supabase and support-email environment variables are set.");
   console.log("This checks presence only, not connectivity or provider-side verification.");
+}
+
+if (missingRecommended.length > 0) {
+  console.warn("\nRecommended (production) environment variables not set:");
+  for (const name of missingRecommended) console.warn(`- ${name}`);
+  if (missingRecommended.includes("ENCRYPTION_KEY")) {
+    console.warn(
+      "  ENCRYPTION_KEY: 32+ character secret used to encrypt Google tokens and Arketa API keys at rest.",
+    );
+  }
 }
