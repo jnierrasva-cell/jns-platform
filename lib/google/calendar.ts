@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
+import { fetchWithRetry } from "@/lib/http/retry";
 
 type CreateCalendarEventInput = {
   organizationId: string;
@@ -10,6 +11,10 @@ type CreateCalendarEventInput = {
   attendeeEmail?: string | null;
   attendeeEmails?: string[] | null;
   calendarId?: string;
+  /** IANA timezone for event display (e.g. America/Los_Angeles) */
+  timeZone?: string | null;
+  /** Optional pre-resolved access token to avoid repeated DB hits */
+  accessToken?: string;
   /** Stable Arketa class id — used to prevent duplicates */
   arketaClassId?: string | null;
 };
@@ -37,12 +42,27 @@ function collectAttendees(input: {
   }));
 }
 
+async function resolveToken(
+  organizationId: string,
+  accessToken?: string,
+): Promise<string> {
+  if (accessToken) return accessToken;
+  const { accessToken: t } = await getValidGoogleAccessToken(organizationId);
+  return t;
+}
+
+function resolveTimeZone(tz?: string | null) {
+  const t = tz?.trim();
+  return t && t.length > 0 ? t : "America/Los_Angeles";
+}
+
 export async function createGoogleCalendarEvent(
   input: CreateCalendarEventInput,
 ): Promise<{ eventId: string | null; error?: string }> {
   try {
-    const { accessToken } = await getValidGoogleAccessToken(
+    const accessToken = await resolveToken(
       input.organizationId,
+      input.accessToken,
     );
 
     const start = new Date(input.startsAt);
@@ -59,17 +79,18 @@ export async function createGoogleCalendarEvent(
     }
 
     const attendees = collectAttendees(input);
+    const timeZone = resolveTimeZone(input.timeZone);
 
     const body: Record<string, unknown> = {
       summary: input.title,
       description: input.description ?? undefined,
       start: {
         dateTime: start.toISOString(),
-        timeZone: "UTC",
+        timeZone,
       },
       end: {
         dateTime: end.toISOString(),
-        timeZone: "UTC",
+        timeZone,
       },
     };
 
@@ -91,18 +112,22 @@ export async function createGoogleCalendarEvent(
       url.searchParams.set("sendUpdates", "all");
     }
 
-    const res = await fetch(url.toString(), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+    const res = await fetchWithRetry(
+      url.toString(),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+      { label: "google-calendar-create", maxAttempts: 4 },
+    );
 
     const text = await res.text();
     if (!res.ok) {
-      console.error("[google-calendar] create failed", res.status, text);
+      console.error("[google-calendar] create failed", res.status, text.slice(0, 200));
       return {
         eventId: null,
         error: `Google Calendar ${res.status}: ${text.slice(0, 300)}`,
@@ -128,10 +153,13 @@ export async function updateGoogleCalendarEvent(input: {
   description?: string | null;
   attendeeEmails?: string[] | null;
   arketaClassId?: string | null;
+  timeZone?: string | null;
+  accessToken?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    const { accessToken } = await getValidGoogleAccessToken(
+    const accessToken = await resolveToken(
       input.organizationId,
+      input.accessToken,
     );
 
     const start = new Date(input.startsAt);
@@ -143,12 +171,13 @@ export async function updateGoogleCalendarEvent(input: {
     const attendees = collectAttendees({
       attendeeEmails: input.attendeeEmails,
     });
+    const timeZone = resolveTimeZone(input.timeZone);
 
     const body: Record<string, unknown> = {
       summary: input.title,
       description: input.description ?? undefined,
-      start: { dateTime: start.toISOString(), timeZone: "UTC" },
-      end: { dateTime: end.toISOString(), timeZone: "UTC" },
+      start: { dateTime: start.toISOString(), timeZone },
+      end: { dateTime: end.toISOString(), timeZone },
     };
     if (attendees.length > 0) {
       body.attendees = attendees;
@@ -169,14 +198,18 @@ export async function updateGoogleCalendarEvent(input: {
       url.searchParams.set("sendUpdates", "all");
     }
 
-    const res = await fetch(url.toString(), {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+    const res = await fetchWithRetry(
+      url.toString(),
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+      { label: "google-calendar-update", maxAttempts: 4 },
+    );
 
     if (!res.ok) {
       const text = await res.text();
@@ -195,18 +228,21 @@ export async function deleteGoogleCalendarEvent(input: {
   organizationId: string;
   calendarId: string;
   eventId: string;
+  accessToken?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    const { accessToken } = await getValidGoogleAccessToken(
+    const accessToken = await resolveToken(
       input.organizationId,
+      input.accessToken,
     );
 
-    const res = await fetch(
+    const res = await fetchWithRetry(
       calendarEventsUrl(input.calendarId, input.eventId),
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${accessToken}` },
       },
+      { label: "google-calendar-delete", maxAttempts: 3 },
     );
 
     if (!res.ok && res.status !== 404 && res.status !== 410) {
@@ -227,10 +263,12 @@ export async function findGoogleEventByArketaClassId(input: {
   organizationId: string;
   calendarId: string;
   arketaClassId: string;
+  accessToken?: string;
 }): Promise<string | null> {
   try {
-    const { accessToken } = await getValidGoogleAccessToken(
+    const accessToken = await resolveToken(
       input.organizationId,
+      input.accessToken,
     );
     const cal = encodeURIComponent(input.calendarId || "primary");
     const url = new URL(
@@ -243,10 +281,14 @@ export async function findGoogleEventByArketaClassId(input: {
     url.searchParams.set("maxResults", "5");
     url.searchParams.set("singleEvents", "true");
 
-    const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    });
+    const res = await fetchWithRetry(
+      url.toString(),
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: "no-store",
+      },
+      { label: "google-calendar-find", maxAttempts: 3 },
+    );
     if (!res.ok) return null;
     const json = await res.json();
     const items = (json.items ?? []) as { id?: string }[];
@@ -266,10 +308,12 @@ export async function deleteJnsArketaEventsInWindow(input: {
   calendarId: string;
   timeMinIso: string;
   timeMaxIso: string;
+  accessToken?: string;
 }): Promise<{ deleted: number; error?: string }> {
   try {
-    const { accessToken } = await getValidGoogleAccessToken(
+    const accessToken = await resolveToken(
       input.organizationId,
+      input.accessToken,
     );
     const cal = encodeURIComponent(input.calendarId || "primary");
     let deleted = 0;
@@ -286,10 +330,14 @@ export async function deleteJnsArketaEventsInWindow(input: {
       url.searchParams.set("maxResults", "100");
       if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        cache: "no-store",
-      });
+      const res = await fetchWithRetry(
+        url.toString(),
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          cache: "no-store",
+        },
+        { label: "google-calendar-list", maxAttempts: 3 },
+      );
       if (!res.ok) {
         const text = await res.text();
         return {
@@ -316,6 +364,7 @@ export async function deleteJnsArketaEventsInWindow(input: {
           organizationId: input.organizationId,
           calendarId: input.calendarId,
           eventId: ev.id,
+          accessToken,
         });
         if (del.ok) deleted += 1;
       }

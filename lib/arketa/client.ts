@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "@/lib/http/retry";
+
 const ARKETA_BASE =
   "https://us-central1-sutra-prod.cloudfunctions.net/partnerApi/v0";
 
@@ -46,13 +48,17 @@ export async function fetchArketaClasses(input: {
     url.searchParams.set("end_date", input.endDate);
     if (startAfter) url.searchParams.set("start_after", startAfter);
 
-    const res = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        "X-API-Key": input.apiKey,
+    const res = await fetchWithRetry(
+      url.toString(),
+      {
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+          "X-API-Key": input.apiKey,
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+      { label: "arketa-classes", maxAttempts: 4 },
+    );
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
