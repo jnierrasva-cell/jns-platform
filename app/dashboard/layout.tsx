@@ -5,9 +5,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getActiveOrg } from "@/lib/org/active";
 import { getPlanGateState } from "@/lib/billing/org-plan";
-import { PLAN_LIMITS } from "@/lib/billing/plans";
+import {
+  PLAN_LIMITS,
+  daysRemaining,
+  isTrialing,
+} from "@/lib/billing/plans";
 import { needsProfileName } from "@/lib/names";
 import { CompleteProfileBanner } from "@/components/complete-profile-banner";
+import { TrialBanner } from "@/components/trial-banner";
 
 export const metadata = createNoIndexMetadata("Workspace");
 
@@ -89,7 +94,6 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
-  // Trust service role for platform role (RLS can hide role on user client)
   let platformRole = profile?.role ?? null;
   let firstName = profile?.first_name;
   let lastName = profile?.last_name;
@@ -121,8 +125,25 @@ export default async function DashboardLayout({
   const isOrgManager = active.role === "ceo" || active.role === "admin";
 
   const gate = await getPlanGateState(active.organizationId);
-  const planLabel = PLAN_LIMITS[gate.planId].label;
+  const planLabel = isTrialing(gate.billing)
+    ? "Pro trial"
+    : PLAN_LIMITS[gate.planId].label;
   const planId = gate.planId;
+  const trialActive = isTrialing(gate.billing);
+  const trialExpired =
+    (gate.billing.billing_status || "").toLowerCase() === "expired" &&
+    (gate.billing.billing_provider || "").toLowerCase() === "jns_trial";
+  const remaining = daysRemaining(gate.billing);
+  const endsLabel =
+    gate.billing.plan_period_end &&
+    !Number.isNaN(new Date(gate.billing.plan_period_end).getTime())
+      ? new Date(gate.billing.plan_period_end).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+
   const metadataFirstName =
     typeof user.user_metadata.first_name === "string"
       ? user.user_metadata.first_name.trim()
@@ -149,6 +170,9 @@ export default async function DashboardLayout({
     >
       <>
         {showNamePrompt && <CompleteProfileBanner />}
+        {(trialActive || trialExpired) && remaining !== null && (
+          <TrialBanner daysLeft={remaining} endsLabel={endsLabel} />
+        )}
         {children}
       </>
     </DashboardShell>
