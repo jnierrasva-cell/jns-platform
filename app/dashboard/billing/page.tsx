@@ -10,6 +10,7 @@ import {
   isTrialing,
   PLAN_LIMITS,
   normalizePlan,
+  type OrgBilling,
 } from "@/lib/billing/plans";
 import { expireTrialIfNeeded } from "@/lib/billing/trial";
 import { BillingClient } from "@/components/billing-client";
@@ -33,7 +34,7 @@ export default async function BillingPage() {
     .eq("id", active.organizationId)
     .maybeSingle();
 
-  let billing = {
+  let billing: OrgBilling = {
     plan: org?.plan ?? "none",
     billing_status: org?.billing_status ?? "none",
     plan_period_end: org?.plan_period_end ?? null,
@@ -55,7 +56,7 @@ export default async function BillingPage() {
       plan={normalizePlan(org?.plan)}
       billingStatus={billing.billing_status || "none"}
       periodEnd={billing.plan_period_end}
-      provider={billing.billing_provider}
+      provider={billing.billing_provider ?? null}
       effectivePlan={current}
       planLabel={trial ? "Pro trial" : limits.label}
       isActive={hasActiveSubscription(billing)}
