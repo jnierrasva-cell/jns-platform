@@ -4,11 +4,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { isOrgManagerRole } from "@/lib/org/roles";
 import {
+  daysRemaining,
   effectivePlan,
   hasActiveSubscription,
+  isTrialing,
   PLAN_LIMITS,
   normalizePlan,
 } from "@/lib/billing/plans";
+import { expireTrialIfNeeded } from "@/lib/billing/trial";
 import { BillingClient } from "@/components/billing-client";
 
 export default async function BillingPage() {
@@ -30,15 +33,19 @@ export default async function BillingPage() {
     .eq("id", active.organizationId)
     .maybeSingle();
 
-  const billing = {
+  let billing = {
     plan: org?.plan ?? "none",
     billing_status: org?.billing_status ?? "none",
     plan_period_end: org?.plan_period_end ?? null,
+    billing_provider: org?.billing_provider ?? null,
   };
+
+  billing = await expireTrialIfNeeded(active.organizationId, billing);
 
   const current = effectivePlan(billing);
   const limits = PLAN_LIMITS[current];
   const canManage = isOrgManagerRole(active.role);
+  const trial = isTrialing(billing);
 
   return (
     <BillingClient
@@ -46,12 +53,14 @@ export default async function BillingPage() {
       organizationId={active.organizationId}
       canManage={canManage}
       plan={normalizePlan(org?.plan)}
-      billingStatus={org?.billing_status || "none"}
-      periodEnd={org?.plan_period_end}
-      provider={org?.billing_provider}
+      billingStatus={billing.billing_status || "none"}
+      periodEnd={billing.plan_period_end}
+      provider={billing.billing_provider}
       effectivePlan={current}
-      planLabel={limits.label}
+      planLabel={trial ? "Pro trial" : limits.label}
       isActive={hasActiveSubscription(billing)}
+      isTrial={trial}
+      daysLeft={daysRemaining(billing)}
     />
   );
 }

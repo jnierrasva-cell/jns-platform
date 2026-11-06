@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { PricingCheckoutButton } from "@/components/pricing-checkout-button";
 import {
   normalizePlan,
@@ -15,7 +15,8 @@ const PLANS = [
     price: "$35",
     features: [
       "Contacts, pipeline, bookings",
-      "Forms & CSV",
+      "Email rules & auto-reply",
+      "Forms & CSV · custom forms",
       "Team invites · up to 2 users",
       "Google Calendar",
     ],
@@ -27,9 +28,9 @@ const PLANS = [
     highlighted: true,
     features: [
       "Everything in Starter",
-      "Email rules & auto-reply",
-      "More seats (up to 10) & roles",
-      "SMS reminders (usage extra)",
+      "Up to 10 seats & roles",
+      "SMS reminders (your Twilio)",
+      "Included in the 14-day free trial",
     ],
   },
   {
@@ -38,19 +39,43 @@ const PLANS = [
     price: "$179",
     features: [
       "Everything in Pro",
-      "More seats (up to 25)",
+      "Up to 25 seats",
       "Higher limits",
       "Priority onboarding",
     ],
   },
 ];
 
-function unlockSummary(planId: PlanId): string {
-  const limits = PLAN_LIMITS[planId];
+const MATRIX: {
+  label: string;
+  free: boolean;
+  starter: boolean;
+  pro: boolean;
+  business: boolean;
+}[] = [
+  { label: "Contacts, pipeline, bookings", free: true, starter: true, pro: true, business: true },
+  { label: "Email rules & auto-reply", free: true, starter: true, pro: true, business: true },
+  { label: "Team invites", free: false, starter: true, pro: true, business: true },
+  { label: "Custom forms", free: false, starter: true, pro: true, business: true },
+  { label: "SMS reminders", free: false, starter: false, pro: true, business: true },
+];
+
+function unlockSummary(
+  planId: PlanId,
+  billingStatus: string,
+  isTrial: boolean,
+): string {
+  if (isTrial) {
+    return "Pro trial active — team invites, custom forms, and SMS unlocked until the trial ends.";
+  }
   if (planId === "none") {
-    return "Free tier: contacts, bookings, email rules, and auto-reply. Team invites and SMS unlock on a paid plan.";
+    if ((billingStatus || "").toLowerCase() === "expired") {
+      return "Trial ended. Free tier: contacts, bookings, email rules, and auto-reply. Subscribe to restore Pro features.";
+    }
+    return "Free: contacts, bookings, email rules, and auto-reply. Team invites, custom forms, and SMS need a paid plan.";
   }
 
+  const limits = PLAN_LIMITS[planId];
   const parts: string[] = [`up to ${limits.maxUsers} seats`];
   if (limits.teamInvites) parts.push("team invites");
   if (limits.customForms) parts.push("custom forms");
@@ -69,6 +94,8 @@ export function BillingClient({
   effectivePlan,
   planLabel,
   isActive,
+  isTrial,
+  daysLeft,
 }: {
   orgName: string;
   organizationId: string;
@@ -80,6 +107,8 @@ export function BillingClient({
   effectivePlan: string;
   planLabel: string;
   isActive: boolean;
+  isTrial: boolean;
+  daysLeft: number | null;
 }) {
   const planId = normalizePlan(effectivePlan);
   const endLabel =
@@ -106,26 +135,79 @@ export function BillingClient({
           Current access
         </p>
         <p className="mt-2 text-lg font-semibold text-slate-900">
-          You are on {planLabel}
+          {isTrial ? "Pro trial" : `You are on ${planLabel}`}
           <span className="ml-2 text-sm font-normal text-slate-500">
             ({billingStatus || "none"}
             {provider ? ` · ${provider}` : ""})
           </span>
         </p>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Unlocks: {unlockSummary(planId)}
+          {unlockSummary(planId, billingStatus, isTrial)}
         </p>
-        {endLabel && (
+        {isTrial && daysLeft != null && (
+          <p className="mt-2 text-sm font-medium text-sky-800">
+            {daysLeft <= 0
+              ? "Trial period has ended."
+              : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}
+            {endLabel ? ` · ends ${endLabel}` : ""}
+          </p>
+        )}
+        {!isTrial && endLabel && (
           <p className="mt-1 text-sm text-slate-600">
             {isActive ? "Renews / ends" : "Ended"}: {endLabel}
           </p>
         )}
-        {!isActive && (
+        {!isActive && !isTrial && (
           <p className="mt-2 text-sm text-amber-700">
-            No active subscription on this workspace. Choose a plan below
-            {canManage ? "" : " (ask an owner or admin to subscribe)"}.
+            No active paid subscription. Free features still work
+            {canManage
+              ? " — choose a plan below to unlock the rest."
+              : " (ask an owner or admin to subscribe)."}
           </p>
         )}
+        {isTrial && (
+          <p className="mt-2 text-sm text-slate-600">
+            No card on file. When the trial ends you keep Free features; Pro-only
+            items (extra seats, SMS, etc.) lock until you subscribe.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
+        <table className="w-full min-w-[32rem] text-left text-sm">
+          <thead className="border-b border-slate-200/80 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Feature</th>
+              <th className="px-3 py-3 font-medium">Free</th>
+              <th className="px-3 py-3 font-medium">Starter</th>
+              <th className="px-3 py-3 font-medium">Pro / trial</th>
+              <th className="px-3 py-3 font-medium">Business</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MATRIX.map((row) => (
+              <tr key={row.label} className="border-t border-slate-100">
+                <td className="px-4 py-2.5 text-slate-800">{row.label}</td>
+                {(["free", "starter", "pro", "business"] as const).map((k) => (
+                  <td key={k} className="px-3 py-2.5">
+                    {row[k] ? (
+                      <Check className="h-4 w-4 text-sky-600" aria-label="Included" />
+                    ) : (
+                      <Minus className="h-4 w-4 text-slate-300" aria-label="Not included" />
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            <tr className="border-t border-slate-100">
+              <td className="px-4 py-2.5 text-slate-800">Seat limit</td>
+              <td className="px-3 py-2.5 text-slate-600">1</td>
+              <td className="px-3 py-2.5 text-slate-600">2</td>
+              <td className="px-3 py-2.5 text-slate-600">10</td>
+              <td className="px-3 py-2.5 text-slate-600">25</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {!canManage ? (
@@ -162,7 +244,7 @@ export function BillingClient({
                     /mo
                   </span>
                 </p>
-                {effectivePlan === p.id && isActive && (
+                {effectivePlan === p.id && isActive && !isTrial && (
                   <p
                     className={`mt-2 text-xs font-medium ${
                       p.highlighted ? "text-slate-400" : "text-sky-700"
@@ -179,20 +261,14 @@ export function BillingClient({
                           p.highlighted ? "text-slate-400" : "text-sky-600"
                         }`}
                       />
-                      <span
-                        className={
-                          p.highlighted ? "text-slate-700" : "text-slate-700"
-                        }
-                      >
-                        {feature}
-                      </span>
+                      <span className="text-slate-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <PricingCheckoutButton
                   plan={p.id}
                   label={
-                    effectivePlan === p.id && isActive
+                    effectivePlan === p.id && isActive && !isTrial
                       ? "Manage / renew"
                       : `Subscribe · ${p.name}`
                   }
