@@ -12,15 +12,30 @@ export type OrgBilling = {
   plan: string | null;
   billing_status: string | null;
   plan_period_end: string | null;
+  billing_provider?: string | null;
 };
 
-/** What each plan is allowed to use (enforce gradually). */
+/** New workspaces get a no-card Pro trial for this many days. */
+export const TRIAL_DAYS = 14;
+
+/** Trial unlocks the same feature set as this paid plan. */
+export const TRIAL_PLAN: PlanId = "pro";
+
+/**
+ * Feature gates by effective plan.
+ *
+ * Always available (not gated here): contacts, pipeline, notes, bookings,
+ * public booking page, core forms, CSV, Google Calendar connect, SOPs owner.
+ *
+ * none     = free forever after trial ends (or never started)
+ * starter  = paid $35
+ * pro      = paid $89 (also used while trialing)
+ * business = paid $179
+ */
 export const PLAN_LIMITS = {
   none: {
-    label: "No plan",
+    label: "Free",
     maxUsers: 1,
-    // Free workspaces can complete the core inbox loop (connect Google,
-    // one rule, auto-reply). Soft caps can be added later.
     emailAutomation: true,
     emailRules: true,
     teamInvites: false,
@@ -56,6 +71,8 @@ export const PLAN_LIMITS = {
   },
 } as const;
 
+export type PlanLimits = (typeof PLAN_LIMITS)[PlanId];
+
 export function normalizePlan(plan: string | null | undefined): PlanId {
   if (plan === "starter" || plan === "pro" || plan === "business") return plan;
   return "none";
@@ -77,13 +94,36 @@ export function effectivePlan(org: OrgBilling): PlanId {
   return normalizePlan(org.plan);
 }
 
-export function planLimits(org: OrgBilling) {
+export function planLimits(org: OrgBilling): PlanLimits {
   return PLAN_LIMITS[effectivePlan(org)];
+}
+
+export function isTrialing(org: OrgBilling): boolean {
+  return (
+    (org.billing_status || "").toLowerCase() === "trialing" &&
+    hasActiveSubscription(org)
+  );
+}
+
+/** Days remaining on trial/subscription period (ceil). Null if no end date. */
+export function daysRemaining(org: OrgBilling): number | null {
+  if (!org.plan_period_end) return null;
+  const end = new Date(org.plan_period_end).getTime();
+  if (Number.isNaN(end)) return null;
+  const ms = end - Date.now();
+  if (ms <= 0) return 0;
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
 }
 
 /** Default monthly period end from now. */
 export function addOneMonth(from = new Date()): Date {
   const d = new Date(from);
   d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+export function addDays(days: number, from = new Date()): Date {
+  const d = new Date(from);
+  d.setDate(d.getDate() + days);
   return d;
 }
