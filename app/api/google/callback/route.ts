@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { encryptSecret } from "@/lib/crypto/secrets";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -82,15 +83,30 @@ export async function GET(request: NextRequest) {
   const expiresAt = new Date(Date.now() + (expires_in || 3600) * 1000).toISOString();
 
   const admin = createAdminClient();
+
+  // Preserve existing refresh_token if Google omits it on re-consent
+  let refreshToStore = refresh_token ?? null;
+  if (!refreshToStore) {
+    const { data: existing } = await admin
+      .from("connections")
+      .select("refresh_token")
+      .eq("organization_id", storedOrgId)
+      .eq("provider", "google")
+      .maybeSingle();
+    refreshToStore = existing?.refresh_token ?? null;
+  }
+
   const { error } = await admin.from("connections").upsert(
     {
       organization_id: storedOrgId,
       provider: "google",
       connected_email: googleUser?.email ?? null,
-      access_token,
-      refresh_token: refresh_token ?? null,
+      access_token: encryptSecret(access_token),
+      refresh_token: encryptSecret(refreshToStore),
       expires_at: expiresAt,
       scopes: scope ?? null,
+      needs_reauth: false,
+      last_auth_error: null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "organization_id,provider" },
@@ -98,6 +114,11 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return redirectWithParam("google_error", "save_failed");
+  }
+
+  if (!refreshToStore) {
+    // Connected but offline access incomplete — still usable until access expires
+    return redirectWithParam("google_connected", "1");
   }
 
   return redirectWithParam("google_connected", "1");

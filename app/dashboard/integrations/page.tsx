@@ -32,7 +32,7 @@ export default async function ConnectionsPage() {
 
   const { data: googleConnection } = await admin
     .from("connections")
-    .select("connected_email")
+    .select("connected_email, needs_reauth, last_auth_error")
     .eq("organization_id", orgId)
     .eq("provider", "google")
     .maybeSingle();
@@ -46,7 +46,7 @@ export default async function ConnectionsPage() {
   const { data: arketaRows } = await admin
     .from("arketa_locations")
     .select(
-      "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status, instructor_email_map",
+      "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status, last_sync_error, consecutive_failures, timezone, instructor_email_map",
     )
     .eq("organization_id", orgId)
     .order("label", { ascending: true });
@@ -58,11 +58,16 @@ export default async function ConnectionsPage() {
     google_calendar_id: (row.google_calendar_id as string | null) ?? null,
     last_synced_at: (row.last_synced_at as string | null) ?? null,
     last_sync_status: (row.last_sync_status as string | null) ?? null,
+    last_sync_error: (row.last_sync_error as string | null) ?? null,
+    consecutive_failures: (row.consecutive_failures as number | null) ?? 0,
+    timezone: (row.timezone as string | null) ?? "America/Los_Angeles",
     instructor_email_map_text: mapToText(row.instructor_email_map),
     instructor_count: Object.keys(
       (row.instructor_email_map as Record<string, string>) || {},
     ).length,
   }));
+
+  const googleNeedsReauth = Boolean(googleConnection?.needs_reauth);
 
   return (
     <div>
@@ -91,12 +96,18 @@ export default async function ConnectionsPage() {
             </div>
             <span
               className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${
-                googleConnection
+                googleConnection && !googleNeedsReauth
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200/80 bg-slate-50 text-slate-500"
+                  : googleNeedsReauth
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-slate-200/80 bg-slate-50 text-slate-500"
               }`}
             >
-              {googleConnection ? "Connected" : "Not connected"}
+              {googleNeedsReauth
+                ? "Reconnect required"
+                : googleConnection
+                  ? "Connected"
+                  : "Not connected"}
             </span>
           </div>
 
@@ -108,7 +119,30 @@ export default async function ConnectionsPage() {
                   {googleConnection.connected_email}
                 </span>
               </p>
-              {canManage && (
+              {googleNeedsReauth && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  <p className="font-medium">Google access needs to be renewed</p>
+                  <p className="mt-0.5 text-xs text-amber-800/90">
+                    {(googleConnection.last_auth_error as string | null)?.slice(
+                      0,
+                      200,
+                    ) ||
+                      "The refresh token was revoked or expired. Reconnect to restore calendar and Gmail automations."}
+                  </p>
+                  {canManage && (
+                    <a
+                      href="/api/google/connect"
+                      className="mt-2 inline-flex rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800"
+                    >
+                      Reconnect Google
+                    </a>
+                  )}
+                </div>
+              )}
+              {canManage && !googleNeedsReauth && (
+                <GoogleDisconnectButton organizationId={orgId} />
+              )}
+              {canManage && googleNeedsReauth && (
                 <GoogleDisconnectButton organizationId={orgId} />
               )}
             </div>

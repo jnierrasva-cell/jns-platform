@@ -7,6 +7,8 @@ import {
   syncArketaLocationById,
   clearAndResyncArketaLocation,
 } from "@/lib/arketa/sync";
+import { encryptSecret, decryptSecret } from "@/lib/crypto/secrets";
+import { fetchWithRetry } from "@/lib/http/retry";
 
 const ARKETA_BASE =
   "https://us-central1-sutra-prod.cloudfunctions.net/partnerApi/v0";
@@ -63,13 +65,17 @@ async function verifyArketaCredentials(
   url.searchParams.set("start_date", startDate);
   url.searchParams.set("end_date", endDate);
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "X-API-Key": apiKey,
+  const res = await fetchWithRetry(
+    url.toString(),
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "X-API-Key": apiKey,
+      },
+      cache: "no-store",
     },
-    cache: "no-store",
-  });
+    { label: "arketa-verify", maxAttempts: 3 },
+  );
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -98,6 +104,7 @@ export async function saveArketaLocation(input: {
   apiKey: string;
   googleCalendarId?: string;
   instructorEmailMapText?: string;
+  timezone?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await requireOrgManager(input.organizationId);
@@ -106,6 +113,8 @@ export async function saveArketaLocation(input: {
     const partnerId = input.partnerId.trim();
     let apiKey = input.apiKey.trim();
     const googleCalendarId = input.googleCalendarId?.trim() || null;
+    const timezone =
+      input.timezone?.trim() || "America/Los_Angeles";
     const instructor_email_map = parseInstructorMap(
       input.instructorEmailMapText,
     );
@@ -115,7 +124,7 @@ export async function saveArketaLocation(input: {
 
     const admin = createAdminClient();
 
-    // Edit: empty API key keeps the existing key
+    // Edit: empty API key keeps the existing key (decrypt only for verify if needed)
     if (input.id && !apiKey) {
       const { data: existing } = await admin
         .from("arketa_locations")
@@ -126,7 +135,16 @@ export async function saveArketaLocation(input: {
       if (!existing?.api_key) {
         return { ok: false, error: "API key is required" };
       }
-      apiKey = existing.api_key as string;
+      try {
+        apiKey = decryptSecret(existing.api_key as string) ?? "";
+      } catch {
+        return {
+          ok: false,
+          error:
+            "Could not read stored API key. Re-enter the API key and save again.",
+        };
+      }
+      if (!apiKey) return { ok: false, error: "API key is required" };
     }
 
     if (!apiKey) return { ok: false, error: "API key is required" };
@@ -137,9 +155,10 @@ export async function saveArketaLocation(input: {
       organization_id: input.organizationId,
       label,
       partner_id: partnerId,
-      api_key: apiKey,
+      api_key: encryptSecret(apiKey),
       google_calendar_id: googleCalendarId,
       instructor_email_map,
+      timezone,
       updated_at: new Date().toISOString(),
     };
 
@@ -208,9 +227,20 @@ export async function testArketaLocation(
 
     if (error || !data) return { ok: false, error: "Location not found" };
 
+    let apiKey: string;
+    try {
+      apiKey = decryptSecret(data.api_key) ?? "";
+    } catch {
+      return {
+        ok: false,
+        error:
+          "Could not read stored API key. Edit the location and re-enter the API key.",
+      };
+    }
+
     const { classCount } = await verifyArketaCredentials(
       data.partner_id,
-      data.api_key,
+      apiKey,
     );
 
     return {
