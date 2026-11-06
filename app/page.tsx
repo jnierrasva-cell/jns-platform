@@ -85,7 +85,7 @@ const plans = [
   },
 ];
 
-/** Always-on product preview — no external image dependency. */
+/** Real dashboard screenshot from public/dashboard-hero.jpg */
 function ProductPreview() {
   return (
     <div className="relative">
@@ -94,124 +94,14 @@ function ProductPreview() {
         aria-hidden
       />
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.55)] ring-1 ring-white/10">
-        <div className="flex min-h-[280px]">
-          {/* Sidebar */}
-          <div className="hidden w-[9.5rem] shrink-0 border-r border-slate-200 bg-slate-50/90 p-3 sm:block">
-            <div className="flex items-center gap-2 px-1">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#0B132B] text-[10px] font-bold text-white">
-                J
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-[11px] font-semibold text-slate-800">
-                  Harbor Studio
-                </p>
-                <p className="text-[9px] text-slate-500">Pro trial</p>
-              </div>
-            </div>
-            <p className="mt-4 px-1 text-[9px] font-medium uppercase tracking-wider text-slate-400">
-              Work
-            </p>
-            <div className="mt-1.5 space-y-0.5">
-              {[
-                ["Today", true],
-                ["Clients", false],
-                ["Schedule", false],
-                ["Forms", false],
-              ].map(([label, active]) => (
-                <div
-                  key={String(label)}
-                  className={`rounded-md px-2 py-1.5 text-[11px] ${
-                    active
-                      ? "bg-sky-100 font-medium text-sky-900"
-                      : "text-slate-500"
-                  }`}
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-            <p className="mt-4 px-1 text-[9px] font-medium uppercase tracking-wider text-slate-400">
-              Setup
-            </p>
-            <div className="mt-1.5 space-y-0.5">
-              {["Autopilot", "Connections", "Team"].map((label) => (
-                <div
-                  key={label}
-                  className="rounded-md px-2 py-1.5 text-[11px] text-slate-500"
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Main */}
-          <div className="min-w-0 flex-1 p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Today
-                </p>
-                <p className="mt-0.5 text-sm font-semibold text-slate-900">
-                  Harbor Wellness Studio
-                </p>
-              </div>
-              <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700">
-                Pro trial
-              </span>
-            </div>
-
-            <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50/60 px-3.5 py-3">
-              <p className="text-[11px] font-semibold text-slate-900">
-                Get your first inquiry handled automatically
-              </p>
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Connect Google → add a rule → turn on auto-reply
-              </p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
-                <div className="h-full w-2/3 rounded-full bg-sky-500" />
-              </div>
-              <p className="mt-1 text-right text-[9px] text-slate-400">2/3</p>
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[
-                ["24", "Clients"],
-                ["6", "Booked"],
-                ["On", "Autopilot"],
-                ["3", "Unmatched"],
-              ].map(([value, label]) => (
-                <div
-                  key={label}
-                  className="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2"
-                >
-                  <p className="text-base font-semibold tracking-tight text-slate-900">
-                    {value}
-                  </p>
-                  <p className="text-[10px] text-slate-500">{label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
-              {[
-                ["Maya Chen", "Lead · intake form"],
-                ["Jordan Hale", "Booked · Thu 10:00"],
-                ["Inquiry reply", "Rule matched · sent"],
-              ].map(([title, meta], i) => (
-                <div
-                  key={title}
-                  className={`flex items-center justify-between px-3 py-2 text-[11px] ${
-                    i > 0 ? "border-t border-slate-50" : ""
-                  }`}
-                >
-                  <span className="font-medium text-slate-800">{title}</span>
-                  <span className="text-slate-500">{meta}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/dashboard-hero.jpg"
+          alt="JNS workspace — clients, schedule, autopilot, and pipeline"
+          width={1400}
+          height={680}
+          className="h-auto w-full object-cover object-left-top"
+        />
       </div>
     </div>
   );
