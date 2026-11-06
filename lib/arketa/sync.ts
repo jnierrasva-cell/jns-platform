@@ -11,6 +11,8 @@ import {
   deleteJnsArketaEventsInWindow,
 } from "@/lib/google/calendar";
 import { decryptSecret } from "@/lib/crypto/secrets";
+import { maybeAlertArketaSyncFailure } from "@/lib/arketa/alerts";
+import { log } from "@/lib/log";
 
 export type SyncLocationResult = {
   locationId: string;
@@ -20,10 +22,13 @@ export type SyncLocationResult = {
   deleted: number;
   skipped: number;
   error?: string;
+  timedOut?: boolean;
 };
 
 const SYNC_DAYS_BACK = 1;
 const SYNC_DAYS_FORWARD = 21;
+/** Leave headroom under Vercel maxDuration (300s). */
+const LOCATION_TIME_BUDGET_MS = 240_000;
 
 function toDateParam(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -55,10 +60,50 @@ function sameInstant(a: string | null | undefined, b: string) {
   return Number.isFinite(ta) && Number.isFinite(tb) && ta === tb;
 }
 
+async function recordFailureAndMaybeAlert(input: {
+  locationId: string;
+  organizationId: string;
+  label: string;
+  previousFailures: number;
+  message: string;
+}) {
+  const admin = createAdminClient();
+  const next = (input.previousFailures ?? 0) + 1;
+  await admin
+    .from("arketa_locations")
+    .update({
+      last_synced_at: new Date().toISOString(),
+      last_sync_status: "error",
+      last_sync_error: input.message.slice(0, 500),
+      consecutive_failures: next,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.locationId);
+
+  log.error("arketa-sync", "location failed", {
+    organizationId: input.organizationId,
+    locationId: input.locationId,
+    label: input.label,
+    consecutiveFailures: next,
+    error: input.message.slice(0, 200),
+  });
+
+  await maybeAlertArketaSyncFailure({
+    organizationId: input.organizationId,
+    locationId: input.locationId,
+    locationLabel: input.label,
+    consecutiveFailures: next,
+    errorMessage: input.message,
+  });
+
+  return next;
+}
+
 export async function syncArketaLocationById(
   arketaLocationId: string,
 ): Promise<SyncLocationResult> {
   const admin = createAdminClient();
+  const started = Date.now();
 
   const { data: loc, error } = await admin
     .from("arketa_locations")
@@ -92,19 +137,16 @@ export async function syncArketaLocationById(
   const timeZone =
     (typeof loc.timezone === "string" && loc.timezone.trim()) ||
     "America/Los_Angeles";
+  const prevFailures = (loc.consecutive_failures as number | null) ?? 0;
 
   if (!loc.google_calendar_id?.trim()) {
-    await admin
-      .from("arketa_locations")
-      .update({
-        last_sync_status: "error",
-        last_sync_error: "Google Calendar ID missing",
-        consecutive_failures: (loc.consecutive_failures ?? 0) + 1,
-        last_synced_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", loc.id);
-
+    await recordFailureAndMaybeAlert({
+      locationId: loc.id,
+      organizationId: loc.organization_id,
+      label: loc.label,
+      previousFailures: prevFailures,
+      message: "Google Calendar ID missing",
+    });
     return { ...base, error: "Google Calendar ID missing" };
   }
 
@@ -117,30 +159,24 @@ export async function syncArketaLocationById(
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : "Failed to decrypt Arketa API key";
-    await admin
-      .from("arketa_locations")
-      .update({
-        last_sync_status: "error",
-        last_sync_error: msg.slice(0, 500),
-        consecutive_failures: (loc.consecutive_failures ?? 0) + 1,
-        last_synced_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", loc.id);
+    await recordFailureAndMaybeAlert({
+      locationId: loc.id,
+      organizationId: loc.organization_id,
+      label: loc.label,
+      previousFailures: prevFailures,
+      message: msg,
+    });
     return { ...base, error: msg };
   }
 
   if (!apiKeyPlain) {
-    await admin
-      .from("arketa_locations")
-      .update({
-        last_sync_status: "error",
-        last_sync_error: "Arketa API key missing",
-        consecutive_failures: (loc.consecutive_failures ?? 0) + 1,
-        last_synced_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", loc.id);
+    await recordFailureAndMaybeAlert({
+      locationId: loc.id,
+      organizationId: loc.organization_id,
+      label: loc.label,
+      previousFailures: prevFailures,
+      message: "Arketa API key missing",
+    });
     return { ...base, error: "Arketa API key missing" };
   }
 
@@ -154,6 +190,7 @@ export async function syncArketaLocationById(
 
   let firstGoogleError: string | null = null;
   let accessToken: string | undefined;
+  let timedOut = false;
 
   try {
     try {
@@ -167,16 +204,13 @@ export async function syncArketaLocationById(
         err instanceof Error
           ? err.message
           : "Google is not connected for this workspace";
-      await admin
-        .from("arketa_locations")
-        .update({
-          last_sync_status: "error",
-          last_sync_error: msg.slice(0, 500),
-          consecutive_failures: (loc.consecutive_failures ?? 0) + 1,
-          last_synced_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", loc.id);
+      await recordFailureAndMaybeAlert({
+        locationId: loc.id,
+        organizationId: loc.organization_id,
+        label: loc.label,
+        previousFailures: prevFailures,
+        message: msg,
+      });
       return { ...base, error: msg };
     }
 
@@ -185,6 +219,12 @@ export async function syncArketaLocationById(
       apiKey: apiKeyPlain,
       startDate: toDateParam(windowStart),
       endDate: toDateParam(windowEnd),
+    });
+
+    log.info("arketa-sync", "fetched classes", {
+      organizationId: loc.organization_id,
+      locationId: loc.id,
+      count: classes.length,
     });
 
     const { data: existingMaps } = await admin
@@ -199,6 +239,17 @@ export async function syncArketaLocationById(
     const seen = new Set<string>();
 
     for (const cls of classes) {
+      if (Date.now() - started > LOCATION_TIME_BUDGET_MS) {
+        timedOut = true;
+        log.warn("arketa-sync", "time budget reached; continuing next run", {
+          organizationId: loc.organization_id,
+          locationId: loc.id,
+          processed: seen.size,
+          total: classes.length,
+        });
+        break;
+      }
+
       if (!cls?.id) {
         base.skipped += 1;
         continue;
@@ -208,7 +259,6 @@ export async function syncArketaLocationById(
       const inactive = Boolean(cls.canceled || cls.deleted);
       let mapped = mapByClassId.get(cls.id) ?? null;
 
-      // Recover map if event exists on Google but row was lost
       if (!mapped) {
         const existingId = await findGoogleEventByArketaClassId({
           organizationId: loc.organization_id,
@@ -229,7 +279,9 @@ export async function syncArketaLocationById(
               last_title: cls.name ?? null,
               updated_at: new Date().toISOString(),
             })
-            .select("id, arketa_class_id, google_event_id, last_start_at, last_title")
+            .select(
+              "id, arketa_class_id, google_event_id, last_start_at, last_title",
+            )
             .maybeSingle();
           if (inserted) {
             mapped = inserted;
@@ -246,10 +298,7 @@ export async function syncArketaLocationById(
             eventId: mapped.google_event_id,
             accessToken,
           });
-          await admin
-            .from("arketa_class_events")
-            .delete()
-            .eq("id", mapped.id);
+          await admin.from("arketa_class_events").delete().eq("id", mapped.id);
           base.deleted += 1;
         } else {
           base.skipped += 1;
@@ -277,7 +326,6 @@ export async function syncArketaLocationById(
         .join("\n\n");
 
       if (mapped) {
-        // Skip no-op updates when title + start are unchanged
         if (
           mapped.last_title === title &&
           sameInstant(mapped.last_start_at, startsAt)
@@ -348,74 +396,87 @@ export async function syncArketaLocationById(
       }
     }
 
-    // Delete mapped events that are no longer in the Arketa window response.
-    // Always run — we no longer truncate the class list.
-    for (const [classId, mapped] of mapByClassId) {
-      if (seen.has(classId)) continue;
-
-      await deleteGoogleCalendarEvent({
-        organizationId: loc.organization_id,
-        calendarId,
-        eventId: mapped.google_event_id,
-        accessToken,
-      });
-      await admin.from("arketa_class_events").delete().eq("id", mapped.id);
-      base.deleted += 1;
+    // Deletes only when we processed the full class list (no time budget cut)
+    if (!timedOut) {
+      for (const [classId, mapped] of mapByClassId) {
+        if (seen.has(classId)) continue;
+        if (Date.now() - started > LOCATION_TIME_BUDGET_MS) {
+          timedOut = true;
+          break;
+        }
+        await deleteGoogleCalendarEvent({
+          organizationId: loc.organization_id,
+          calendarId,
+          eventId: mapped.google_event_id,
+          accessToken,
+        });
+        await admin.from("arketa_class_events").delete().eq("id", mapped.id);
+        base.deleted += 1;
+      }
     }
 
-    const statusNote = firstGoogleError
-      ? `partial: ${firstGoogleError}`.slice(0, 500)
-      : null;
+    const statusNote = timedOut
+      ? `partial: time budget reached; will continue next run${
+          firstGoogleError ? ` · ${firstGoogleError}` : ""
+        }`.slice(0, 500)
+      : firstGoogleError
+        ? `partial: ${firstGoogleError}`.slice(0, 500)
+        : null;
 
     const hardFail =
+      !timedOut &&
       Boolean(firstGoogleError) &&
       base.created === 0 &&
       base.updated === 0 &&
       base.deleted === 0;
 
-    await admin
-      .from("arketa_locations")
-      .update({
-        last_synced_at: new Date().toISOString(),
-        last_sync_status: hardFail
-          ? "error"
-          : firstGoogleError
-            ? "partial"
-            : "ok",
-        last_sync_error: statusNote,
-        consecutive_failures: hardFail
-          ? (loc.consecutive_failures ?? 0) + 1
-          : 0,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", loc.id);
-
     if (hardFail) {
-      return { ...base, error: firstGoogleError ?? "Sync failed" };
+      await recordFailureAndMaybeAlert({
+        locationId: loc.id,
+        organizationId: loc.organization_id,
+        label: loc.label,
+        previousFailures: prevFailures,
+        message: firstGoogleError ?? "Sync failed",
+      });
+      return { ...base, error: firstGoogleError ?? "Sync failed", timedOut };
     }
 
-    return base;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Sync failed";
     await admin
       .from("arketa_locations")
       .update({
         last_synced_at: new Date().toISOString(),
-        last_sync_status: "error",
-        last_sync_error: message.slice(0, 500),
-        consecutive_failures: (loc.consecutive_failures ?? 0) + 1,
+        last_sync_status: timedOut || firstGoogleError ? "partial" : "ok",
+        last_sync_error: statusNote,
+        consecutive_failures: 0,
         updated_at: new Date().toISOString(),
       })
       .eq("id", loc.id);
 
+    log.info("arketa-sync", "location complete", {
+      organizationId: loc.organization_id,
+      locationId: loc.id,
+      created: base.created,
+      updated: base.updated,
+      deleted: base.deleted,
+      skipped: base.skipped,
+      timedOut,
+      durationMs: Date.now() - started,
+    });
+
+    return { ...base, timedOut };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Sync failed";
+    await recordFailureAndMaybeAlert({
+      locationId: loc.id,
+      organizationId: loc.organization_id,
+      label: loc.label,
+      previousFailures: prevFailures,
+      message,
+    });
     return { ...base, error: message };
   }
 }
 
-/**
- * Wipe JNS Arketa events on the calendar + mapping rows, then sync once.
- * Use once to clear old duplicates before the tag system.
- */
 export async function clearAndResyncArketaLocation(
   arketaLocationId: string,
 ): Promise<SyncLocationResult & { cleaned: number }> {
@@ -457,7 +518,6 @@ export async function clearAndResyncArketaLocation(
     // syncArketaLocationById will surface the same error
   }
 
-  // Delete mapped Google events
   const { data: maps } = await admin
     .from("arketa_class_events")
     .select("id, google_event_id")
@@ -477,7 +537,6 @@ export async function clearAndResyncArketaLocation(
     .delete()
     .eq("arketa_location_id", loc.id);
 
-  // Delete unmapped old duplicates (description or tag)
   const cleaned = await deleteJnsArketaEventsInWindow({
     organizationId: loc.organization_id,
     calendarId: loc.google_calendar_id,
