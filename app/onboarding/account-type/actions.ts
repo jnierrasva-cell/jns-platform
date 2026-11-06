@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { possessiveWorkspaceName } from "@/lib/names";
 import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
+import { startProTrial } from "@/lib/billing/trial";
 
 export async function setAccountType(
   type: "individual" | "business",
@@ -36,7 +37,6 @@ export async function setAccountType(
     meta?.first_name?.trim() ||
     "";
 
-  // Sync metadata → profile if signup wrote metadata only
   if ((!profile?.first_name || !profile?.last_name) && (meta?.first_name || meta?.last_name)) {
     await admin
       .from("profiles")
@@ -88,8 +88,8 @@ export async function setAccountType(
     .update({ active_organization_id: orgId as string })
     .eq("id", user.id);
 
-  // Seed default pipeline stages for individual workspaces too
   await ensureDefaultPipelineStages(orgId as string);
+  await startProTrial(orgId as string);
 
   return { ok: true, next: "/dashboard" };
 }
