@@ -5,6 +5,7 @@ import {
   type OrgBilling,
   type PlanId,
 } from "@/lib/billing/plans";
+import { expireTrialIfNeeded } from "@/lib/billing/trial";
 
 export async function getOrgBilling(
   organizationId: string,
@@ -12,52 +13,55 @@ export async function getOrgBilling(
   const admin = createAdminClient();
   const { data } = await admin
     .from("organizations")
-    .select("plan, billing_status, plan_period_end")
+    .select("plan, billing_status, plan_period_end, billing_provider")
     .eq("id", organizationId)
     .maybeSingle();
 
-  const billing: OrgBilling = {
+  let billing: OrgBilling = {
     plan: data?.plan ?? "none",
     billing_status: data?.billing_status ?? "none",
     plan_period_end: data?.plan_period_end ?? null,
+    billing_provider: data?.billing_provider ?? null,
   };
+
+  billing = await expireTrialIfNeeded(organizationId, billing);
 
   return { ...billing, planId: effectivePlan(billing) };
 }
 
 function upgradeMessage(need: string) {
-  return `${need} Upgrade under Billing (sidebar → Billing), or ask the platform owner to assign a plan.`;
+  return `${need} Upgrade under Billing (sidebar → Billing), or start / continue a plan there.`;
 }
 
-/** Email rules + unmatched routing */
+/** Email rules + unmatched routing — Free and above */
 export async function assertEmailRules(organizationId: string) {
   const billing = await getOrgBilling(organizationId);
   const limits = planLimits(billing);
   if (!limits.emailRules) {
     throw new Error(
-      upgradeMessage("Email rules require Pro or Business."),
+      upgradeMessage("Email rules are not available on this plan."),
     );
   }
 }
 
-/** Auto-reply / inbox automations */
+/** Auto-reply / inbox automations — Free and above */
 export async function assertEmailAutomation(organizationId: string) {
   const billing = await getOrgBilling(organizationId);
   const limits = planLimits(billing);
   if (!limits.emailAutomation) {
     throw new Error(
-      upgradeMessage("Email automation requires Pro or Business."),
+      upgradeMessage("Email automation is not available on this plan."),
     );
   }
 }
 
-/** SMS reminders */
+/** SMS reminders — Pro / Business (and Pro trial) */
 export async function assertSmsReminders(organizationId: string) {
   const billing = await getOrgBilling(organizationId);
   const limits = planLimits(billing);
   if (!limits.smsReminders) {
     throw new Error(
-      upgradeMessage("SMS reminders require Pro or Business."),
+      upgradeMessage("SMS reminders require Pro, Business, or an active Pro trial."),
     );
   }
 }
@@ -74,7 +78,9 @@ export async function assertCanInvite(
 
   if (!limits.teamInvites) {
     throw new Error(
-      upgradeMessage("Team invites require Starter, Pro, or Business."),
+      upgradeMessage(
+        "Team invites require Starter or higher (included in the Pro trial).",
+      ),
     );
   }
 
