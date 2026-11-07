@@ -32,11 +32,14 @@ export function FormsClient({
   orgSlug,
   orgName,
   forms,
+  canCreateCustom = true,
 }: {
   organizationId: string;
   orgSlug: string;
   orgName: string;
   forms: FormRow[];
+  /** When false (Free plan), hide create controls; banner explains upgrade. */
+  canCreateCustom?: boolean;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
@@ -69,6 +72,10 @@ export function FormsClient({
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!canCreateCustom) {
+      setError("Custom forms need Starter or higher. Open Billing to upgrade.");
+      return;
+    }
     setError(null);
     const name = newName.trim();
     if (!name) {
@@ -163,6 +170,10 @@ export function FormsClient({
   }
 
   function duplicateForm(form: FormRow) {
+    if (!canCreateCustom) {
+      setError("Custom forms need Starter or higher. Open Billing to upgrade.");
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const result = await duplicateIntakeForm({
@@ -218,41 +229,63 @@ export function FormsClient({
         </p>
       )}
 
-      <form
-        id="new-form"
-        onSubmit={handleCreate}
-        className="mt-8 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4"
-      >
-        <div className="min-w-[200px] flex-1">
-          <label className="text-sm text-slate-700">New form name</label>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="e.g. Website inquiry"
-            className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+      {canCreateCustom ? (
+        <form
+          id="new-form"
+          onSubmit={handleCreate}
+          className="mt-8 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4"
         >
-          {isPending ? "Creating…" : "Create form"}
-        </button>
-      </form>
+          <div className="min-w-[200px] flex-1">
+            <label className="text-sm text-slate-700">New form name</label>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Website inquiry"
+              className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm min-h-[44px]"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="min-h-[44px] rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          >
+            {isPending ? "Creating…" : "Create form"}
+          </button>
+        </form>
+      ) : (
+        <p className="mt-6 text-sm text-slate-500">
+          Creating new custom forms is locked on Free. Existing forms (if any)
+          stay usable.{" "}
+          <a
+            href="/dashboard/billing"
+            className="font-medium text-sky-700 underline underline-offset-2"
+          >
+            View plans
+          </a>
+        </p>
+      )}
 
       {forms.length === 0 ? (
         <div className="mt-8">
           <EmptyState
             icon={FileInput}
             title="No forms yet"
-            description="Publish an intake form to collect leads. Submissions can create contacts and show up in Recent submissions."
-            actionLabel="Scroll to create"
-            onAction={() => {
-              document
-                .getElementById("new-form")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
+            description={
+              canCreateCustom
+                ? "Publish an intake form to collect leads. Submissions can create contacts."
+                : "Upgrade to Starter or higher to publish custom intake forms."
+            }
+            actionLabel={canCreateCustom ? "Scroll to create" : "Open Billing"}
+            href={canCreateCustom ? undefined : "/dashboard/billing"}
+            onAction={
+              canCreateCustom
+                ? () => {
+                    document
+                      .getElementById("new-form")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                : undefined
+            }
           />
         </div>
       ) : (
@@ -435,7 +468,7 @@ export function FormsClient({
                       <button
                         type="button"
                         onClick={() => copyLink(form)}
-                        className="rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
+                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
                       >
                         {copiedId === form.id ? "Copied" : "Copy link"}
                       </button>
@@ -443,15 +476,15 @@ export function FormsClient({
                         type="button"
                         disabled={isPending}
                         onClick={() => exportForm(form)}
-                        className="rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
+                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
                       >
                         Extract CSV
                       </button>
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={isPending || !canCreateCustom}
                         onClick={() => duplicateForm(form)}
-                        className="rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
+                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs disabled:opacity-50"
                       >
                         Duplicate
                       </button>
@@ -462,7 +495,7 @@ export function FormsClient({
                             ? setEditingId(null)
                             : startEdit(form)
                         }
-                        className="rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
+                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
                       >
                         {editingId === form.id ? "Close" : "Customize"}
                       </button>
@@ -470,7 +503,7 @@ export function FormsClient({
                         type="button"
                         disabled={isPending}
                         onClick={() => togglePublish(form)}
-                        className="rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
+                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
                       >
                         {form.is_published ? "Unpublish" : "Publish"}
                       </button>
