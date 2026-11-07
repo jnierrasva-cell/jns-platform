@@ -238,7 +238,7 @@ export function BillingClient({
                   {p.price}
                   <span
                     className={`text-sm font-normal ${
-                      p.highlighted ? "text-slate-400" : "text-slate-500"
+                      p.highlighted ? "text-sky-100" : "text-slate-500"
                     }`}
                   >
                     /mo
@@ -247,7 +247,7 @@ export function BillingClient({
                 {effectivePlan === p.id && isActive && !isTrial && (
                   <p
                     className={`mt-2 text-xs font-medium ${
-                      p.highlighted ? "text-slate-400" : "text-sky-700"
+                      p.highlighted ? "text-sky-100" : "text-sky-700"
                     }`}
                   >
                     Current plan
@@ -258,10 +258,16 @@ export function BillingClient({
                     <li key={feature} className="flex gap-2 text-sm">
                       <Check
                         className={`mt-0.5 h-4 w-4 shrink-0 ${
-                          p.highlighted ? "text-slate-400" : "text-sky-600"
+                          p.highlighted ? "text-sky-100" : "text-sky-600"
                         }`}
                       />
-                      <span className="text-slate-700">{feature}</span>
+                      <span
+                        className={
+                          p.highlighted ? "text-sky-50" : "text-slate-700"
+                        }
+                      >
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
