@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
+import { getPlanGateState } from "@/lib/billing/org-plan";
+import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { FormsClient } from "@/components/forms-client";
 import { DEFAULT_FORM_FIELDS } from "@/lib/forms/fields";
 
@@ -17,6 +19,7 @@ export default async function FormsPage() {
   if (!active) redirect("/onboarding/setup-business");
 
   const orgId = active.organizationId;
+  const gate = await getPlanGateState(orgId);
   const admin = createAdminClient();
 
   const { data: org } = await admin
@@ -55,11 +58,20 @@ export default async function FormsPage() {
   }));
 
   return (
-    <FormsClient
-      organizationId={orgId}
-      orgSlug={org?.slug ?? orgId}
-      orgName={org?.name ?? "Workspace"}
-      forms={formsWithMeta}
-    />
+    <div>
+      {!gate.limits.customForms && (
+        <PlanGateBanner
+          title="Custom forms need Starter or higher"
+          body="Free includes your core workflow. Starter unlocks custom intake forms you can publish and share. Pro trial includes this while active."
+        />
+      )}
+      <FormsClient
+        organizationId={orgId}
+        orgSlug={org?.slug ?? orgId}
+        orgName={org?.name ?? "Workspace"}
+        forms={formsWithMeta}
+        canCreateCustom={gate.limits.customForms}
+      />
+    </div>
   );
 }

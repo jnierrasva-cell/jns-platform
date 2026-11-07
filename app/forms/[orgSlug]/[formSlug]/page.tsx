@@ -14,11 +14,11 @@ export default async function PublicIntakeFormPage({
   const { orgSlug, formSlug } = await params;
   const supabase = createAdminClient();
 
-  let org: { id: string; name: string } | null = null;
+  let org: { id: string; name: string; logo_url: string | null } | null = null;
 
   const bySlug = await supabase
     .from("organizations")
-    .select("id, name")
+    .select("id, name, logo_url")
     .eq("slug", orgSlug)
     .maybeSingle();
 
@@ -27,7 +27,7 @@ export default async function PublicIntakeFormPage({
   } else {
     const byId = await supabase
       .from("organizations")
-      .select("id, name")
+      .select("id, name, logo_url")
       .eq("id", orgSlug)
       .maybeSingle();
     org = byId.data;
@@ -56,6 +56,7 @@ export default async function PublicIntakeFormPage({
       organizationId={org.id}
       formId={form.id}
       businessName={org.name}
+      logoUrl={org.logo_url}
       formName={form.name}
       headline={form.headline}
       description={form.description}

@@ -2,6 +2,8 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
+import { Inbox } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   convertUnmatchedToLead,
   ignoreUnmatched,
@@ -42,76 +44,89 @@ export function UnmatchedClient({
         </p>
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+      <div className="mt-8">
         {rows.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-slate-500">
-            No unmatched emails. Your CRM stays clean.
-          </p>
+          <EmptyState
+            icon={Inbox}
+            title="Inbox is clear"
+            description="No unmatched emails right now. Rules keep newsletters and noise out of Contacts."
+            actionLabel="Review email rules"
+            href="/dashboard/email-rules"
+            secondaryLabel="Open Autopilot"
+            secondaryHref="/dashboard/automation"
+          />
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">When</th>
-                <th className="px-4 py-3">From</th>
-                <th className="px-4 py-3">Subject</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 text-slate-500">
-                    {new Date(row.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">
-                      {row.from_name || row.from_email}
-                    </p>
-                    {row.from_name && (
-                      <p className="text-xs text-slate-500">{row.from_email}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {row.subject || "(no subject)"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() =>
-                          startTransition(async () => {
-                            await convertUnmatchedToLead({
-                              organizationId,
-                              unmatchedId: row.id,
-                            });
-                          })
-                        }
-                        className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700"
-                      >
-                        Convert to lead
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() =>
-                          startTransition(async () => {
-                            await ignoreUnmatched({
-                              organizationId,
-                              unmatchedId: row.id,
-                            });
-                          })
-                        }
-                        className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs text-slate-500"
-                      >
-                        Ignore
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
+            <table className="w-full min-w-[36rem] text-left text-sm">
+              <thead className="border-b border-slate-200/80 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">When</th>
+                  <th className="px-4 py-3">From</th>
+                  <th className="px-4 py-3">Subject</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-slate-100 last:border-0"
+                  >
+                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                      {new Date(row.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-slate-900">
+                        {row.from_name || row.from_email}
+                      </p>
+                      {row.from_name && (
+                        <p className="text-xs text-slate-500">
+                          {row.from_email}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {row.subject || "(no subject)"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            startTransition(async () => {
+                              await convertUnmatchedToLead({
+                                organizationId,
+                                unmatchedId: row.id,
+                              });
+                            })
+                          }
+                          className="min-h-[44px] rounded-xl border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700"
+                        >
+                          Convert to lead
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            startTransition(async () => {
+                              await ignoreUnmatched({
+                                organizationId,
+                                unmatchedId: row.id,
+                              });
+                            })
+                          }
+                          className="min-h-[44px] rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs text-slate-500"
+                        >
+                          Ignore
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
