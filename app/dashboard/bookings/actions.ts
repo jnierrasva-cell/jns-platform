@@ -12,6 +12,7 @@ import {
   assignContactPipelineStage,
   getBookedPipelineStageId,
 } from "@/lib/pipeline/assign";
+import { sendBookingConfirmationEmail } from "@/lib/bookings/email-notifications";
 
 async function requireOrgMember(organizationId: string) {
   const supabase = await createClient();
@@ -60,10 +61,11 @@ export async function createBooking(input: {
     }
 
     let attendeeEmail: string | null = null;
+    let contactFirstName: string | null = null;
     if (input.contactId) {
       const { data: contact, error: contactError } = await admin
         .from("contacts")
-        .select("email")
+        .select("email, first_name")
         .eq("id", input.contactId)
         .eq("organization_id", input.organizationId)
         .maybeSingle();
@@ -73,6 +75,7 @@ export async function createBooking(input: {
       }
       if (!contact) throw new Error("The selected contact was not found.");
       attendeeEmail = contact.email ?? null;
+      contactFirstName = contact.first_name ?? null;
       if (input.sendEmailNotification && !attendeeEmail) {
         throw new Error("The selected contact does not have an email address.");
       }
@@ -138,6 +141,23 @@ export async function createBooking(input: {
         stageId: bookedStageId,
         onlyIfEmpty: false,
       });
+    }
+
+    // Zero-setup managed confirmation (Resend) — independent of Google calendar invite
+    if (attendeeEmail) {
+      try {
+        await sendBookingConfirmationEmail({
+          organizationId: input.organizationId,
+          bookingId: booking.id,
+          title: input.title.trim(),
+          startsAt: startsAt.toISOString(),
+          contactEmail: attendeeEmail,
+          contactFirstName,
+          contactId: input.contactId ?? null,
+        });
+      } catch (emailErr) {
+        console.error("[createBooking] confirmation email:", emailErr);
+      }
     }
 
     revalidatePath("/dashboard/bookings");
