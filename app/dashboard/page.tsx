@@ -177,7 +177,7 @@ export default async function OverviewPage() {
         ? `Connected as ${googleConnection?.connected_email}`
         : "Link the business Gmail this workspace should watch and reply from.",
       href: "/dashboard/integrations",
-      actionLabel: googleConnected ? "Manage" : "Open Integrations",
+      actionLabel: googleConnected ? "Manage" : "Open Connections",
       done: googleConnected,
       critical: true,
     },
@@ -186,9 +186,9 @@ export default async function OverviewPage() {
       title: "Turn on inquiry auto-reply",
       description: autoAckOn
         ? "Auto-reply is enabled for this workspace."
-        : "Enable Inquiry auto-reply under Automation.",
+        : "Enable Inquiry auto-reply under Automations.",
       href: "/dashboard/automation",
-      actionLabel: autoAckOn ? "Open Automation" : "Open Automation",
+      actionLabel: "Open Automations",
       done: autoAckOn,
       critical: true,
     },
@@ -200,7 +200,7 @@ export default async function OverviewPage() {
           ? `${enabledRulesCount} enabled rule${enabledRulesCount === 1 ? "" : "s"}`
           : "Rules decide who gets a reply — so not every message becomes a lead.",
       href: "/dashboard/email-rules",
-      actionLabel: enabledRulesCount > 0 ? "Open rules" : "Open rules",
+      actionLabel: "Open rules",
       done: enabledRulesCount > 0,
       critical: true,
     },
@@ -212,7 +212,7 @@ export default async function OverviewPage() {
           ? `${templatesCount} template${templatesCount === 1 ? "" : "s"} ready`
           : "Templates are the text auto-reply sends.",
       href: "/dashboard/templates",
-      actionLabel: templatesCount > 0 ? "Open templates" : "Open templates",
+      actionLabel: "Open templates",
       done: templatesCount > 0,
       critical: false,
     },
@@ -222,10 +222,10 @@ export default async function OverviewPage() {
       description: recentActivityCount > 0
         ? `${recentActivityCount} email event${recentActivityCount === 1 ? "" : "s"} in the last 7 days`
         : googleConnected
-          ? `Send a test message to ${googleConnection?.connected_email}, then check Automation activity.`
+          ? `Send a test message to ${googleConnection?.connected_email}, then check Automations activity.`
           : "Connect Google first, then email that inbox once.",
       href: "/dashboard/automation",
-      actionLabel: "Open Automation",
+      actionLabel: "Open Automations",
       done: recentActivityCount > 0,
       critical: false,
     },
@@ -272,27 +272,33 @@ export default async function OverviewPage() {
     (c) => new Date(c.created_at) >= weekAgo,
   ).length;
 
+  const peopleLabel =
+    active.contactLabelPlural &&
+    active.contactLabelPlural.toLowerCase() !== "contacts"
+      ? active.contactLabelPlural
+      : "People";
+
   const metrics: OverviewMetric[] = [
     {
       href: "/dashboard/contacts",
-      label: "Clients",
+      label: peopleLabel,
       value: contacts.length,
       detail:
         newThisWeek > 0
           ? `${newThisWeek} new this week`
-          : "People in this workspace",
+          : "In this workspace",
       icon: Contact,
     },
     {
       href: "/dashboard/bookings",
-      label: "Schedule (30 days)",
+      label: "Bookings (30 days)",
       value: bookingsRes.count ?? 0,
       detail: "Scheduled ahead",
       icon: CalendarDays,
     },
     {
       href: "/dashboard/automation",
-      label: "Autopilot on",
+      label: "Automations on",
       value: activeAutomations,
       detail: "Enabled for this org",
       icon: Zap,
@@ -313,11 +319,18 @@ export default async function OverviewPage() {
     },
     {
       href: "/dashboard/unmatched",
-      label: "Unmatched email",
+      label: "Needs review",
       value: unmatchedCount,
       detail: unmatchedCount > 0 ? "Needs a rule or contact" : "Inbox clear",
       icon: Inbox,
     },
+  ];
+
+  const primaryMetricLabels = [
+    peopleLabel,
+    "Bookings (30 days)",
+    "Automations on",
+    "Needs review",
   ];
 
   const nextStep =
@@ -332,16 +345,16 @@ export default async function OverviewPage() {
       : unmatchedCount > 0
         ? {
             href: "/dashboard/unmatched",
-            title: `${unmatchedCount} unmatched email${unmatchedCount === 1 ? "" : "s"}`,
+            title: `${unmatchedCount} item${unmatchedCount === 1 ? "" : "s"} need review`,
             description: "Review and attach to a contact or add a rule.",
-            action: "Unmatched",
+            action: "Needs review",
           }
         : activeAutomations === 0
           ? {
               href: "/dashboard/automation",
-              title: "Turn on autopilot",
+              title: "Turn on automations",
               description: "Auto-ack or reminders once tools are connected.",
-              action: "Autopilot",
+              action: "Automations",
             }
           : contacts.length === 0
             ? {
@@ -352,9 +365,10 @@ export default async function OverviewPage() {
               }
             : {
                 href: "/dashboard/pipeline",
-                title: "Work your journey",
-                description: "Move people forward and keep follow-ups tight.",
-                action: "Journey",
+                title: "Work your pipeline",
+                description:
+                  "Move people through stages and keep follow-ups tight.",
+                action: "Pipeline",
               };
 
   function contactName(c: {
@@ -369,10 +383,9 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
-          Today
+          Home
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
@@ -407,7 +420,6 @@ export default async function OverviewPage() {
         </p>
       </div>
 
-      {/* Setup / first-run progress — existing data only */}
       {showSetupCard && !allCriticalDone && (
         <FirstRunPanel
           orgName={active.orgName}
@@ -428,14 +440,9 @@ export default async function OverviewPage() {
         </section>
       )}
 
-      {/* Metric cards — real numbers; sparklines are visual placeholders */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {metrics
-          .filter((m) =>
-            ["Clients", "Schedule (30 days)", "Autopilot on", "Unmatched email"].includes(
-              m.label,
-            ),
-          )
+          .filter((m) => primaryMetricLabels.includes(m.label))
           .map((m) => {
             const Icon = m.icon;
             return (
@@ -446,24 +453,20 @@ export default async function OverviewPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs font-medium text-slate-500">{m.label}</p>
-                  <Icon className="h-4 w-4 text-slate-300 group-hover:text-slate-400" aria-hidden />
+                  <Icon
+                    className="h-4 w-4 text-slate-300 group-hover:text-slate-400"
+                    aria-hidden
+                  />
                 </div>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
                   {m.value}
                 </p>
                 <p className="mt-1 truncate text-xs text-slate-500">{m.detail}</p>
-                {/* Placeholder sparkline — no historical series in app yet */}
-                <div
-                  className="mt-3 h-8 w-full rounded-md bg-gradient-to-r from-sky-50 via-sky-100/80 to-sky-50 opacity-80"
-                  aria-hidden
-                  title="Trend chart placeholder"
-                />
               </Link>
             );
           })}
       </section>
 
-      {/* Suggested next — existing logic */}
       <section>
         <Link
           href={nextStep.href}
@@ -486,12 +489,10 @@ export default async function OverviewPage() {
         </Link>
       </section>
 
-      {/* Today schedule + Journey + Activity */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Today = upcoming bookings */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Today</h2>
+            <h2 className="text-sm font-semibold text-slate-900">Upcoming</h2>
             <Link
               href="/dashboard/bookings"
               className="text-xs font-medium text-sky-600 hover:text-sky-700"
@@ -502,7 +503,7 @@ export default async function OverviewPage() {
           <ul className="mt-4 space-y-3">
             {upcomingBookings.length === 0 ? (
               <li className="rounded-xl bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
-                No upcoming schedule items.
+                No upcoming bookings.
               </li>
             ) : (
               upcomingBookings.map((b) => {
@@ -543,10 +544,9 @@ export default async function OverviewPage() {
           </ul>
         </div>
 
-        {/* Journey bars — existing stage/status counts */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Journey</h2>
+            <h2 className="text-sm font-semibold text-slate-900">Pipeline</h2>
             <Link
               href="/dashboard/pipeline"
               className="text-xs font-medium text-sky-600 hover:text-sky-700"
@@ -557,10 +557,7 @@ export default async function OverviewPage() {
           <div className="mt-4 space-y-3">
             {stageCounts
               ? stageCounts.map((s) => {
-                  const max = Math.max(
-                    ...stageCounts.map((x) => x.count),
-                    1,
-                  );
+                  const max = Math.max(...stageCounts.map((x) => x.count), 1);
                   const pct = Math.round((s.count / max) * 100);
                   return (
                     <div key={s.id}>
@@ -574,99 +571,37 @@ export default async function OverviewPage() {
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                         <div
-                          className="h-full rounded-full bg-sky-500 transition-all"
+                          className="h-full rounded-full bg-sky-500"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
                   );
                 })
-              : (
-                  [
-                    ["Lead", statusPipeline.lead, "bg-sky-500"],
-                    ["Booked", statusPipeline.booked, "bg-sky-400"],
-                    ["Customer", statusPipeline.customer, "bg-emerald-500"],
-                    ["Inactive", statusPipeline.inactive, "bg-slate-300"],
-                  ] as const
-                ).map(([name, count, barClass]) => {
-                  const max = Math.max(
-                    statusPipeline.lead,
-                    statusPipeline.booked,
-                    statusPipeline.customer,
-                    statusPipeline.inactive,
-                    1,
-                  );
-                  const pct = Math.round((count / max) * 100);
-                  return (
-                    <div key={name}>
-                      <div className="mb-1 flex items-center justify-between gap-2">
-                        <p className="text-xs text-slate-600">{name}</p>
-                        <p className="text-xs font-semibold text-slate-900">
-                          {count}
-                        </p>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full rounded-full ${barClass} transition-all`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+              : [
+                  ["Lead", statusPipeline.lead],
+                  ["Booked", statusPipeline.booked],
+                  ["Customer", statusPipeline.customer],
+                  ["Inactive", statusPipeline.inactive],
+                ].map(([name, count]) => (
+                  <div
+                    key={name as string}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-slate-600">{name}</span>
+                    <span className="font-semibold text-slate-900">
+                      {count as number}
+                    </span>
+                  </div>
+                ))}
           </div>
         </div>
 
-        {/* Recent activity — placeholder until real activity feed exists */}
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
-              Recent activity
+              Recent {peopleLabel.toLowerCase()}
             </h2>
-          </div>
-          <ul className="mt-4 space-y-3">
-            <li className="flex gap-2.5">
-              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-500" />
-              <div className="min-w-0">
-                <p className="text-sm text-slate-800">
-                  {recentActivityCount > 0
-                    ? `${recentActivityCount} email event${recentActivityCount === 1 ? "" : "s"} in the last 7 days`
-                    : "No email activity in the last 7 days"}
-                </p>
-                <p className="text-xs text-slate-400">
-                  From existing automation activity count
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-2.5">
-              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-              <div className="min-w-0">
-                <p className="text-sm text-slate-800">
-                  {newThisWeek > 0
-                    ? `${newThisWeek} new client${newThisWeek === 1 ? "" : "s"} this week`
-                    : "No new clients this week"}
-                </p>
-                <p className="text-xs text-slate-400">From clients list</p>
-              </div>
-            </li>
-            <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3 text-xs text-slate-500">
-              Full activity feed is a placeholder. Item-level events are not
-              loaded on this page yet.
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* Secondary: remaining metrics + recent clients (existing data) */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-slate-400" aria-hidden />
-              <h2 className="text-sm font-semibold text-slate-900">
-                Recent clients
-              </h2>
-            </div>
             <Link
               href="/dashboard/contacts"
               className="text-xs font-medium text-sky-600 hover:text-sky-700"
@@ -674,76 +609,54 @@ export default async function OverviewPage() {
               View all
             </Link>
           </div>
-          <ul className="mt-3 divide-y divide-slate-100">
+          <ul className="mt-4 space-y-2">
             {recentContacts.length === 0 ? (
-              <li className="py-5 text-center text-sm text-slate-500">
-                No clients yet.
+              <li className="rounded-xl bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
+                No contacts yet.
               </li>
             ) : (
               recentContacts.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-start justify-between gap-3 py-2.5"
-                >
-                  <div className="min-w-0">
-                    <Link
-                      href={`/dashboard/contacts/${c.id}`}
-                      className="text-sm font-medium text-slate-900 hover:underline"
-                    >
+                <li key={c.id}>
+                  <Link
+                    href={`/dashboard/contacts/${c.id}`}
+                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 hover:border-slate-200"
+                  >
+                    <span className="truncate text-sm font-medium text-slate-900">
                       {contactName(c)}
-                    </Link>
-                    <p className="text-xs capitalize text-slate-500">
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-400">
                       {c.status || "—"}
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-xs text-slate-400">
-                    {new Date(c.created_at).toLocaleDateString()}
-                  </p>
+                    </span>
+                  </Link>
                 </li>
               ))
             )}
           </ul>
         </div>
+      </section>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Workspace snapshot
-            </h2>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {metrics
-              .filter(
-                (m) =>
-                  !["Clients", "Schedule (30 days)", "Autopilot on", "Unmatched email"].includes(
-                    m.label,
-                  ),
-              )
-              .map((m) => {
-                const Icon = m.icon;
-                return (
-                  <Link
-                    key={m.href + m.label}
-                    href={m.href}
-                    className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3 transition hover:bg-slate-50"
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <p className="truncate text-xs text-slate-500">
-                        {m.label}
-                      </p>
-                      <Icon className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-                    </div>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {m.value}
-                    </p>
-                    <p className="mt-0.5 truncate text-[11px] text-slate-400">
-                      {m.detail}
-                    </p>
-                  </Link>
-                );
-              })}
-          </div>
-        </div>
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {metrics
+          .filter((m) => !primaryMetricLabels.includes(m.label))
+          .map((m) => {
+            const Icon = m.icon;
+            return (
+              <Link
+                key={m.href + m.label}
+                href={m.href}
+                className="group flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300"
+              >
+                <Icon className="h-5 w-5 text-slate-300" aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500">{m.label}</p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {m.value}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">{m.detail}</p>
+                </div>
+              </Link>
+            );
+          })}
       </section>
     </div>
   );

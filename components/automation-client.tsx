@@ -189,7 +189,7 @@ export function AutomationClient({
   return (
     <div>
       <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
-        Autopilot
+        Automations
       </span>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
         What actually runs
@@ -268,7 +268,7 @@ export function AutomationClient({
                         href="/dashboard/unmatched"
                         className="text-xs text-slate-600 underline underline-offset-2 hover:text-slate-900"
                       >
-                        Unmatched
+                        Needs review
                       </Link>
                     </div>
                   )}
@@ -277,7 +277,7 @@ export function AutomationClient({
                       href="/dashboard/integrations"
                       className="px-0.5 text-xs text-slate-600 underline underline-offset-2 hover:text-slate-900"
                     >
-                      Twilio in Integrations
+                      Twilio in Connections
                     </Link>
                   )}
                 </div>
