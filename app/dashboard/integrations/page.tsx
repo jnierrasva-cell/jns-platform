@@ -14,7 +14,40 @@ function mapToText(raw: unknown): string {
     .join("\n");
 }
 
-export default async function ConnectionsPage() {
+function googleErrorMessage(
+  code: string | undefined,
+  jnsEmail: string | null,
+): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "email_mismatch":
+      return jnsEmail
+        ? `The Google account you chose does not match your JNS login (${jnsEmail}). Pick that same Google address, or sign in to JNS with the Google account you want to connect.`
+        : "The Google account you chose does not match your JNS login email. Use the same address for both.";
+    case "not_allowed":
+      return "Only the workspace owner or an admin can connect Google.";
+    case "invalid_state":
+    case "missing_org":
+      return "That Google connection link expired. Click Connect Google and try again.";
+    case "token_exchange_failed":
+      return "Google did not complete the connection. Try again in a moment.";
+    case "save_failed":
+      return "Google authorized, but we could not save the connection. Try again or contact support.";
+    default:
+      return "Could not connect Google. Try again.";
+  }
+}
+
+export default async function ConnectionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const googleError =
+    typeof params.google_error === "string" ? params.google_error : undefined;
+  const googleConnected = params.google_connected === "1";
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,6 +60,7 @@ export default async function ConnectionsPage() {
 
   const orgId = active.organizationId;
   const canManage = active.role === "ceo" || active.role === "admin";
+  const jnsEmail = user.email?.trim().toLowerCase() ?? null;
 
   const admin = createAdminClient();
 
@@ -68,6 +102,7 @@ export default async function ConnectionsPage() {
   }));
 
   const googleNeedsReauth = Boolean(googleConnection?.needs_reauth);
+  const errorText = googleErrorMessage(googleError, jnsEmail);
 
   return (
     <div>
@@ -83,6 +118,30 @@ export default async function ConnectionsPage() {
         optional and only needed for SMS.
       </p>
 
+      {errorText && (
+        <div
+          className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+          role="alert"
+        >
+          <p className="font-medium">Google connection failed</p>
+          <p className="mt-1 text-red-800/90">{errorText}</p>
+          {googleError === "email_mismatch" && jnsEmail && (
+            <p className="mt-2 text-xs text-red-800/80">
+              Tip: on the Google account picker, choose{" "}
+              <span className="font-medium">{jnsEmail}</span> — the same email
+              you use to sign in to JNS.
+            </p>
+          )}
+        </div>
+      )}
+
+      {googleConnected && !errorText && (
+        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Google connected successfully. You can turn on inquiry auto-reply in
+          Automation.
+        </div>
+      )}
+
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
           <div className="flex items-start justify-between gap-4">
@@ -92,6 +151,15 @@ export default async function ConnectionsPage() {
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 Used for inbox watch, auto-acknowledgment, and calendar sync.
+                Connect the same Google address you use to sign in to JNS
+                {jnsEmail ? (
+                  <>
+                    {" "}
+                    (<span className="font-medium text-slate-700">{jnsEmail}</span>
+                    )
+                  </>
+                ) : null}
+                .
               </p>
             </div>
             <span

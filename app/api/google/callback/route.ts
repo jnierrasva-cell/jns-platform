@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
   const state = request.nextUrl.searchParams.get("state");
   const storedState = request.cookies.get("google_oauth_state")?.value;
   const storedOrgId = request.cookies.get("google_oauth_org")?.value;
+  const expectedEmail =
+    request.cookies.get("google_oauth_expected_email")?.value?.toLowerCase() ??
+    null;
   const redirectUri = `${request.nextUrl.origin}/api/google/callback`;
 
   function redirectWithParam(key: string, value: string) {
@@ -16,6 +19,7 @@ export async function GET(request: NextRequest) {
     const res = NextResponse.redirect(url);
     res.cookies.delete("google_oauth_state");
     res.cookies.delete("google_oauth_org");
+    res.cookies.delete("google_oauth_expected_email");
     return res;
   }
 
@@ -55,6 +59,10 @@ export async function GET(request: NextRequest) {
     { headers: { Authorization: `Bearer ${access_token}` } },
   );
   const googleUser = userInfoRes.ok ? await userInfoRes.json() : null;
+  const googleEmail =
+    typeof googleUser?.email === "string"
+      ? googleUser.email.trim().toLowerCase()
+      : null;
 
   const supabase = await createClient();
   const {
@@ -63,6 +71,13 @@ export async function GET(request: NextRequest) {
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  const jnsEmail = (user.email ?? expectedEmail ?? "").trim().toLowerCase();
+
+  // Google account must match the signed-in JNS user email
+  if (!googleEmail || !jnsEmail || googleEmail !== jnsEmail) {
+    return redirectWithParam("google_error", "email_mismatch");
   }
 
   // Must be manager of the org we started connect for
@@ -100,7 +115,7 @@ export async function GET(request: NextRequest) {
     {
       organization_id: storedOrgId,
       provider: "google",
-      connected_email: googleUser?.email ?? null,
+      connected_email: googleEmail,
       access_token: encryptSecret(access_token),
       refresh_token: encryptSecret(refreshToStore),
       expires_at: expiresAt,
@@ -114,11 +129,6 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return redirectWithParam("google_error", "save_failed");
-  }
-
-  if (!refreshToStore) {
-    // Connected but offline access incomplete — still usable until access expires
-    return redirectWithParam("google_connected", "1");
   }
 
   return redirectWithParam("google_connected", "1");

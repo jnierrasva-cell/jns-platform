@@ -44,8 +44,12 @@ export async function GET(request: NextRequest) {
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("scope", GOOGLE_SCOPES);
   authUrl.searchParams.set("access_type", "offline");
-  authUrl.searchParams.set("prompt", "consent");
+  authUrl.searchParams.set("prompt", "consent select_account");
   authUrl.searchParams.set("state", state);
+  // Prefer the same address the user registered with on JNS
+  if (user.email) {
+    authUrl.searchParams.set("login_hint", user.email.trim().toLowerCase());
+  }
 
   const response = NextResponse.redirect(authUrl);
   response.cookies.set("google_oauth_state", state, {
@@ -63,6 +67,20 @@ export async function GET(request: NextRequest) {
     maxAge: 600,
     path: "/",
   });
+  // Remember expected JNS login email for mismatch messaging after callback
+  if (user.email) {
+    response.cookies.set(
+      "google_oauth_expected_email",
+      user.email.trim().toLowerCase(),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 600,
+        path: "/",
+      },
+    );
+  }
 
   return response;
 }
