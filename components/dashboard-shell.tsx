@@ -80,29 +80,47 @@ type NavItem = {
   badge?: string;
 };
 
-/** Day-to-day work — every org member */
-const WORK_NAV: NavItem[] = [
-  { label: "Today", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Clients", href: "/dashboard/contacts", icon: Contact },
-  { label: "Journey", href: "/dashboard/pipeline", icon: Kanban },
-  { label: "Schedule", href: "/dashboard/bookings", icon: CalendarDays },
-  { label: "Forms", href: "/dashboard/forms", icon: FileInput },
-  { label: "Playbooks", href: "/dashboard/sops", icon: BookOpen },
+/** Day-to-day work — every org member. Routes unchanged. */
+function buildWorkNav(peopleLabel: string): NavItem[] {
+  return [
+    { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+    { label: peopleLabel, href: "/dashboard/contacts", icon: Contact },
+    { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
+    { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
+    { label: "Forms", href: "/dashboard/forms", icon: FileInput },
+    { label: "Docs", href: "/dashboard/sops", icon: BookOpen },
+  ];
+}
+
+/** Inbox triage — ceo / admin only */
+const INBOX_NAV: NavItem[] = [
+  { label: "Needs review", href: "/dashboard/unmatched", icon: Inbox },
+  { label: "Email rules", href: "/dashboard/email-rules", icon: Filter },
+  { label: "Templates", href: "/dashboard/templates", icon: FileText },
+];
+
+/** Systems / setup — ceo / admin only */
+const SYSTEMS_NAV: NavItem[] = [
+  {
+    label: "Automations",
+    href: "/dashboard/automation",
+    icon: Zap,
+    badge: "Pro",
+  },
+  { label: "Connections", href: "/dashboard/integrations", icon: Plug },
+  { label: "Team", href: "/dashboard/team", icon: Users },
+  { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
 ];
 
 /**
- * Inbox ops + workspace setup — ceo / admin only.
- * Unmatched lives here so assistants are not dropped into email triage by default.
+ * Niche kits set Member/Members or Client/Clients.
+ * Default product language is People (clearer than Contacts for multi-niche).
  */
-const SETUP_NAV: NavItem[] = [
-  { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
-  { label: "Unmatched email", href: "/dashboard/unmatched", icon: Inbox },
-  { label: "Autopilot", href: "/dashboard/automation", icon: Zap, badge: "Pro" },
-  { label: "Who gets replies", href: "/dashboard/email-rules", icon: Filter },
-  { label: "Reply templates", href: "/dashboard/templates", icon: FileText },
-  { label: "Connections", href: "/dashboard/integrations", icon: Plug },
-  { label: "Team", href: "/dashboard/team", icon: Users },
-];
+function peopleNavLabel(contactLabelPlural?: string | null) {
+  const raw = contactLabelPlural?.trim();
+  if (!raw || raw.toLowerCase() === "contacts") return "People";
+  return raw;
+}
 
 export function DashboardShell({
   userEmail,
@@ -113,6 +131,7 @@ export function DashboardShell({
   orgLogoUrl,
   planLabel = "No plan",
   planId = "none",
+  contactLabelPlural = "People",
   children,
 }: {
   userEmail: string;
@@ -123,6 +142,7 @@ export function DashboardShell({
   orgLogoUrl?: string | null;
   planLabel?: string;
   planId?: string;
+  contactLabelPlural?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -141,6 +161,9 @@ export function DashboardShell({
   );
   const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
   const mobileOpen = mobileOpenPath === pathname;
+
+  const peopleLabel = peopleNavLabel(contactLabelPlural);
+  const workNav = buildWorkNav(peopleLabel);
 
   function toggleCollapsed() {
     try {
@@ -286,12 +309,14 @@ export function DashboardShell({
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         <SectionLabel collapsed={!showLabels}>Work</SectionLabel>
-        {renderNavItems(WORK_NAV)}
+        {renderNavItems(workNav)}
 
         {isOrgManager && (
           <>
-            <SectionLabel collapsed={!showLabels}>Setup</SectionLabel>
-            {renderNavItems(SETUP_NAV)}
+            <SectionLabel collapsed={!showLabels}>Inbox</SectionLabel>
+            {renderNavItems(INBOX_NAV)}
+            <SectionLabel collapsed={!showLabels}>Systems</SectionLabel>
+            {renderNavItems(SYSTEMS_NAV)}
           </>
         )}
 
@@ -458,7 +483,7 @@ export function DashboardShell({
         aria-label="Primary"
       >
         <ul className="mx-auto flex h-16 max-w-lg items-stretch justify-between px-1">
-          {WORK_NAV.slice(0, 4).map((item) => {
+          {workNav.slice(0, 4).map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
             return (

@@ -204,6 +204,7 @@ export default async function DashboardLayout({
       orgLogoUrl={active.orgLogoUrl}
       planLabel={planLabel}
       planId={planId}
+      contactLabelPlural={active.contactLabelPlural}
     >
       <>
         {showNamePrompt && <CompleteProfileBanner />}
