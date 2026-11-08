@@ -19,6 +19,14 @@ export const mockServices: Service[] = [
     status: "available",
   },
   {
+    id: "booking-email-reminders",
+    name: "Booking email confirmations & reminders",
+    description:
+      "Sends a confirmation when a booking is created and a reminder before it starts. Uses JNS email — no Twilio or Google setup required.",
+    category: "Email",
+    status: "available",
+  },
+  {
     id: "sms-reminders",
     name: "Booking SMS reminders",
     description:
