@@ -4,9 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
 import { startProTrial } from "@/lib/billing/trial";
+import { applyNicheKit } from "@/lib/niches/apply-kit";
+import { isNicheKey, type NicheKey } from "@/lib/niches/kits";
 
 export async function createOrganization(
   businessName: string,
+  niche?: string,
 ): Promise<{ ok: true; next: string } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
@@ -34,6 +37,8 @@ export async function createOrganization(
   if (!businessName.trim()) {
     return { ok: false, error: "Business name is required" };
   }
+
+  const nicheKey: NicheKey = isNicheKey(niche) ? niche : "general";
 
   const { data: orgId, error } = await supabase.rpc(
     "create_organization_with_ceo",
@@ -74,7 +79,12 @@ export async function createOrganization(
     return { ok: false, error: profileError.message };
   }
 
-  await ensureDefaultPipelineStages(orgId as string);
+  // Niche kit seeds pipeline + forms + email reminders; falls back to default stages
+  const kitResult = await applyNicheKit(orgId as string, nicheKey);
+  if (!kitResult.ok) {
+    await ensureDefaultPipelineStages(orgId as string);
+  }
+
   // No-card Pro trial: team invites, custom forms, SMS for 14 days
   await startProTrial(orgId as string);
 

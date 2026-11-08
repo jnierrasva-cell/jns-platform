@@ -10,6 +10,7 @@ import {
   assignContactPipelineStage,
   getBookedPipelineStageId,
 } from "@/lib/pipeline/assign";
+import { sendBookingConfirmationEmail } from "@/lib/bookings/email-notifications";
 
 export async function submitPublicBooking(input: {
   organizationId: string;
@@ -98,6 +99,20 @@ export async function submitPublicBooking(input: {
 
   if (cal.eventId) {
     await saveBookingGoogleEventId(booking.id, cal.eventId);
+  }
+
+  try {
+    await sendBookingConfirmationEmail({
+      organizationId: input.organizationId,
+      bookingId: booking.id,
+      title,
+      startsAt: startsAt.toISOString(),
+      contactEmail: email,
+      contactFirstName: firstName,
+      contactId,
+    });
+  } catch (emailErr) {
+    console.error("[submitPublicBooking] confirmation email:", emailErr);
   }
 
   return { ok: true as const, bookingId: booking.id };

@@ -9,6 +9,9 @@ export type ActiveOrg = {
   orgName: string;
   orgKind: "personal" | "business";
   orgLogoUrl: string | null;
+  niche: string | null;
+  contactLabel: string;
+  contactLabelPlural: string;
 };
 
 export async function getActiveOrg(): Promise<ActiveOrg | null> {
@@ -79,16 +82,24 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
   let orgName = "Workspace";
   let orgKind: "personal" | "business" = "personal";
   let orgLogoUrl: string | null = null;
+  let niche: string | null = null;
+  let contactLabel = "Contact";
+  let contactLabelPlural = "Contacts";
+
   try {
     const admin = createAdminClient();
     const { data: org } = await admin
       .from("organizations")
-      .select("name, kind, logo_url")
+      .select("name, kind, logo_url, niche, label_map")
       .eq("id", selected.organization_id)
       .maybeSingle();
     orgName = org?.name ?? "Workspace";
     orgKind = org?.kind === "business" ? "business" : "personal";
     orgLogoUrl = org?.logo_url ?? null;
+    niche = (org?.niche as string | null) ?? null;
+    const map = (org?.label_map ?? {}) as Record<string, string>;
+    if (map.contact) contactLabel = map.contact;
+    if (map.contacts) contactLabelPlural = map.contacts;
   } catch {
     const { data: org } = await supabase
       .from("organizations")
@@ -106,5 +117,8 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
     orgName,
     orgKind,
     orgLogoUrl,
+    niche,
+    contactLabel,
+    contactLabelPlural,
   };
 }

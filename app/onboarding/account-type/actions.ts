@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { possessiveWorkspaceName } from "@/lib/names";
 import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
 import { startProTrial } from "@/lib/billing/trial";
+import { applyNicheKit } from "@/lib/niches/apply-kit";
 
 export async function setAccountType(
   type: "individual" | "business",
@@ -88,7 +89,10 @@ export async function setAccountType(
     .update({ active_organization_id: orgId as string })
     .eq("id", user.id);
 
-  await ensureDefaultPipelineStages(orgId as string);
+  const kitResult = await applyNicheKit(orgId as string, "general");
+  if (!kitResult.ok) {
+    await ensureDefaultPipelineStages(orgId as string);
+  }
   await startProTrial(orgId as string);
 
   return { ok: true, next: "/dashboard" };

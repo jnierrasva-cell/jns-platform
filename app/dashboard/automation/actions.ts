@@ -26,6 +26,7 @@ export async function setAutomationEnabled(
     ) {
       await assertEmailAutomation(organizationId);
     }
+    // booking-email-reminders: available on all plans, uses Resend, no extra gate
   }
 
   if (serviceKey === "sms-reminders" && isEnabled) {
