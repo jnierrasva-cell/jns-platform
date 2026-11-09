@@ -5,6 +5,7 @@ import {
   NICHE_KITS,
   type NicheKey,
 } from "@/lib/niches/kits";
+import { ensureDefaultAutoAckTemplate } from "@/lib/email/ensure-default-template";
 
 function slugify(input: string) {
   return input
@@ -20,6 +21,7 @@ function slugify(input: string) {
  * - Sets organizations.niche + label_map
  * - Replaces pipeline stages when org has none (or forceReplaceStages)
  * - Creates kit forms when org has no forms yet
+ * - Seeds gmail_auto_ack from kit reply template (inbox loop)
  * - Enables booking-email-reminders automation (zero setup)
  */
 export async function applyNicheKit(
@@ -42,7 +44,6 @@ export async function applyNicheKit(
     .eq("id", organizationId);
 
   if (orgError) {
-    // Column may not exist until SQL migration is run — still try stages/forms
     console.error("[applyNicheKit] org update failed:", orgError.message);
   }
 
@@ -107,6 +108,17 @@ export async function applyNicheKit(
         console.error("[applyNicheKit] form insert failed:", formError.message);
       }
     }
+  }
+
+  // Default auto-ack template (inbox loop) — do not overwrite if present
+  const reply = kit.replyTemplates?.[0];
+  try {
+    await ensureDefaultAutoAckTemplate(organizationId, {
+      subject: reply?.subject,
+      body: reply?.body,
+    });
+  } catch (err) {
+    console.error("[applyNicheKit] template seed failed:", err);
   }
 
   // Zero-setup booking email reminders ON by default
