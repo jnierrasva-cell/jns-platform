@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
 
 /**
  * Starts a Gmail watch for the org and stores history_id + expiration.
- * Watch lasts ~7 days; must be renewed.
+ * Watch lasts ~7 days; must be renewed via cron.
  */
 export async function startGmailWatch(organizationId: string) {
   const topic = process.env.GOOGLE_PUBSUB_TOPIC;
@@ -34,14 +35,13 @@ export async function startGmailWatch(organizationId: string) {
   }
 
   const data = await watchRes.json();
-  // data.historyId, data.expiration (ms since epoch as string)
-
-  const supabase = await createClient();
   const expiration = data.expiration
     ? new Date(Number(data.expiration)).toISOString()
     : null;
 
-  const { error } = await supabase
+  // Prefer admin so this works from OAuth callback and cron (no user cookie)
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("connections")
     .update({
       history_id: String(data.historyId),
@@ -65,17 +65,20 @@ export async function startGmailWatch(organizationId: string) {
  * Stops Gmail push notifications for the connected account.
  */
 export async function stopGmailWatch(organizationId: string) {
-  const { accessToken } = await getValidGoogleAccessToken(organizationId);
+  try {
+    const { accessToken } = await getValidGoogleAccessToken(organizationId);
+    await fetch("https://gmail.googleapis.com/gmail/v1/users/me/stop", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch (err) {
+    console.error("[gmail-watch] stop failed", err);
+  }
 
-  await fetch("https://gmail.googleapis.com/gmail/v1/users/me/stop", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  const supabase = await createClient();
-  await supabase
+  const admin = createAdminClient();
+  await admin
     .from("connections")
     .update({
       watch_expiration: null,
@@ -83,4 +86,61 @@ export async function stopGmailWatch(organizationId: string) {
     })
     .eq("organization_id", organizationId)
     .eq("provider", "google");
+}
+
+/**
+ * Renew watches that expire within `withinHours` (default 48).
+ * Returns counts for cron logging.
+ */
+export async function renewExpiringGmailWatches(withinHours = 48) {
+  const admin = createAdminClient();
+  const cutoff = new Date(
+    Date.now() + withinHours * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { data: rows, error } = await admin
+    .from("connections")
+    .select("organization_id, watch_expiration, needs_reauth")
+    .eq("provider", "google")
+    .not("connected_email", "is", null);
+
+  if (error) {
+    throw new Error(`Failed to list Google connections: ${error.message}`);
+  }
+
+  let renewed = 0;
+  let skipped = 0;
+  let failed = 0;
+  const errors: { organizationId: string; error: string }[] = [];
+
+  for (const row of rows ?? []) {
+    const orgId = row.organization_id as string;
+    if (row.needs_reauth) {
+      skipped += 1;
+      continue;
+    }
+
+    const exp = row.watch_expiration as string | null;
+    const needsRenew =
+      !exp || Number.isNaN(new Date(exp).getTime()) || exp <= cutoff;
+
+    if (!needsRenew) {
+      skipped += 1;
+      continue;
+    }
+
+    try {
+      await startGmailWatch(orgId);
+      renewed += 1;
+    } catch (err) {
+      failed += 1;
+      errors.push({
+        organizationId: orgId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      console.error("[gmail-watch] renew failed", orgId, err);
+    }
+  }
+
+  return { renewed, skipped, failed, errors };
 }
