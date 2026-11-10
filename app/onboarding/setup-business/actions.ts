@@ -5,11 +5,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureDefaultPipelineStages } from "@/lib/pipeline/seed-default-stages";
 import { startProTrial } from "@/lib/billing/trial";
 import { applyNicheKit } from "@/lib/niches/apply-kit";
-import { isNicheKey, type NicheKey } from "@/lib/niches/kits";
+import {
+  isBusinessSizeKey,
+  resolveKitFromOnboardingInput,
+  type BusinessSizeKey,
+} from "@/lib/niches/business-types";
 
 export async function createOrganization(
   businessName: string,
-  niche?: string,
+  businessType?: string,
+  businessSize?: string,
 ): Promise<{ ok: true; next: string } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
@@ -38,7 +43,17 @@ export async function createOrganization(
     return { ok: false, error: "Business name is required" };
   }
 
-  const nicheKey: NicheKey = isNicheKey(niche) ? niche : "general";
+  if (!businessType?.trim()) {
+    return { ok: false, error: "Choose a business type" };
+  }
+
+  if (!businessSize?.trim() || !isBusinessSizeKey(businessSize)) {
+    return { ok: false, error: "Choose a business size" };
+  }
+
+  const sizeKey = businessSize as BusinessSizeKey;
+  const { businessType: typeKey, kit: nicheKey } =
+    resolveKitFromOnboardingInput(businessType);
 
   const { data: orgId, error } = await supabase.rpc(
     "create_organization_with_ceo",
@@ -52,17 +67,34 @@ export async function createOrganization(
     };
   }
 
+  // kind + optional analytics fields (columns may be missing until SQL is applied)
   const { data: organization, error: kindError } = await admin
     .from("organizations")
-    .update({ kind: "business" })
+    .update({
+      kind: "business",
+      business_type: typeKey,
+      business_size: sizeKey,
+    })
     .eq("id", orgId as string)
     .select("id")
     .maybeSingle();
 
   if (kindError) {
-    return { ok: false, error: kindError.message };
-  }
-  if (!organization) {
+    // Retry kind-only if new columns are not migrated yet
+    const { data: org2, error: kindOnly } = await admin
+      .from("organizations")
+      .update({ kind: "business" })
+      .eq("id", orgId as string)
+      .select("id")
+      .maybeSingle();
+
+    if (kindOnly || !org2) {
+      return {
+        ok: false,
+        error: kindError.message || kindOnly?.message || "Could not update organization",
+      };
+    }
+  } else if (!organization) {
     return { ok: false, error: "Could not mark organization as a business." };
   }
 
@@ -79,13 +111,12 @@ export async function createOrganization(
     return { ok: false, error: profileError.message };
   }
 
-  // Niche kit seeds pipeline + forms + email reminders; falls back to default stages
+  // Starter kit from mapped type (not user-facing niche jargon)
   const kitResult = await applyNicheKit(orgId as string, nicheKey);
   if (!kitResult.ok) {
     await ensureDefaultPipelineStages(orgId as string);
   }
 
-  // No-card Pro trial: team invites, custom forms, SMS for 14 days
   await startProTrial(orgId as string);
 
   return { ok: true, next: "/dashboard/workspace?welcome=1" };
