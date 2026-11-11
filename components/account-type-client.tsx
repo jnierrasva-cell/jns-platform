@@ -55,10 +55,10 @@ export function AccountTypeClient() {
                 <User className="h-4 w-4" />
               </span>
               <p className="mt-3 text-sm font-semibold text-zinc-900">
-                Individual
+                Personal
               </p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Solo operator or VA. We create a personal workspace now.
+                Solo use. We create a personal workspace now.
               </p>
             </button>
 
@@ -73,7 +73,7 @@ export function AccountTypeClient() {
               </span>
               <p className="mt-3 text-sm font-semibold text-zinc-900">Business</p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Studio or team. Next you name the workspace, then invite staff.
+                Company or team. Next: name, type, and size — then invite staff.
               </p>
             </button>
           </div>
