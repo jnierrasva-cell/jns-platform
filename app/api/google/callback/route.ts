@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptSecret } from "@/lib/crypto/secrets";
+import { startGmailWatch } from "@/lib/google/watch";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const storedState = request.cookies.get("google_oauth_state")?.value;
   const storedOrgId = request.cookies.get("google_oauth_org")?.value;
+  const expectedEmail =
+    request.cookies.get("google_oauth_expected_email")?.value?.toLowerCase() ??
+    null;
   const redirectUri = `${request.nextUrl.origin}/api/google/callback`;
 
   function redirectWithParam(key: string, value: string) {
@@ -16,6 +20,7 @@ export async function GET(request: NextRequest) {
     const res = NextResponse.redirect(url);
     res.cookies.delete("google_oauth_state");
     res.cookies.delete("google_oauth_org");
+    res.cookies.delete("google_oauth_expected_email");
     return res;
   }
 
@@ -55,6 +60,10 @@ export async function GET(request: NextRequest) {
     { headers: { Authorization: `Bearer ${access_token}` } },
   );
   const googleUser = userInfoRes.ok ? await userInfoRes.json() : null;
+  const googleEmail =
+    typeof googleUser?.email === "string"
+      ? googleUser.email.trim().toLowerCase()
+      : null;
 
   const supabase = await createClient();
   const {
@@ -65,7 +74,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Must be manager of the org we started connect for
+  const jnsEmail = (user.email ?? expectedEmail ?? "").trim().toLowerCase();
+
+  if (!googleEmail || !jnsEmail || googleEmail !== jnsEmail) {
+    return redirectWithParam("google_error", "email_mismatch");
+  }
+
   const { data: membership } = await supabase
     .from("org_members")
     .select("organization_id, role")
@@ -73,18 +87,16 @@ export async function GET(request: NextRequest) {
     .eq("organization_id", storedOrgId)
     .maybeSingle();
 
-  if (
-    !membership ||
-    !["ceo", "admin"].includes(membership.role)
-  ) {
+  if (!membership || !["ceo", "admin"].includes(membership.role)) {
     return redirectWithParam("google_error", "not_allowed");
   }
 
-  const expiresAt = new Date(Date.now() + (expires_in || 3600) * 1000).toISOString();
+  const expiresAt = new Date(
+    Date.now() + (expires_in || 3600) * 1000,
+  ).toISOString();
 
   const admin = createAdminClient();
 
-  // Preserve existing refresh_token if Google omits it on re-consent
   let refreshToStore = refresh_token ?? null;
   if (!refreshToStore) {
     const { data: existing } = await admin
@@ -100,7 +112,7 @@ export async function GET(request: NextRequest) {
     {
       organization_id: storedOrgId,
       provider: "google",
-      connected_email: googleUser?.email ?? null,
+      connected_email: googleEmail,
       access_token: encryptSecret(access_token),
       refresh_token: encryptSecret(refreshToStore),
       expires_at: expiresAt,
@@ -116,9 +128,17 @@ export async function GET(request: NextRequest) {
     return redirectWithParam("google_error", "save_failed");
   }
 
-  if (!refreshToStore) {
-    // Connected but offline access incomplete — still usable until access expires
-    return redirectWithParam("google_connected", "1");
+  // Inbox loop requires Gmail push watch — start immediately after connect
+  let watchOk = true;
+  try {
+    await startGmailWatch(storedOrgId);
+  } catch (watchErr) {
+    watchOk = false;
+    console.error("[google-callback] startGmailWatch failed", watchErr);
+  }
+
+  if (!watchOk) {
+    return redirectWithParam("google_connected", "watch_pending");
   }
 
   return redirectWithParam("google_connected", "1");

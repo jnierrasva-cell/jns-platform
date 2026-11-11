@@ -7,6 +7,7 @@ import {
   assertEmailAutomation,
   assertSmsReminders,
 } from "@/lib/billing/org-plan";
+import { ensureDefaultAutoAckTemplate } from "@/lib/email/ensure-default-template";
 
 export async function setAutomationEnabled(
   organizationId: string,
@@ -26,7 +27,6 @@ export async function setAutomationEnabled(
     ) {
       await assertEmailAutomation(organizationId);
     }
-    // booking-email-reminders: available on all plans, uses Resend, no extra gate
   }
 
   if (serviceKey === "sms-reminders" && isEnabled) {
@@ -56,6 +56,8 @@ export async function setAutomationEnabled(
         "Connect Google in Integrations before enabling inquiry auto-reply.",
       );
     }
+
+    await ensureDefaultAutoAckTemplate(organizationId);
   }
 
   if (

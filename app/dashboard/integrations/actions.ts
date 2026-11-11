@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgManager } from "@/lib/org/auth";
+import { stopGmailWatch } from "@/lib/google/watch";
 
 export async function disconnectGoogle(
   organizationId: string,
@@ -16,6 +17,13 @@ export async function disconnectGoogle(
     }
 
     await requireOrgManager(organizationId);
+
+    // Best-effort stop push notifications before deleting tokens
+    try {
+      await stopGmailWatch(organizationId);
+    } catch (err) {
+      console.error("[disconnectGoogle] stop watch", err);
+    }
 
     const admin = createAdminClient();
     const { error } = await admin
