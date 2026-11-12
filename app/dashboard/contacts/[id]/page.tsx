@@ -1,5 +1,4 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
@@ -67,22 +66,13 @@ export default async function ContactDetailPage({
     .limit(50);
 
   return (
-    <div>
-      <Link
-        href="/dashboard/contacts"
-        className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
-      >
-        ← Back to Contacts
-      </Link>
-
-      <ContactDetailClient
-        organizationId={orgId}
-        contact={contact}
-        stages={stages ?? []}
-        activity={activity ?? []}
-        bookings={bookings ?? []}
-        notes={notes ?? []}
-      />
-    </div>
+    <ContactDetailClient
+      organizationId={orgId}
+      contact={contact}
+      stages={stages ?? []}
+      activity={activity ?? []}
+      bookings={bookings ?? []}
+      notes={notes ?? []}
+    />
   );
 }

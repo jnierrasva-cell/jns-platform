@@ -3,11 +3,19 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
+  CalendarDays,
+  Mail,
+  NotebookPen,
+  UserRound,
+} from "lucide-react";
+import {
   updateContact,
   addContactNote,
   setContactPipelineStage,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
+import { EmptyState } from "@/components/empty-state";
+import PageHeader from "@/components/ui/PageHeader";
 
 type Contact = {
   id: string;
@@ -56,6 +64,37 @@ type Note = {
   created_by: string | null;
 };
 
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(iso: string | null | undefined) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  lead: "Lead",
+  booked: "Booked",
+  customer: "Customer",
+  inactive: "Inactive",
+};
+
 export function ContactDetailClient({
   organizationId,
   contact,
@@ -83,7 +122,17 @@ export function ContactDetailClient({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
+  const [noteSaved, setNoteSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const displayName =
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    email ||
+    phone ||
+    "Contact";
+
+  const stageName =
+    stages.find((s) => s.id === pipelineStageId)?.name ?? null;
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -115,6 +164,11 @@ export function ContactDetailClient({
   function handleAddNote(e: React.FormEvent) {
     e.preventDefault();
     setNoteError(null);
+    setNoteSaved(false);
+    if (!noteBody.trim()) {
+      setNoteError("Write a short note first.");
+      return;
+    }
     startTransition(async () => {
       try {
         await addContactNote({
@@ -123,6 +177,7 @@ export function ContactDetailClient({
           body: noteBody,
         });
         setNoteBody("");
+        setNoteSaved(true);
       } catch (err) {
         setNoteError(err instanceof Error ? err.message : "Could not add note");
       }
@@ -130,62 +185,97 @@ export function ContactDetailClient({
   }
 
   return (
-    <div className="mt-4">
-      <span className="font-mono text-xs uppercase tracking-[0.15em] text-slate-500">
-        Contact
-      </span>
-      <h1 className="mt-1 text-2xl font-semibold text-slate-900">
-        {[firstName, lastName].filter(Boolean).join(" ") || email || "Contact"}
-      </h1>
+    <div className="pb-4">
+      <PageHeader
+        backHref="/dashboard/contacts"
+        backLabel="Back to Clients"
+        eyebrow="Client"
+        title={displayName}
+        description="Update details, move them through your journey, and keep notes in one place."
+      />
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      {/* Summary strip */}
+      <section className="mt-5 flex flex-wrap items-center gap-2">
+        {stageName ? (
+          <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-100">
+            {stageName}
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
+            No journey stage
+          </span>
+        )}
+        <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
+          {STATUS_LABEL[status] ?? status}
+        </span>
+        {contact.source ? (
+          <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-100">
+            {contact.source}
+          </span>
+        ) : null}
         {(contact.tags ?? []).map((tag) => (
           <span
             key={tag}
-            className="inline-flex rounded-full border border-[#2563EB]/30 bg-sky-600/10 px-2.5 py-0.5 text-xs text-sky-600"
+            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600"
           >
             {tag}
           </span>
         ))}
-      </div>
+        <span className="ml-auto text-xs text-slate-400">
+          {contact.last_contacted_at
+            ? `Last contact ${formatDate(contact.last_contacted_at)}`
+            : `Added ${formatDate(contact.created_at) ?? ""}`}
+        </span>
+      </section>
 
+      {/* Details form */}
       <form
         onSubmit={handleSave}
-        className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6"
+        className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6"
       >
-        <h2 className="text-sm font-medium text-slate-900">Details</h2>
+        <div className="flex items-center gap-2">
+          <UserRound className="h-4 w-4 text-slate-400" aria-hidden />
+          <h2 className="text-sm font-semibold text-slate-900">Details</h2>
+        </div>
+
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">First name</label>
+            <label className="text-sm font-medium text-slate-700">
+              First name
+            </label>
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Last name</label>
+            <label className="text-sm font-medium text-slate-700">
+              Last name
+            </label>
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Email</label>
+            <label className="text-sm font-medium text-slate-700">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Pipeline stage</label>
+            <label className="text-sm font-medium text-slate-700">
+              Journey stage
+            </label>
             <select
               value={pipelineStageId}
               onChange={(e) => setPipelineStageId(e.target.value)}
-              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             >
               <option value="">Unassigned</option>
               {stages.map((s) => (
@@ -195,22 +285,24 @@ export function ContactDetailClient({
               ))}
             </select>
             <p className="text-xs text-slate-500">
-              Managed in{" "}
+              Stages are managed in{" "}
               <Link
                 href="/dashboard/pipeline"
-                className="text-sky-600 underline underline-offset-2"
+                className="font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
               >
-                Pipeline
+                Journey
               </Link>
               .
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Legacy status</label>
+            <label className="text-sm font-medium text-slate-700">
+              Status
+            </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
             >
               <option value="lead">Lead</option>
               <option value="booked">Booked</option>
@@ -219,7 +311,7 @@ export function ContactDetailClient({
             </select>
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-slate-700">Phone</label>
+            <label className="text-sm font-medium text-slate-700">Phone</label>
             <CountryPhoneInput value={phone} onChange={setPhone} />
             <p className="text-xs text-slate-500">
               Country defaults from your browser timezone. Enter the local
@@ -228,135 +320,191 @@ export function ContactDetailClient({
           </div>
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        {saved && <p className="mt-3 text-sm text-emerald-600">Saved.</p>}
+        {error ? (
+          <p role="alert" className="mt-4 text-sm text-red-600">
+            {error}
+          </p>
+        ) : null}
+        {saved ? (
+          <p role="status" className="mt-4 text-sm font-medium text-emerald-700">
+            Saved. Changes are live on Journey and Clients.
+          </p>
+        ) : null}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="mt-5 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
-        >
-          {isPending ? "Saving…" : "Save contact"}
-        </button>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
+          >
+            {isPending ? "Saving…" : "Save changes"}
+          </button>
+          <Link
+            href="/dashboard/pipeline"
+            className="text-sm font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900"
+          >
+            Open Journey board
+          </Link>
+        </div>
       </form>
 
-      <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-slate-500">
-          Notes
-        </h2>
+      {/* Notes */}
+      <section className="mt-8">
+        <div className="mb-3 flex items-center gap-2">
+          <NotebookPen className="h-4 w-4 text-slate-400" aria-hidden />
+          <h2 className="text-sm font-semibold text-slate-900">Notes</h2>
+        </div>
+
         <form
           onSubmit={handleAddNote}
-          className="mt-4 rounded-2xl border border-slate-200/80 bg-white p-4"
+          className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5"
         >
+          <label htmlFor="contact-note" className="sr-only">
+            Add a note
+          </label>
           <textarea
+            id="contact-note"
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
             rows={3}
             placeholder="Log a call, follow-up, or internal note…"
-            className="w-full rounded-2xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
           />
-          {noteError && (
-            <p className="mt-2 text-sm text-red-600">{noteError}</p>
-          )}
+          {noteError ? (
+            <p role="alert" className="mt-2 text-sm text-red-600">
+              {noteError}
+            </p>
+          ) : null}
+          {noteSaved ? (
+            <p role="status" className="mt-2 text-sm font-medium text-emerald-700">
+              Note added.
+            </p>
+          ) : null}
           <button
             type="submit"
             disabled={isPending}
-            className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-600 transition hover:bg-sky-100 disabled:opacity-60"
+            className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
           >
             {isPending ? "Adding…" : "Add note"}
           </button>
         </form>
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+        <div className="mt-4">
           {notes.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">
-              No notes yet. Add the first one above.
-            </p>
+            <EmptyState
+              icon={NotebookPen}
+              title="No notes yet"
+              description="Capture calls, follow-ups, and context here so anyone on the team can pick up the thread."
+            />
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm divide-y divide-slate-100">
               {notes.map((n) => (
-                <li key={n.id} className="px-4 py-3">
+                <li key={n.id} className="px-4 py-3.5 sm:px-5">
                   <p className="text-sm whitespace-pre-wrap text-slate-700">
                     {n.body}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {new Date(n.created_at).toLocaleString()}
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    {formatDateTime(n.created_at)}
                   </p>
                 </li>
               ))}
             </ul>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-slate-500">
-          Bookings
-        </h2>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
-          {bookings.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">
-              No bookings for this contact yet.
-            </p>
-          ) : (
-            <ul className="divide-y divide-white/5">
-              {bookings.map((b) => (
-                <li
-                  key={b.id}
-                  className="flex items-center justify-between gap-4 px-4 py-3"
+      {/* Bookings */}
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-slate-400" aria-hidden />
+            <h2 className="text-sm font-semibold text-slate-900">Bookings</h2>
+          </div>
+          <Link
+            href="/dashboard/bookings"
+            className="text-xs font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+          >
+            All bookings
+          </Link>
+        </div>
+
+        {bookings.length === 0 ? (
+          <EmptyState
+            icon={CalendarDays}
+            title="No bookings yet"
+            description="When this person books time, sessions will show up here. You can also create bookings from Schedule."
+            actionLabel="Open Schedule"
+            href="/dashboard/bookings"
+          />
+        ) : (
+          <ul className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm divide-y divide-slate-100">
+            {bookings.map((b) => (
+              <li
+                key={b.id}
+                className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-900">
+                    {b.title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {formatDateTime(b.starts_at)} · {b.status}
+                  </p>
+                </div>
+                <Link
+                  href="/dashboard/bookings"
+                  className="shrink-0 text-xs font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{b.title}</p>
-                    <p className="text-xs text-slate-500">
-                      {new Date(b.starts_at).toLocaleString()} · {b.status}
-                    </p>
-                  </div>
-                  <Link
-                    href="/dashboard/bookings"
-                    className="text-xs text-sky-600 underline underline-offset-2"
-                  >
-                    View
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+                  View
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-      <div className="mt-8">
-        <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-slate-500">
-          Email activity
-        </h2>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
-          {activity.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">
-              No email activity yet.
-            </p>
-          ) : (
-            <ul className="divide-y divide-white/5">
-              {activity.map((row) => (
-                <li key={row.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {row.subject || "(no subject)"}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {row.direction === "inbound" ? "Received" : "Sent"} ·{" "}
-                        {row.status}
-                      </p>
-                    </div>
-                    <p className="shrink-0 text-xs text-slate-500">
-                      {new Date(row.created_at).toLocaleString()}
+      {/* Email activity */}
+      <section className="mt-8">
+        <div className="mb-3 flex items-center gap-2">
+          <Mail className="h-4 w-4 text-slate-400" aria-hidden />
+          <h2 className="text-sm font-semibold text-slate-900">
+            Email activity
+          </h2>
+        </div>
+
+        {activity.length === 0 ? (
+          <EmptyState
+            icon={Mail}
+            title="No email activity yet"
+            description="Sent and received messages linked to this person will appear here once Google is connected and mail is flowing."
+            actionLabel="Open Connections"
+            href="/dashboard/integrations"
+            secondaryLabel="Email rules"
+            secondaryHref="/dashboard/email-rules"
+          />
+        ) : (
+          <ul className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm divide-y divide-slate-100">
+            {activity.map((row) => (
+              <li key={row.id} className="px-4 py-3.5 sm:px-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {row.subject || "(no subject)"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {row.direction === "inbound" ? "Received" : "Sent"} ·{" "}
+                      {row.status}
                     </p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+                  <p className="shrink-0 text-xs text-slate-400">
+                    {formatDateTime(row.created_at)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
