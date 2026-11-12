@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Filter } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   createEmailRule,
   deleteEmailRule,
@@ -23,6 +25,15 @@ type Rule = {
   template_key?: string | null;
   created_at: string;
 };
+
+const inputClass =
+  "min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100";
+
+const secondaryBtn =
+  "inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50";
+
+const primaryBtn =
+  "inline-flex min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60";
 
 function conditionSummary(rule: Rule) {
   const parts: string[] = [];
@@ -65,6 +76,7 @@ export function EmailRulesClient({
   const [templateKey, setTemplateKey] = useState("gmail_auto_ack");
   const [enableOnCreate, setEnableOnCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function resetForm() {
@@ -83,6 +95,7 @@ export function EmailRulesClient({
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     startTransition(async () => {
       try {
         await createEmailRule({
@@ -99,6 +112,7 @@ export function EmailRulesClient({
           enabled: enableOnCreate,
         });
         resetForm();
+        setSuccess("Rule saved.");
         router.refresh();
       } catch (err) {
         const message =
@@ -116,49 +130,113 @@ export function EmailRulesClient({
     });
   }
 
+  function toggleEnabled(rule: Rule) {
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      try {
+        await setEmailRuleEnabled(rule.id, !rule.is_enabled);
+        setSuccess(
+          rule.is_enabled ? `Disabled “${rule.name}”.` : `Enabled “${rule.name}”.`,
+        );
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not update rule",
+        );
+      }
+    });
+  }
+
+  function removeRule(rule: Rule) {
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      try {
+        await deleteEmailRule(rule.id);
+        setSuccess(`Deleted “${rule.name}”.`);
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not delete rule",
+        );
+      }
+    });
+  }
+
   return (
-    <div>
-      <div className="mb-1 flex items-center justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
-          Email
-        </span>
-        <Link
-          href="/dashboard/automation"
-          className="text-xs text-slate-600 underline underline-offset-2"
-        >
-          ← Automation
-        </Link>
+    <div className="pb-4">
+      <div className="border-b border-slate-200/80 pb-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            Inbox
+          </p>
+          <div className="flex flex-wrap gap-3 text-xs">
+            <Link
+              href="/dashboard/unmatched"
+              className="font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900"
+            >
+              Needs review
+            </Link>
+            <Link
+              href="/dashboard/templates"
+              className="font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900"
+            >
+              Templates
+            </Link>
+            <Link
+              href="/dashboard/automation"
+              className="font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900"
+            >
+              Automations
+            </Link>
+          </div>
+        </div>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Email rules
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
+          Rules decide who gets a reply and who becomes a contact. Leave
+          optional filters empty to match more mail. Lower priority number is
+          checked first.
+        </p>
       </div>
 
-      <h1 className="mt-1 text-2xl font-semibold text-slate-900">Email rules</h1>
-      <p className="mt-1 max-w-2xl text-sm text-slate-500">
-        Rules decide who gets a reply. Leave optional filters empty to match
-        more mail. Lower priority number is checked first.
-      </p>
+      {error ? (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
+      {success ? (
+        <p role="status" className="mt-4 text-sm font-medium text-emerald-700">
+          {success}
+        </p>
+      ) : null}
 
       <form
+        id="new-rule"
         onSubmit={handleCreate}
-        className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6"
+        className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6"
       >
-        <h2 className="text-sm font-medium text-slate-900">New rule</h2>
+        <h2 className="text-sm font-semibold text-slate-900">New rule</h2>
         <p className="mt-1 text-xs text-slate-500">
-          Example: subject contains “cancel” → auto-reply. You do not need
-          every field filled in.
+          Example: subject contains “cancel” → auto-reply. You do not need every
+          field filled in.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Name</label>
+            <label className="text-sm font-medium text-slate-700">Name</label>
             <input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Cancellation requests"
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm font-medium text-slate-700">
               Priority (1 = highest)
             </label>
             <input
@@ -167,66 +245,68 @@ export function EmailRulesClient({
               max={999}
               value={priority}
               onChange={(e) => setPriority(Number(e.target.value) || 1)}
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             />
             <p className="text-xs text-slate-400">
               Use 1–10 for important rules. Default 10 is fine.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm font-medium text-slate-700">
               From email (optional)
             </label>
             <input
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
               placeholder="one.person@email.com"
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm font-medium text-slate-700">
               From domain (optional)
             </label>
             <input
               value={fromDomain}
               onChange={(e) => setFromDomain(e.target.value)}
               placeholder="ilovemypilates.com"
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm font-medium text-slate-700">
               Subject contains (optional)
             </label>
             <input
               value={subjectContains}
               onChange={(e) => setSubjectContains(e.target.value)}
               placeholder="cancellation"
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Action</label>
+            <label className="text-sm font-medium text-slate-700">Action</label>
             <select
               value={action}
               onChange={(e) =>
                 setAction(e.target.value as "auto_ack" | "skip" | "tag_only")
               }
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             >
               <option value="auto_ack">Send auto-reply + contact</option>
               <option value="tag_only">Contact only (no reply)</option>
               <option value="skip">Skip (ignore this mail)</option>
             </select>
           </div>
-          {action === "auto_ack" && (
+          {action === "auto_ack" ? (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-slate-700">Reply template</label>
+              <label className="text-sm font-medium text-slate-700">
+                Reply template
+              </label>
               <select
                 value={templateKey}
                 onChange={(e) => setTemplateKey(e.target.value)}
-                className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+                className={inputClass}
               >
                 {(templateKeys.length > 0
                   ? templateKeys
@@ -238,168 +318,225 @@ export function EmailRulesClient({
                 ))}
               </select>
             </div>
-          )}
+          ) : null}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-slate-700">Tag (optional)</label>
+            <label className="text-sm font-medium text-slate-700">
+              Tag (optional)
+            </label>
             <input
               value={tag}
               onChange={(e) => setTag(e.target.value)}
               placeholder="cancellation"
-              className="rounded-2xl border border-slate-200/80 px-3.5 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
+          <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-700 md:col-span-2">
             <input
               type="checkbox"
               checked={onlyNewContact}
               onChange={(e) => setOnlyNewContact(e.target.checked)}
+              className="rounded border-slate-300"
             />
             Only when this is a new contact
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
+          <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-700 md:col-span-2">
             <input
               type="checkbox"
               checked={enableOnCreate}
               onChange={(e) => setEnableOnCreate(e.target.checked)}
+              className="rounded border-slate-300"
             />
             Enable this rule immediately
           </label>
         </div>
 
-        {error && (
-          <p className="mt-3 text-sm text-red-600" role="alert">
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="mt-4 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-        >
+        <button type="submit" disabled={isPending} className={`mt-5 ${primaryBtn}`}>
           {isPending ? "Saving…" : "Add rule"}
         </button>
       </form>
 
-      <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-100 text-xs text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Rule</th>
-              <th className="px-4 py-3">When</th>
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Priority</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rulesLoadError ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-10 text-center text-sm text-red-600"
-                  role="alert"
-                >
-                  {rulesLoadError}
-                </td>
-              </tr>
-            ) : rules.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-10 text-center text-slate-500"
-                >
-                  No rules yet. Add one so auto-reply only fires when you want
-                  it.
-                </td>
-              </tr>
-            ) : (
-              rules.map((rule) => (
-                <tr
-                  key={rule.id}
-                  className="border-b border-slate-50 last:border-0"
-                >
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{rule.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {rule.is_enabled ? "Enabled" : "Disabled"}
-                      {rule.tag ? ` · tag: ${rule.tag}` : ""}
-                      {rule.template_key
-                        ? ` · template: ${rule.template_key}`
-                        : ""}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {conditionSummary(rule)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {actionLabel(rule.action)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{rule.priority}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={rule.is_enabled}
-                        aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
-                        disabled={isPending}
-                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                          rule.is_enabled ? "bg-emerald-600" : "bg-zinc-300"
-                        }`}
-                        onClick={() =>
-                          startTransition(async () => {
-                            try {
-                              await setEmailRuleEnabled(
-                                rule.id,
-                                !rule.is_enabled,
-                              );
-                              setError(null);
-                              router.refresh();
-                            } catch (err) {
-                              setError(
-                                err instanceof Error
-                                  ? err.message
-                                  : "Could not update rule",
-                              );
+      <div className="mt-8">
+        {rulesLoadError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-6 text-center">
+            <p className="text-sm font-medium text-red-800" role="alert">
+              {rulesLoadError}
+            </p>
+            <button
+              type="button"
+              onClick={() => router.refresh()}
+              className={`mt-4 ${secondaryBtn}`}
+            >
+              Try again
+            </button>
+          </div>
+        ) : rules.length === 0 ? (
+          <EmptyState
+            icon={Filter}
+            title="No rules yet"
+            description="Add a rule so auto-reply only fires when you want it. Without rules, unmatched mail lands in Needs review instead of becoming contacts."
+            actionLabel="Create a rule"
+            onAction={() => {
+              document
+                .getElementById("new-rule")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            secondaryLabel="Open Needs review"
+            secondaryHref="/dashboard/unmatched"
+          />
+        ) : (
+          <>
+            {/* Mobile cards */}
+            <ul className="space-y-3 md:hidden">
+              {rules.map((rule) => (
+                exportruleCard(rule)
+              ))}
+            </ul>
+
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b border-slate-100 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3">Rule</th>
+                    <th className="px-4 py-3">When</th>
+                    <th className="px-4 py-3">Action</th>
+                    <th className="px-4 py-3">Priority</th>
+                    <th className="px-4 py-3 text-right">Controls</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rules.map((rule) => (
+                    <tr
+                      key={rule.id}
+                      className="border-b border-slate-50 last:border-0"
+                    >
+                      <td className="px-4 py-3.5">
+                        <p className="font-semibold text-slate-900">
+                          {rule.name}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          <span
+                            className={
+                              rule.is_enabled
+                                ? "font-medium text-emerald-700"
+                                : "text-slate-400"
                             }
-                          })
-                        }
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                            rule.is_enabled ? "translate-x-6" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        className="text-xs text-red-600 underline"
-                        onClick={() =>
-                          startTransition(async () => {
-                            try {
-                              await deleteEmailRule(rule.id);
-                            } catch (err) {
-                              setError(
-                                err instanceof Error
-                                  ? err.message
-                                  : "Could not delete rule",
-                              );
-                            }
-                          })
-                        }
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                          >
+                            {rule.is_enabled ? "Enabled" : "Disabled"}
+                          </span>
+                          {rule.tag ? ` · tag: ${rule.tag}` : ""}
+                          {rule.template_key
+                            ? ` · template: ${rule.template_key}`
+                            : ""}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5 text-slate-600">
+                        {conditionSummary(rule)}
+                      </td>
+                      <td className="px-4 py-3.5 text-slate-600">
+                        {actionLabel(rule.action)}
+                      </td>
+                      <td className="px-4 py-3.5 text-slate-600">
+                        {rule.priority}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={rule.is_enabled}
+                            aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
+                            disabled={isPending}
+                            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                              rule.is_enabled
+                                ? "bg-emerald-600"
+                                : "bg-slate-300"
+                            }`}
+                            onClick={() => toggleEnabled(rule)}
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                                rule.is_enabled
+                                  ? "translate-x-6"
+                                  : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            className="min-h-[44px] px-2 text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
+                            onClick={() => removeRule(rule)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
+
+  function ruleCard(rule: Rule) {
+    return (
+      <li
+        key={rule.id}
+        className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-900">{rule.name}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {conditionSummary(rule)}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {actionLabel(rule.action)} · priority {rule.priority}
+            </p>
+          </div>
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
+              rule.is_enabled
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                : "bg-slate-50 text-slate-500 ring-slate-200"
+            }`}
+          >
+            {rule.is_enabled ? "On" : "Off"}
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={rule.is_enabled}
+            aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
+            disabled={isPending}
+            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+              rule.is_enabled ? "bg-emerald-600" : "bg-slate-300"
+            }`}
+            onClick={() => toggleEnabled(rule)}
+          >
+            <span
+              className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                rule.is_enabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            className="min-h-[44px] text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
+            onClick={() => removeRule(rule)}
+          >
+            Delete
+          </button>
+        </div>
+      </li>
+    );
+  }
 }
