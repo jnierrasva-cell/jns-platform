@@ -9,6 +9,8 @@ import {
   CalendarDays,
   Contact,
   Inbox,
+  ArrowRight,
+  Kanban,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -21,6 +23,7 @@ type OverviewMetric = {
   value: number | string;
   detail: string;
   icon: typeof Zap;
+  attention?: boolean;
 };
 
 type SetupStep = {
@@ -321,8 +324,10 @@ export default async function OverviewPage() {
       href: "/dashboard/unmatched",
       label: "Needs review",
       value: unmatchedCount,
-      detail: unmatchedCount > 0 ? "Needs a rule or contact" : "Inbox clear",
+      detail:
+        unmatchedCount > 0 ? "Attach to a contact or add a rule" : "Inbox clear",
       icon: Inbox,
+      attention: unmatchedCount > 0,
     },
   ];
 
@@ -340,35 +345,43 @@ export default async function OverviewPage() {
           title: "Connect Google or SMS",
           description:
             "Automations and calendar features need at least one connection.",
-          action: "Connections",
+          action: "Open Connections",
+          urgent: true,
         }
       : unmatchedCount > 0
         ? {
             href: "/dashboard/unmatched",
             title: `${unmatchedCount} item${unmatchedCount === 1 ? "" : "s"} need review`,
-            description: "Review and attach to a contact or add a rule.",
-            action: "Needs review",
+            description:
+              "Review and attach to a person, or add a rule so similar mail is handled next time.",
+            action: "Review inbox",
+            urgent: true,
           }
         : activeAutomations === 0
           ? {
               href: "/dashboard/automation",
               title: "Turn on automations",
-              description: "Auto-ack or reminders once tools are connected.",
-              action: "Automations",
+              description:
+                "Enable inquiry auto-reply or reminders once tools are connected.",
+              action: "Open Automations",
+              urgent: false,
             }
           : contacts.length === 0
             ? {
-                href: "/dashboard/forms",
-                title: "Capture your first lead",
-                description: "Share a form or add a contact manually.",
-                action: "Forms",
+                href: "/dashboard/contacts",
+                title: "Add your first person",
+                description:
+                  "Import a CSV, add someone manually, or share a form to start capturing leads.",
+                action: "Open Clients",
+                urgent: false,
               }
             : {
                 href: "/dashboard/pipeline",
-                title: "Work your pipeline",
+                title: "Work your journey board",
                 description:
                   "Move people through stages and keep follow-ups tight.",
-                action: "Pipeline",
+                action: "Open Journey",
+                urgent: false,
               };
 
   function contactName(c: {
@@ -381,10 +394,25 @@ export default async function OverviewPage() {
     return name || c.email || "—";
   }
 
+  function bookingWhen(iso: string) {
+    const start = new Date(iso);
+    const dateLabel = start.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    const timeLabel = start.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return { dateLabel, timeLabel };
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+    <div className="space-y-6 pb-4">
+      {/* Header */}
+      <div className="border-b border-slate-200/80 pb-6">
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
           Home
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -393,7 +421,7 @@ export default async function OverviewPage() {
           </h1>
           <Link
             href="/dashboard/billing"
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition hover:opacity-90 ${
               planId === "none"
                 ? "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
                 : "bg-sky-50 text-sky-700 ring-1 ring-sky-200"
@@ -402,16 +430,16 @@ export default async function OverviewPage() {
             {planLabel}
           </Link>
         </div>
-        <p className="mt-1 text-sm text-slate-500">
-          Here is what is happening in your workspace today.
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
+          What needs attention in this workspace today.
           {periodLabel
             ? ` Plan access through ${periodLabel}.`
             : planId === "none"
-              ? " No active subscription — some tools are limited."
+              ? " Free tier — some tools are limited."
               : ""}{" "}
           <Link
             href="/dashboard/billing"
-            className="font-medium text-slate-800 underline underline-offset-2"
+            className="font-medium text-slate-700 underline underline-offset-2 hover:text-slate-900"
           >
             Billing
           </Link>
@@ -420,6 +448,7 @@ export default async function OverviewPage() {
         </p>
       </div>
 
+      {/* First-run setup */}
       {showSetupCard && !allCriticalDone && (
         <FirstRunPanel
           orgName={active.orgName}
@@ -428,18 +457,42 @@ export default async function OverviewPage() {
         />
       )}
 
-      {showSetupCard && allCriticalDone && (
+      {showSetupCard && allCriticalDone && unmatchedCount === 0 && (
         <section className="rounded-2xl border border-emerald-200/80 bg-emerald-50/60 px-5 py-4">
           <p className="text-sm font-medium text-emerald-900">
             Inbox loop is ready
           </p>
           <p className="mt-1 text-sm text-emerald-800/80">
             Google, auto-reply, and at least one rule are in place. Use the
-            snapshot below to run the workspace day to day.
+            snapshot below to run the day.
           </p>
         </section>
       )}
 
+      {/* Attention: unmatched inbox */}
+      {isManager && unmatchedCount > 0 && (
+        <Link
+          href="/dashboard/unmatched"
+          className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 transition hover:border-amber-300 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-950">
+              {unmatchedCount} message{unmatchedCount === 1 ? "" : "s"} need
+              review
+            </p>
+            <p className="mt-0.5 text-sm text-amber-900/80">
+              Attach to a person or add a rule so similar mail is handled
+              automatically next time.
+            </p>
+          </div>
+          <span className="inline-flex min-h-[44px] w-fit shrink-0 items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">
+            Review inbox
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </span>
+        </Link>
+      )}
+
+      {/* Primary metrics */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {metrics
           .filter((m) => primaryMetricLabels.includes(m.label))
@@ -449,16 +502,28 @@ export default async function OverviewPage() {
               <Link
                 key={m.href + m.label}
                 href={m.href}
-                className="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                className={`group rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
+                  m.attention
+                    ? "border-amber-200 hover:border-amber-300"
+                    : "border-slate-200/80 hover:border-slate-300"
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs font-medium text-slate-500">{m.label}</p>
                   <Icon
-                    className="h-4 w-4 text-slate-300 group-hover:text-slate-400"
+                    className={`h-4 w-4 ${
+                      m.attention
+                        ? "text-amber-500"
+                        : "text-slate-300 group-hover:text-slate-400"
+                    }`}
                     aria-hidden
                   />
                 </div>
-                <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                <p
+                  className={`mt-2 text-2xl font-semibold tracking-tight ${
+                    m.attention ? "text-amber-900" : "text-slate-900"
+                  }`}
+                >
                   {m.value}
                 </p>
                 <p className="mt-1 truncate text-xs text-slate-500">{m.detail}</p>
@@ -467,61 +532,80 @@ export default async function OverviewPage() {
           })}
       </section>
 
+      {/* Suggested next */}
       <section>
         <Link
           href={nextStep.href}
-          className="flex flex-col gap-1 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+          className={`flex flex-col gap-3 rounded-2xl border bg-white p-5 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between ${
+            nextStep.urgent
+              ? "border-sky-200 hover:border-sky-300"
+              : "border-slate-200/80 hover:border-slate-300"
+          }`}
         >
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
               Suggested next
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-900">
               {nextStep.title}
             </p>
-            <p className="mt-0.5 text-sm text-slate-500">
-              {nextStep.description}
-            </p>
+            <p className="mt-0.5 text-sm text-slate-500">{nextStep.description}</p>
           </div>
-          <span className="mt-3 inline-flex w-fit rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-medium text-white sm:mt-0">
+          <span className="inline-flex min-h-[44px] w-fit shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
             {nextStep.action}
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </span>
         </Link>
       </section>
 
+      {/* Three-column snapshot */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
-          <div className="flex items-center justify-between">
+        {/* Upcoming bookings */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-900">Upcoming</h2>
             <Link
               href="/dashboard/bookings"
-              className="text-xs font-medium text-sky-600 hover:text-sky-700"
+              className="text-xs font-medium text-sky-700 underline-offset-2 hover:underline"
             >
               View all
             </Link>
           </div>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-4 space-y-2.5">
             {upcomingBookings.length === 0 ? (
-              <li className="rounded-xl bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
-                No upcoming bookings.
+              <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-8 text-center">
+                <CalendarDays
+                  className="mx-auto h-5 w-5 text-slate-300"
+                  aria-hidden
+                />
+                <p className="mt-2 text-sm text-slate-500">
+                  No upcoming bookings in the next 30 days.
+                </p>
+                <Link
+                  href="/dashboard/bookings"
+                  className="mt-3 inline-flex text-xs font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                >
+                  Open Schedule
+                </Link>
               </li>
             ) : (
               upcomingBookings.map((b) => {
                 const c = Array.isArray(b.contacts)
                   ? b.contacts[0]
                   : b.contacts;
-                const start = new Date(b.starts_at);
-                const timeLabel = start.toLocaleTimeString(undefined, {
-                  hour: "numeric",
-                  minute: "2-digit",
-                });
+                const { dateLabel, timeLabel } = bookingWhen(b.starts_at);
                 return (
                   <li
                     key={b.id}
                     className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5"
                   >
-                    <div className="w-14 shrink-0 pt-0.5 text-xs font-medium text-slate-500">
-                      {timeLabel}
+                    <div className="w-[4.25rem] shrink-0 pt-0.5">
+                      <p className="text-[11px] font-medium text-slate-500">
+                        {dateLabel}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-700">
+                        {timeLabel}
+                      </p>
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-slate-900">
@@ -544,19 +628,37 @@ export default async function OverviewPage() {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Pipeline</h2>
+        {/* Journey snapshot */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">Journey</h2>
             <Link
               href="/dashboard/pipeline"
-              className="text-xs font-medium text-sky-600 hover:text-sky-700"
+              className="text-xs font-medium text-sky-700 underline-offset-2 hover:underline"
             >
               Open board
             </Link>
           </div>
           <div className="mt-4 space-y-3">
-            {stageCounts
-              ? stageCounts.map((s) => {
+            {stageCounts ? (
+              stageCounts.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-8 text-center">
+                  <Kanban
+                    className="mx-auto h-5 w-5 text-slate-300"
+                    aria-hidden
+                  />
+                  <p className="mt-2 text-sm text-slate-500">
+                    No stages yet. Build your client lifecycle on the board.
+                  </p>
+                  <Link
+                    href="/dashboard/pipeline"
+                    className="mt-3 inline-flex text-xs font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                  >
+                    Set up Journey
+                  </Link>
+                </div>
+              ) : (
+                stageCounts.map((s) => {
                   const max = Math.max(...stageCounts.map((x) => x.count), 1);
                   const pct = Math.round((s.count / max) * 100);
                   return (
@@ -571,60 +673,76 @@ export default async function OverviewPage() {
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                         <div
-                          className="h-full rounded-full bg-sky-500"
+                          className="h-full rounded-full bg-sky-500 transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
                   );
                 })
-              : [
-                  ["Lead", statusPipeline.lead],
-                  ["Booked", statusPipeline.booked],
-                  ["Customer", statusPipeline.customer],
-                  ["Inactive", statusPipeline.inactive],
-                ].map(([name, count]) => (
-                  <div
-                    key={name as string}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <span className="text-slate-600">{name}</span>
-                    <span className="font-semibold text-slate-900">
-                      {count as number}
-                    </span>
-                  </div>
-                ))}
+              )
+            ) : (
+              [
+                ["Lead", statusPipeline.lead],
+                ["Booked", statusPipeline.booked],
+                ["Customer", statusPipeline.customer],
+                ["Inactive", statusPipeline.inactive],
+              ].map(([name, count]) => (
+                <div
+                  key={name as string}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="text-slate-600">{name}</span>
+                  <span className="font-semibold text-slate-900">
+                    {count as number}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm lg:col-span-1">
-          <div className="flex items-center justify-between">
+        {/* Recent people */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
               Recent {peopleLabel.toLowerCase()}
             </h2>
             <Link
               href="/dashboard/contacts"
-              className="text-xs font-medium text-sky-600 hover:text-sky-700"
+              className="text-xs font-medium text-sky-700 underline-offset-2 hover:underline"
             >
               View all
             </Link>
           </div>
           <ul className="mt-4 space-y-2">
             {recentContacts.length === 0 ? (
-              <li className="rounded-xl bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
-                No contacts yet.
+              <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-8 text-center">
+                <Contact
+                  className="mx-auto h-5 w-5 text-slate-300"
+                  aria-hidden
+                />
+                <p className="mt-2 text-sm text-slate-500">
+                  No one here yet. Add a person or import a CSV.
+                </p>
+                <Link
+                  href="/dashboard/contacts"
+                  className="mt-3 inline-flex text-xs font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
+                >
+                  Open Clients
+                </Link>
               </li>
             ) : (
               recentContacts.map((c) => (
                 <li key={c.id}>
                   <Link
                     href={`/dashboard/contacts/${c.id}`}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 hover:border-slate-200"
+                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-50"
                   >
                     <span className="truncate text-sm font-medium text-slate-900">
                       {contactName(c)}
                     </span>
-                    <span className="shrink-0 text-xs text-slate-400">
+                    <span className="shrink-0 text-xs capitalize text-slate-400">
                       {c.status || "—"}
                     </span>
                   </Link>
@@ -635,6 +753,7 @@ export default async function OverviewPage() {
         </div>
       </section>
 
+      {/* Secondary metrics */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {metrics
           .filter((m) => !primaryMetricLabels.includes(m.label))
@@ -646,7 +765,9 @@ export default async function OverviewPage() {
                 href={m.href}
                 className="group flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300"
               >
-                <Icon className="h-5 w-5 text-slate-300" aria-hidden />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 ring-1 ring-slate-100 group-hover:text-slate-500">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </span>
                 <div className="min-w-0">
                   <p className="text-xs text-slate-500">{m.label}</p>
                   <p className="text-lg font-semibold text-slate-900">
