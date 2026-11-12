@@ -137,7 +137,9 @@ export function EmailRulesClient({
       try {
         await setEmailRuleEnabled(rule.id, !rule.is_enabled);
         setSuccess(
-          rule.is_enabled ? `Disabled “${rule.name}”.` : `Enabled “${rule.name}”.`,
+          rule.is_enabled
+            ? `Disabled “${rule.name}”.`
+            : `Enabled “${rule.name}”.`,
         );
         router.refresh();
       } catch (err) {
@@ -350,7 +352,11 @@ export function EmailRulesClient({
           </label>
         </div>
 
-        <button type="submit" disabled={isPending} className={`mt-5 ${primaryBtn}`}>
+        <button
+          type="submit"
+          disabled={isPending}
+          className={`mt-5 ${primaryBtn}`}
+        >
           {isPending ? "Saving…" : "Add rule"}
         </button>
       </form>
@@ -385,14 +391,63 @@ export function EmailRulesClient({
           />
         ) : (
           <>
-            {/* Mobile cards */}
             <ul className="space-y-3 md:hidden">
               {rules.map((rule) => (
-                exportruleCard(rule)
+                <li
+                  key={rule.id}
+                  className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900">{rule.name}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {conditionSummary(rule)}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {actionLabel(rule.action)} · priority {rule.priority}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
+                        rule.is_enabled
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                          : "bg-slate-50 text-slate-500 ring-slate-200"
+                      }`}
+                    >
+                      {rule.is_enabled ? "On" : "Off"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={rule.is_enabled}
+                      aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
+                      disabled={isPending}
+                      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+                        rule.is_enabled ? "bg-emerald-600" : "bg-slate-300"
+                      }`}
+                      onClick={() => toggleEnabled(rule)}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          rule.is_enabled ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      className="min-h-[44px] text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
+                      onClick={() => removeRule(rule)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
               ))}
             </ul>
 
-            {/* Desktop table */}
             <div className="hidden overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b border-slate-100 text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -482,61 +537,4 @@ export function EmailRulesClient({
       </div>
     </div>
   );
-
-  function ruleCard(rule: Rule) {
-    return (
-      <li
-        key={rule.id}
-        className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-semibold text-slate-900">{rule.name}</p>
-            <p className="mt-1 text-xs text-slate-500">
-              {conditionSummary(rule)}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              {actionLabel(rule.action)} · priority {rule.priority}
-            </p>
-          </div>
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
-              rule.is_enabled
-                ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-                : "bg-slate-50 text-slate-500 ring-slate-200"
-            }`}
-          >
-            {rule.is_enabled ? "On" : "Off"}
-          </span>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={rule.is_enabled}
-            aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
-            disabled={isPending}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
-              rule.is_enabled ? "bg-emerald-600" : "bg-slate-300"
-            }`}
-            onClick={() => toggleEnabled(rule)}
-          >
-            <span
-              className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                rule.is_enabled ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-          <button
-            type="button"
-            disabled={isPending}
-            className="min-h-[44px] text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
-            onClick={() => removeRule(rule)}
-          >
-            Delete
-          </button>
-        </div>
-      </li>
-    );
-  }
 }
