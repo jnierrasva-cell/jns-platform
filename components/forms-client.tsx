@@ -1,6 +1,7 @@
 "use client";
 
-import { FileInput } from "lucide-react";
+import Link from "next/link";
+import { FileInput, Link2, Plus } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { useState, useTransition } from "react";
 import {
@@ -26,6 +27,15 @@ type FormRow = {
   fields?: FormField[];
   submission_count: number;
 };
+
+const inputClass =
+  "mt-1 w-full min-h-[44px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100";
+
+const secondaryBtn =
+  "inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50";
+
+const primaryBtn =
+  "inline-flex min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60";
 
 export function FormsClient({
   organizationId,
@@ -212,57 +222,298 @@ export function FormsClient({
     setEditFields((prev) => prev.filter((_, i) => i !== index));
   }
 
-  return (
-    <div>
-      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
-        Forms
-      </span>
-      <h1 className="mt-1 text-2xl font-semibold text-slate-900">Intake forms</h1>
-      <p className="mt-1 max-w-2xl text-sm text-slate-500">
-        Public forms for <span className="font-medium">{orgName}</span>.
-        Customize questions, then share the link. Submissions become contacts.
-      </p>
+  function renderEditPanel(form: FormRow) {
+    if (editingId !== form.id) return null;
+    return (
+      <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <div>
+          <label className="text-xs font-medium text-slate-600">Name</label>
+          <input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600">
+            Headline (shown on public form)
+          </label>
+          <input
+            value={editHeadline}
+            onChange={(e) => setEditHeadline(e.target.value)}
+            placeholder={`e.g. Contact ${orgName}`}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600">
+            Description
+          </label>
+          <textarea
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            rows={2}
+            placeholder="Short intro for visitors"
+            className={`${inputClass} min-h-0`}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-600">
+            Success message
+          </label>
+          <textarea
+            value={editSuccess}
+            onChange={(e) => setEditSuccess(e.target.value)}
+            rows={2}
+            className={`${inputClass} min-h-0`}
+          />
+        </div>
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <label className="text-xs font-medium text-slate-700">
+              Questions / fields
+            </label>
+            <button
+              type="button"
+              onClick={addCustomField}
+              className="text-xs font-medium text-sky-700 underline underline-offset-2"
+            >
+              + Add question
+            </button>
+          </div>
+          <div className="space-y-2">
+            {editFields.map((field, index) => (
+              <div
+                key={field.id}
+                className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-12 sm:items-center"
+              >
+                <input
+                  value={field.label}
+                  onChange={(e) =>
+                    updateField(index, {
+                      label: e.target.value,
+                    })
+                  }
+                  className="min-h-[40px] rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm sm:col-span-4"
+                  placeholder="Label"
+                />
+                <select
+                  value={field.type}
+                  onChange={(e) =>
+                    updateField(index, {
+                      type: e.target.value as FormField["type"],
+                    })
+                  }
+                  className="min-h-[40px] rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm sm:col-span-2"
+                >
+                  <option value="text">Text</option>
+                  <option value="email">Email</option>
+                  <option value="phone">Phone</option>
+                  <option value="textarea">Long text</option>
+                </select>
+                <label className="flex min-h-[40px] items-center gap-1.5 text-xs text-slate-600 sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={field.required}
+                    onChange={(e) =>
+                      updateField(index, {
+                        required: e.target.checked,
+                      })
+                    }
+                    className="rounded border-slate-300"
+                  />
+                  Required
+                </label>
+                <label className="flex min-h-[40px] items-center gap-1.5 text-xs text-slate-600 sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={field.enabled}
+                    onChange={(e) =>
+                      updateField(index, {
+                        enabled: e.target.checked,
+                      })
+                    }
+                    className="rounded border-slate-300"
+                  />
+                  Show
+                </label>
+                <button
+                  type="button"
+                  onClick={() => removeField(index)}
+                  className="min-h-[40px] text-left text-xs font-medium text-red-600 sm:col-span-2 sm:text-center"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => handleSaveEdit(form.id)}
+            className={primaryBtn}
+          >
+            {isPending ? "Saving…" : "Save changes"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditingId(null)}
+            className={secondaryBtn}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-      {error && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
-          {error}
+  function formMeta(form: FormRow) {
+    return (
+      <>
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
+            form.is_published
+              ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+              : "bg-slate-50 text-slate-600 ring-slate-200"
+          }`}
+        >
+          {form.is_published ? "Published" : "Draft"}
+        </span>
+        <span className="text-xs text-slate-400">
+          /forms/{orgSlug}/{form.slug}
+        </span>
+      </>
+    );
+  }
+
+  function formActions(form: FormRow) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => copyLink(form)}
+          className={secondaryBtn}
+        >
+          <Link2 className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+          {copiedId === form.id ? "Copied" : "Copy link"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => exportForm(form)}
+          className={secondaryBtn}
+        >
+          Export CSV
+        </button>
+        <button
+          type="button"
+          disabled={isPending || !canCreateCustom}
+          onClick={() => duplicateForm(form)}
+          className={secondaryBtn}
+          title={
+            !canCreateCustom
+              ? "Upgrade to create more custom forms"
+              : undefined
+          }
+        >
+          Duplicate
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            editingId === form.id ? setEditingId(null) : startEdit(form)
+          }
+          className={secondaryBtn}
+        >
+          {editingId === form.id ? "Close" : "Customize"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => togglePublish(form)}
+          className={secondaryBtn}
+        >
+          {form.is_published ? "Unpublish" : "Publish"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-4">
+      <div className="border-b border-slate-200/80 pb-6">
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          Forms
         </p>
-      )}
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Intake forms
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
+          Public forms for{" "}
+          <span className="font-medium text-slate-700">{orgName}</span>.
+          Customize questions, share the link, and turn submissions into
+          contacts on your journey board.
+        </p>
+      </div>
+
+      {error ? (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {error}{" "}
+          {!canCreateCustom && error.toLowerCase().includes("billing") ? (
+            <Link
+              href="/dashboard/billing"
+              className="font-medium text-sky-700 underline underline-offset-2"
+            >
+              Open Billing
+            </Link>
+          ) : null}
+        </p>
+      ) : null}
 
       {canCreateCustom ? (
         <form
           id="new-form"
           onSubmit={handleCreate}
-          className="mt-8 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/80 bg-white p-4"
+          className="mt-6 flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:p-5"
         >
-          <div className="min-w-[200px] flex-1">
-            <label className="text-sm text-slate-700">New form name</label>
+          <div className="min-w-0 flex-1">
+            <label
+              htmlFor="new-form-name"
+              className="text-sm font-medium text-slate-700"
+            >
+              New form name
+            </label>
             <input
+              id="new-form-name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Website inquiry"
-              className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm min-h-[44px]"
+              className={inputClass}
             />
           </div>
-          <button
-            type="submit"
-            disabled={isPending}
-            className="min-h-[44px] rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
+          <button type="submit" disabled={isPending} className={primaryBtn}>
+            <Plus className="mr-1.5 h-4 w-4" aria-hidden />
             {isPending ? "Creating…" : "Create form"}
           </button>
         </form>
       ) : (
-        <p className="mt-6 text-sm text-slate-500">
-          Creating new custom forms is locked on Free. Existing forms (if any)
-          stay usable.{" "}
-          <a
+        <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-sm text-slate-600 sm:px-5">
+          <p className="font-medium text-slate-800">
+            Creating custom forms is locked on Free
+          </p>
+          <p className="mt-1 text-slate-500">
+            Existing forms (if any) stay usable. Upgrade to Starter or higher to
+            publish new intake forms. Pro trial includes this while active.
+          </p>
+          <Link
             href="/dashboard/billing"
-            className="font-medium text-sky-700 underline underline-offset-2"
+            className="mt-3 inline-flex min-h-[44px] items-center text-sm font-medium text-sky-700 underline underline-offset-2 hover:text-sky-800"
           >
-            View plans
-          </a>
-        </p>
+            View plans →
+          </Link>
+        </div>
       )}
 
       {forms.length === 0 ? (
@@ -272,10 +523,10 @@ export function FormsClient({
             title="No forms yet"
             description={
               canCreateCustom
-                ? "Publish an intake form to collect leads. Submissions can create contacts."
-                : "Upgrade to Starter or higher to publish custom intake forms."
+                ? "Create an intake form, customize the questions, then share the public link. Submissions can become contacts on your journey board."
+                : "Upgrade to Starter or higher to publish custom intake forms. Free still includes contacts, bookings, and email rules."
             }
-            actionLabel={canCreateCustom ? "Scroll to create" : "Open Billing"}
+            actionLabel={canCreateCustom ? "Create a form" : "Open Billing"}
             href={canCreateCustom ? undefined : "/dashboard/billing"}
             onAction={
               canCreateCustom
@@ -283,237 +534,94 @@ export function FormsClient({
                     document
                       .getElementById("new-form")
                       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    document.getElementById("new-form-name")?.focus();
                   }
                 : undefined
             }
+            secondaryLabel={canCreateCustom ? undefined : "How plans work"}
+            secondaryHref={canCreateCustom ? undefined : "/dashboard/billing"}
           />
         </div>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Form name</th>
-                <th className="px-4 py-3 font-medium">Date created</th>
-                <th className="px-4 py-3 font-medium">Submissions</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {forms.map((form) => (
-                <tr
-                  key={form.id}
-                  className="border-b border-slate-50 align-top last:border-0"
-                >
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{form.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      {form.is_published ? "Published" : "Unpublished"} · /forms/
-                      {orgSlug}/{form.slug}
-                    </p>
-                    {editingId === form.id && (
-                      <div className="mt-4 space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div>
-                          <label className="text-xs text-slate-600">Name</label>
-                          <input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="mt-1 w-full rounded border border-slate-200/80 px-2 py-1.5 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-600">
-                            Headline (shown on public form)
-                          </label>
-                          <input
-                            value={editHeadline}
-                            onChange={(e) => setEditHeadline(e.target.value)}
-                            placeholder={`e.g. Contact ${orgName}`}
-                            className="mt-1 w-full rounded border border-slate-200/80 px-2 py-1.5 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-600">
-                            Description
-                          </label>
-                          <textarea
-                            value={editDescription}
-                            onChange={(e) => setEditDescription(e.target.value)}
-                            rows={2}
-                            placeholder="Short intro for visitors"
-                            className="mt-1 w-full rounded border border-slate-200/80 px-2 py-1.5 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-600">
-                            Success message
-                          </label>
-                          <textarea
-                            value={editSuccess}
-                            onChange={(e) => setEditSuccess(e.target.value)}
-                            rows={2}
-                            className="mt-1 w-full rounded border border-slate-200/80 px-2 py-1.5 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <div className="mb-2 flex items-center justify-between">
-                            <label className="text-xs font-medium text-slate-700">
-                              Questions / fields
-                            </label>
-                            <button
-                              type="button"
-                              onClick={addCustomField}
-                              className="text-xs text-slate-600 underline"
-                            >
-                              + Add question
-                            </button>
-                          </div>
-                          <div className="space-y-2">
-                            {editFields.map((field, index) => (
-                              <div
-                                key={field.id}
-                                className="grid grid-cols-1 gap-2 rounded border border-slate-200/80 bg-white p-2 sm:grid-cols-12"
-                              >
-                                <input
-                                  value={field.label}
-                                  onChange={(e) =>
-                                    updateField(index, {
-                                      label: e.target.value,
-                                    })
-                                  }
-                                  className="sm:col-span-4 rounded border border-slate-200/80 px-2 py-1 text-sm"
-                                  placeholder="Label"
-                                />
-                                <select
-                                  value={field.type}
-                                  onChange={(e) =>
-                                    updateField(index, {
-                                      type: e.target.value as FormField["type"],
-                                    })
-                                  }
-                                  className="sm:col-span-2 rounded border border-slate-200/80 px-2 py-1 text-sm"
-                                >
-                                  <option value="text">Text</option>
-                                  <option value="email">Email</option>
-                                  <option value="phone">Phone</option>
-                                  <option value="textarea">Long text</option>
-                                </select>
-                                <label className="flex items-center gap-1 text-xs text-slate-600 sm:col-span-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={field.required}
-                                    onChange={(e) =>
-                                      updateField(index, {
-                                        required: e.target.checked,
-                                      })
-                                    }
-                                  />
-                                  Required
-                                </label>
-                                <label className="flex items-center gap-1 text-xs text-slate-600 sm:col-span-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={field.enabled}
-                                    onChange={(e) =>
-                                      updateField(index, {
-                                        enabled: e.target.checked,
-                                      })
-                                    }
-                                  />
-                                  Show
-                                </label>
-                                <button
-                                  type="button"
-                                  onClick={() => removeField(index)}
-                                  className="text-xs text-red-600 sm:col-span-2"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            disabled={isPending}
-                            onClick={() => handleSaveEdit(form.id)}
-                            className="rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-medium text-white"
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingId(null)}
-                            className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {new Date(form.created_at).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {form.submission_count}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => copyLink(form)}
-                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
-                      >
-                        {copiedId === form.id ? "Copied" : "Copy link"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() => exportForm(form)}
-                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
-                      >
-                        Extract CSV
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isPending || !canCreateCustom}
-                        onClick={() => duplicateForm(form)}
-                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs disabled:opacity-50"
-                      >
-                        Duplicate
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          editingId === form.id
-                            ? setEditingId(null)
-                            : startEdit(form)
-                        }
-                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
-                      >
-                        {editingId === form.id ? "Close" : "Customize"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() => togglePublish(form)}
-                        className="min-h-[44px] rounded-2xl border border-slate-200/80 px-2.5 py-1 text-xs"
-                      >
-                        {form.is_published ? "Unpublish" : "Publish"}
-                      </button>
+        <>
+          {/* Mobile cards */}
+          <div className="mt-6 space-y-3 md:hidden">
+            {forms.map((form) => (
+              <article
+                key={form.id}
+                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900">{form.name}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      {formMeta(form)}
                     </div>
-                  </td>
+                  </div>
+                  <p className="shrink-0 text-right text-xs text-slate-500">
+                    <span className="block text-base font-semibold text-slate-900">
+                      {form.submission_count}
+                    </span>
+                    submissions
+                  </p>
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Created{" "}
+                  {new Date(form.created_at).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+                <div className="mt-3">{formActions(form)}</div>
+                {renderEditPanel(form)}
+              </article>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="mt-6 hidden overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="border-b border-slate-100 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Form name</th>
+                  <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3">Submissions</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {forms.map((form) => (
+                  <tr
+                    key={form.id}
+                    className="border-b border-slate-50 align-top last:border-0"
+                  >
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-slate-900">{form.name}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        {formMeta(form)}
+                      </div>
+                      {renderEditPanel(form)}
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">
+                      {new Date(form.created_at).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </td>
+                    <td className="px-4 py-4 font-medium text-slate-900">
+                      {form.submission_count}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end">{formActions(form)}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
