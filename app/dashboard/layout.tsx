@@ -29,40 +29,57 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "role, status, account_type, active_organization_id, first_name, last_name",
-    )
-    .eq("id", user.id)
-    .maybeSingle();
+  // Parallel first wave: profile + memberships (was sequential)
+  const [profileRes, membershipsRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "role, status, account_type, active_organization_id, first_name, last_name",
+      )
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("org_members")
+      .select("organization_id, role")
+      .eq("user_id", user.id),
+  ]);
+
+  const profile = profileRes.data;
+  const memberships = membershipsRes.data;
 
   if (profile?.status === "rejected") {
     redirect("/pending-approval");
   }
 
-  const { data: memberships } = await supabase
-    .from("org_members")
-    .select("organization_id, role")
-    .eq("user_id", user.id);
-
   const hasMembership = (memberships?.length ?? 0) > 0;
 
+  // Only write when something actually needs fixing (was unconditional update)
   if (profile) {
-    try {
-      await supabase
-        .from("profiles")
-        .update({
-          status: "approved",
-          account_type: profile.account_type ?? "individual",
-          active_organization_id:
-            profile.active_organization_id ??
-            memberships?.[0]?.organization_id ??
-            null,
-        })
-        .eq("id", user.id);
-    } catch {
-      // ignore
+    const nextStatus = "approved";
+    const nextAccountType = profile.account_type ?? "individual";
+    const nextActiveOrg =
+      profile.active_organization_id ??
+      memberships?.[0]?.organization_id ??
+      null;
+
+    const needsWrite =
+      profile.status !== nextStatus ||
+      (profile.account_type ?? null) !== nextAccountType ||
+      (profile.active_organization_id ?? null) !== nextActiveOrg;
+
+    if (needsWrite) {
+      try {
+        await supabase
+          .from("profiles")
+          .update({
+            status: nextStatus,
+            account_type: nextAccountType,
+            active_organization_id: nextActiveOrg,
+          })
+          .eq("id", user.id);
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -73,6 +90,7 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
+  // Request-cached with page-level getActiveOrg calls
   let active = await getActiveOrg();
 
   if (!active && memberships?.[0]) {
@@ -95,37 +113,84 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
+  const isOrgManager = active.role === "ceo" || active.role === "admin";
+
+  // Parallel second wave: admin profile + plan gate + arketa issues
   let platformRole = profile?.role ?? null;
   let firstName = profile?.first_name;
   let lastName = profile?.last_name;
-  try {
-    const admin = createAdminClient();
-    const { data: adminProfile, error: adminProfileError } = await admin
-      .from("profiles")
-      .select("role, first_name, last_name")
-      .eq("id", user.id)
-      .maybeSingle();
 
-    if (adminProfileError) {
-      console.error(
-        "Could not read the user's dashboard profile.",
-        adminProfileError,
-      );
-    } else if (adminProfile) {
-      if (adminProfile.role) platformRole = adminProfile.role;
-      firstName = adminProfile.first_name;
-      lastName = adminProfile.last_name;
-    }
-  } catch (error) {
-    console.error("Could not load the user's dashboard profile.", error);
+  type ArketaIssue = {
+    id: string;
+    label: string;
+    last_sync_status: string | null;
+    last_sync_error: string | null;
+    consecutive_failures: number;
+  };
+
+  const [adminProfileResult, gate, arketaIssues] = await Promise.all([
+    (async () => {
+      try {
+        const admin = createAdminClient();
+        const { data: adminProfile, error: adminProfileError } = await admin
+          .from("profiles")
+          .select("role, first_name, last_name")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (adminProfileError) {
+          console.error(
+            "Could not read the user's dashboard profile.",
+            adminProfileError,
+          );
+          return null;
+        }
+        return adminProfile;
+      } catch (error) {
+        console.error("Could not load the user's dashboard profile.", error);
+        return null;
+      }
+    })(),
+    getPlanGateState(active.organizationId),
+    (async (): Promise<ArketaIssue[]> => {
+      if (!isOrgManager) return [];
+      try {
+        const admin = createAdminClient();
+        const { data: rows } = await admin
+          .from("arketa_locations")
+          .select(
+            "id, label, last_sync_status, last_sync_error, consecutive_failures",
+          )
+          .eq("organization_id", active.organizationId);
+
+        return (rows ?? [])
+          .filter((r) => {
+            const status = String(r.last_sync_status || "").toLowerCase();
+            const fails = Number(r.consecutive_failures ?? 0);
+            return status === "error" || fails >= 2;
+          })
+          .map((r) => ({
+            id: r.id as string,
+            label: r.label as string,
+            last_sync_status: (r.last_sync_status as string | null) ?? null,
+            last_sync_error: (r.last_sync_error as string | null) ?? null,
+            consecutive_failures: Number(r.consecutive_failures ?? 0),
+          }));
+      } catch {
+        return [];
+      }
+    })(),
+  ]);
+
+  if (adminProfileResult) {
+    if (adminProfileResult.role) platformRole = adminProfileResult.role;
+    firstName = adminProfileResult.first_name;
+    lastName = adminProfileResult.last_name;
   }
 
   const isPlatformAdmin =
     platformRole === "super_admin" ||
     user.email?.toLowerCase() === "j.nierras.va@gmail.com";
-  const isOrgManager = active.role === "ceo" || active.role === "admin";
 
-  const gate = await getPlanGateState(active.organizationId);
   const planLabel = isTrialing(gate.billing)
     ? "Pro trial"
     : PLAN_LIMITS[gate.planId].label;
@@ -157,42 +222,6 @@ export default async function DashboardLayout({
     firstName?.trim() || metadataFirstName,
     lastName?.trim() || metadataLastName,
   );
-
-  let arketaIssues: {
-    id: string;
-    label: string;
-    last_sync_status: string | null;
-    last_sync_error: string | null;
-    consecutive_failures: number;
-  }[] = [];
-
-  if (isOrgManager) {
-    try {
-      const admin = createAdminClient();
-      const { data: rows } = await admin
-        .from("arketa_locations")
-        .select(
-          "id, label, last_sync_status, last_sync_error, consecutive_failures",
-        )
-        .eq("organization_id", active.organizationId);
-
-      arketaIssues = (rows ?? [])
-        .filter((r) => {
-          const status = String(r.last_sync_status || "").toLowerCase();
-          const fails = Number(r.consecutive_failures ?? 0);
-          return status === "error" || fails >= 2;
-        })
-        .map((r) => ({
-          id: r.id as string,
-          label: r.label as string,
-          last_sync_status: (r.last_sync_status as string | null) ?? null,
-          last_sync_error: (r.last_sync_error as string | null) ?? null,
-          consecutive_failures: Number(r.consecutive_failures ?? 0),
-        }));
-    } catch {
-      // non-fatal
-    }
-  }
 
   return (
     <DashboardShell
