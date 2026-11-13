@@ -59,10 +59,10 @@ export default async function TemplatesPage() {
       label: d.label,
       subject: saved?.subject ?? d.subject,
       body: saved?.body ?? d.body,
+      updated_at: saved?.updated_at ?? null,
     };
   });
 
-  // Extra custom templates beyond defaults
   for (const r of rows ?? []) {
     if (!DEFAULTS.some((d) => d.template_key === r.template_key)) {
       templates.push({
@@ -70,9 +70,16 @@ export default async function TemplatesPage() {
         label: r.template_key,
         subject: r.subject,
         body: r.body,
+        updated_at: r.updated_at ?? null,
       });
     }
   }
 
-  return <TemplateClient orgId={orgId} templates={templates} />;
+  return (
+    <TemplateClient
+      orgId={orgId}
+      orgName={active.orgName}
+      templates={templates}
+    />
+  );
 }
