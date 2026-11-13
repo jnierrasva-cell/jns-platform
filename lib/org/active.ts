@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -14,43 +15,58 @@ export type ActiveOrg = {
   contactLabelPlural: string;
 };
 
-export async function getActiveOrg(): Promise<ActiveOrg | null> {
+/**
+ * Request-scoped: layout + page + nested server components share one result
+ * per navigation (fixes double-fetch on every tool switch).
+ */
+export const getActiveOrg = cache(async function getActiveOrg(): Promise<ActiveOrg | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: memberships } = await supabase
-    .from("org_members")
-    .select("organization_id, role")
-    .eq("user_id", user.id);
-
-  if (!memberships?.length) return null;
-
-  // Read-only cookie access is allowed in Server Components
   const jar = await cookies();
   const cookieOrgId = jar.get("jns_active_org")?.value ?? null;
 
+  // Parallel: memberships + profile active org
+  let memberships: { organization_id: string; role: string }[] | null = null;
   let profileActiveId: string | null = null;
+
   try {
     const admin = createAdminClient();
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("active_organization_id")
-      .eq("id", user.id)
-      .maybeSingle();
+    const [membersRes, profileRes] = await Promise.all([
+      supabase
+        .from("org_members")
+        .select("organization_id, role")
+        .eq("user_id", user.id),
+      admin
+        .from("profiles")
+        .select("active_organization_id")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+    memberships = (membersRes.data as typeof memberships) ?? null;
     profileActiveId =
-      (profile?.active_organization_id as string | null) ?? null;
+      (profileRes.data?.active_organization_id as string | null) ?? null;
   } catch {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("active_organization_id")
-      .eq("id", user.id)
-      .maybeSingle();
+    const [membersRes, profileRes] = await Promise.all([
+      supabase
+        .from("org_members")
+        .select("organization_id, role")
+        .eq("user_id", user.id),
+      supabase
+        .from("profiles")
+        .select("active_organization_id")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+    memberships = (membersRes.data as typeof memberships) ?? null;
     profileActiveId =
-      (profile?.active_organization_id as string | null) ?? null;
+      (profileRes.data?.active_organization_id as string | null) ?? null;
   }
+
+  if (!memberships?.length) return null;
 
   const selected = resolveActiveOrg({
     memberships: memberships.map((m) => ({
@@ -63,7 +79,7 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
 
   if (!selected) return null;
 
-  // Align profile only — do NOT cookies().set() here (crashes Server Components)
+  // Align profile only when it actually differs (avoid write on every nav)
   if (profileActiveId !== selected.organization_id) {
     try {
       const admin = createAdminClient();
@@ -121,4 +137,4 @@ export async function getActiveOrg(): Promise<ActiveOrg | null> {
     contactLabel,
     contactLabelPlural,
   };
-}
+});
