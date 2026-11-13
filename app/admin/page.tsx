@@ -26,6 +26,24 @@ async function assertPlatformAdmin(
   }
 }
 
+export type AdminOrgRow = {
+  id: string;
+  name: string | null;
+  slug: string | null;
+  plan: string | null;
+  billing_status: string | null;
+  billing_provider: string | null;
+  plan_period_end: string | null;
+  plan_notes: string | null;
+  owner_email: string | null;
+  owner_role: string | null;
+  google_connected: boolean;
+  google_needs_reauth: boolean;
+  google_email: string | null;
+  twilio_connected: boolean;
+  arketa_location_count: number;
+};
+
 export default async function AdminPage() {
   const supabase = await createClient();
   const {
@@ -45,16 +63,7 @@ export default async function AdminPage() {
     status: string;
     created_at: string;
   }[] = [];
-  let organizations: {
-    id: string;
-    name: string | null;
-    slug: string | null;
-    plan: string | null;
-    billing_status: string | null;
-    billing_provider: string | null;
-    plan_period_end: string | null;
-    plan_notes: string | null;
-  }[] = [];
+  let organizations: AdminOrgRow[] = [];
   let loadError: string | null = null;
 
   try {
@@ -75,7 +84,104 @@ export default async function AdminPage() {
       .order("name", { ascending: true });
 
     if (orgError && !loadError) loadError = orgError.message;
-    else organizations = orgs ?? [];
+    else {
+      const baseOrgs = orgs ?? [];
+      const orgIds = baseOrgs.map((o) => o.id);
+
+      const ownerByOrg = new Map<
+        string,
+        { email: string | null; role: string }
+      >();
+      const googleByOrg = new Map<
+        string,
+        { email: string | null; needs_reauth: boolean }
+      >();
+      const twilioOrgs = new Set<string>();
+      const arketaCount = new Map<string, number>();
+
+      if (orgIds.length > 0) {
+        const { data: members } = await admin
+          .from("org_members")
+          .select("organization_id, role, user_id")
+          .in("organization_id", orgIds)
+          .in("role", ["ceo", "admin"]);
+
+        const memberUserIds = [
+          ...new Set((members ?? []).map((m) => m.user_id as string)),
+        ];
+        const emailByUser = new Map<string, string | null>();
+        if (memberUserIds.length > 0) {
+          const { data: memberProfiles } = await admin
+            .from("profiles")
+            .select("id, email")
+            .in("id", memberUserIds);
+          for (const p of memberProfiles ?? []) {
+            emailByUser.set(p.id, p.email ?? null);
+          }
+        }
+
+        for (const m of members ?? []) {
+          const orgId = m.organization_id as string;
+          const role = (m.role as string) || "admin";
+          const email = emailByUser.get(m.user_id as string) ?? null;
+          const existing = ownerByOrg.get(orgId);
+          if (!existing || (role === "ceo" && existing.role !== "ceo")) {
+            ownerByOrg.set(orgId, { email, role });
+          }
+        }
+
+        const { data: googleRows } = await admin
+          .from("connections")
+          .select("organization_id, connected_email, needs_reauth")
+          .in("organization_id", orgIds)
+          .eq("provider", "google");
+        for (const g of googleRows ?? []) {
+          googleByOrg.set(g.organization_id as string, {
+            email: (g.connected_email as string | null) ?? null,
+            needs_reauth: Boolean(g.needs_reauth),
+          });
+        }
+
+        const { data: twilioRows } = await admin
+          .from("twilio_connections")
+          .select("organization_id")
+          .in("organization_id", orgIds);
+        for (const t of twilioRows ?? []) {
+          twilioOrgs.add(t.organization_id as string);
+        }
+
+        const { data: arketaRows } = await admin
+          .from("arketa_locations")
+          .select("organization_id")
+          .in("organization_id", orgIds);
+        for (const a of arketaRows ?? []) {
+          const id = a.organization_id as string;
+          arketaCount.set(id, (arketaCount.get(id) ?? 0) + 1);
+        }
+      }
+
+      organizations = baseOrgs.map((o) => {
+        const owner = ownerByOrg.get(o.id);
+        const google = googleByOrg.get(o.id);
+        return {
+          id: o.id,
+          name: o.name,
+          slug: o.slug,
+          plan: o.plan,
+          billing_status: o.billing_status,
+          billing_provider: o.billing_provider,
+          plan_period_end: o.plan_period_end,
+          plan_notes: o.plan_notes,
+          owner_email: owner?.email ?? null,
+          owner_role: owner?.role ?? null,
+          google_connected: Boolean(google),
+          google_needs_reauth: Boolean(google?.needs_reauth),
+          google_email: google?.email ?? null,
+          twilio_connected: twilioOrgs.has(o.id),
+          arketa_location_count: arketaCount.get(o.id) ?? 0,
+        };
+      });
+    }
   } catch (err) {
     loadError =
       err instanceof Error
