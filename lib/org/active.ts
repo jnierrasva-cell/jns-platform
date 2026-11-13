@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -15,11 +14,14 @@ export type ActiveOrg = {
   contactLabelPlural: string;
 };
 
+type Membership = { organization_id: string; role: string };
+
 /**
- * Request-scoped: layout + page + nested server components share one result
- * per navigation (fixes double-fetch on every tool switch).
+ * Resolve the caller's active workspace.
+ * Parallel membership + profile reads; profile write only when active org drifts.
+ * (No React.cache — this is also imported by Server Actions.)
  */
-export const getActiveOrg = cache(async function getActiveOrg(): Promise<ActiveOrg | null> {
+export async function getActiveOrg(): Promise<ActiveOrg | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,8 +31,7 @@ export const getActiveOrg = cache(async function getActiveOrg(): Promise<ActiveO
   const jar = await cookies();
   const cookieOrgId = jar.get("jns_active_org")?.value ?? null;
 
-  // Parallel: memberships + profile active org
-  let memberships: { organization_id: string; role: string }[] | null = null;
+  let memberships: Membership[] = [];
   let profileActiveId: string | null = null;
 
   try {
@@ -46,7 +47,7 @@ export const getActiveOrg = cache(async function getActiveOrg(): Promise<ActiveO
         .eq("id", user.id)
         .maybeSingle(),
     ]);
-    memberships = (membersRes.data as typeof memberships) ?? null;
+    memberships = (membersRes.data as Membership[] | null) ?? [];
     profileActiveId =
       (profileRes.data?.active_organization_id as string | null) ?? null;
   } catch {
@@ -61,12 +62,12 @@ export const getActiveOrg = cache(async function getActiveOrg(): Promise<ActiveO
         .eq("id", user.id)
         .maybeSingle(),
     ]);
-    memberships = (membersRes.data as typeof memberships) ?? null;
+    memberships = (membersRes.data as Membership[] | null) ?? [];
     profileActiveId =
       (profileRes.data?.active_organization_id as string | null) ?? null;
   }
 
-  if (!memberships?.length) return null;
+  if (!memberships.length) return null;
 
   const selected = resolveActiveOrg({
     memberships: memberships.map((m) => ({
@@ -137,4 +138,4 @@ export const getActiveOrg = cache(async function getActiveOrg(): Promise<ActiveO
     contactLabel,
     contactLabelPlural,
   };
-});
+}
