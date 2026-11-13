@@ -1,6 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
-import { sendAutoAck } from "@/lib/google/send-auto-ack";
+import {
+  sendAutoAck,
+  guessFirstNameFromEmail,
+} from "@/lib/google/send-auto-ack";
 import { upsertContactByEmail } from "@/lib/contacts/upsert";
 import { applyTagToContact, findMatchingRule } from "@/lib/email/rules";
 
@@ -12,6 +15,18 @@ type PubSubEmailNotification = {
 function decodePubSubData(data: string): PubSubEmailNotification {
   const json = Buffer.from(data, "base64").toString("utf8");
   return JSON.parse(json) as PubSubEmailNotification;
+}
+
+function headerFirstName(
+  fromName: string | null,
+  fromHeader: string,
+): string | null {
+  const fromDisplay =
+    fromName?.split(" ")[0]?.replace(/[^a-zA-Z\-']/g, "") || null;
+  if (fromDisplay && fromDisplay.length >= 2) return fromDisplay;
+  const raw = fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") || "";
+  if (raw && raw.length >= 2 && !raw.includes("@")) return raw;
+  return null;
 }
 
 export async function processGmailNotification(pubsubDataBase64: string) {
@@ -165,19 +180,20 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
     if (existingActivity) continue;
 
-    const firstName =
-      fromName?.split(" ")[0]?.replace(/[^a-zA-Z\-']/g, "") ||
-      fromHeader.split(" ")[0]?.replace(/[^a-zA-Z]/g, "") ||
-      "there";
-
     const { data: existingContact } = await supabase
       .from("contacts")
-      .select("id")
+      .select("id, first_name")
       .eq("organization_id", organizationId)
       .ilike("email", fromEmail)
       .maybeSingle();
 
     const isNewContact = !existingContact;
+
+    // Prefer: saved contact name → From display name → email local-part
+    const firstName =
+      existingContact?.first_name?.trim() ||
+      headerFirstName(fromName, fromHeader) ||
+      guessFirstNameFromEmail(fromEmail);
 
     const matchedRule = await findMatchingRule({
       organizationId,
@@ -190,6 +206,7 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       fromEmail,
       subject,
       isNewContact,
+      firstName,
       matched: matchedRule?.name ?? null,
       action: matchedRule?.action ?? null,
       templateKey: matchedRule?.template_key ?? null,
