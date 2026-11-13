@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireOrgManager } from "@/lib/org/auth";
-import { sendAutoAck } from "@/lib/google/send-auto-ack";
+import {
+  sendAutoAck,
+  guessFirstNameFromEmail,
+} from "@/lib/google/send-auto-ack";
 
 export async function saveEmailTemplate(input: {
   organizationId: string;
@@ -66,10 +69,13 @@ export async function sendTestAutoAck(
       return { ok: false, error: "Enter a valid test email address." };
     }
 
+    // Use a real-looking name from the test address (was hard-coded "there")
+    const firstName = guessFirstNameFromEmail(recipient);
+
     const result = await sendAutoAck({
       organizationId,
       toEmail: recipient,
-      firstName: "there",
+      firstName,
       templateKey,
       testMode: true,
     });
