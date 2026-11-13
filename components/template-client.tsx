@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import {
   saveEmailTemplate,
@@ -121,7 +121,7 @@ export function TemplateClient({
     setSaved(false);
   }
 
-  function handleSave(e: React.FormEvent) {
+  function handleSave(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSaved(false);
@@ -199,7 +199,7 @@ export function TemplateClient({
 
   function handleDelete() {
     if (activeKey === "gmail_auto_ack") return;
-    if (!window.confirm(`Delete template “${activeKey}”?`)) return;
+    if (!window.confirm(`Delete template "${activeKey}"?`)) return;
     startTransition(async () => {
       try {
         await deleteEmailTemplate(orgId, activeKey);
@@ -213,7 +213,7 @@ export function TemplateClient({
     });
   }
 
-  function handleTest(e: React.FormEvent) {
+  function handleTest(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setTestResult(null);
@@ -290,7 +290,7 @@ export function TemplateClient({
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search templates…"
+                placeholder="Search templates..."
                 className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-sky-500 focus:bg-white focus:ring-2"
               />
             </div>
@@ -477,7 +477,7 @@ export function TemplateClient({
                 disabled={isPending}
                 className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60 sm:w-auto"
               >
-                {isPending ? "Saving…" : "Save template"}
+                {isPending ? "Saving..." : "Save template"}
               </button>
             </form>
 
@@ -498,7 +498,7 @@ export function TemplateClient({
                     Subject
                   </p>
                   <p className="mt-0.5 text-sm font-medium text-slate-900">
-                    {previewSubject || "—"}
+                    {previewSubject || "-"}
                   </p>
                 </div>
                 <div className="whitespace-pre-wrap px-4 py-4 text-sm leading-6 text-slate-800">
