@@ -90,7 +90,6 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
-  // Request-cached with page-level getActiveOrg calls
   let active = await getActiveOrg();
 
   if (!active && memberships?.[0]) {
@@ -113,7 +112,10 @@ export default async function DashboardLayout({
     redirect("/onboarding/account-type");
   }
 
-  const isOrgManager = active.role === "ceo" || active.role === "admin";
+  const activeOrg = active;
+  const organizationId = activeOrg.organizationId;
+  const isOrgManager =
+    activeOrg.role === "ceo" || activeOrg.role === "admin";
 
   // Parallel second wave: admin profile + plan gate + arketa issues
   let platformRole = profile?.role ?? null;
@@ -150,7 +152,7 @@ export default async function DashboardLayout({
         return null;
       }
     })(),
-    getPlanGateState(active.organizationId),
+    getPlanGateState(organizationId),
     (async (): Promise<ArketaIssue[]> => {
       if (!isOrgManager) return [];
       try {
@@ -160,7 +162,7 @@ export default async function DashboardLayout({
           .select(
             "id, label, last_sync_status, last_sync_error, consecutive_failures",
           )
-          .eq("organization_id", active.organizationId);
+          .eq("organization_id", organizationId);
 
         return (rows ?? [])
           .filter((r) => {
@@ -228,12 +230,12 @@ export default async function DashboardLayout({
       userEmail={user.email ?? ""}
       isPlatformAdmin={isPlatformAdmin}
       isOrgManager={isOrgManager}
-      orgName={active.orgName}
-      orgKind={active.orgKind}
-      orgLogoUrl={active.orgLogoUrl}
+      orgName={activeOrg.orgName}
+      orgKind={activeOrg.orgKind}
+      orgLogoUrl={activeOrg.orgLogoUrl}
       planLabel={planLabel}
       planId={planId}
-      contactLabelPlural={active.contactLabelPlural}
+      contactLabelPlural={activeOrg.contactLabelPlural}
     >
       <>
         {showNamePrompt && <CompleteProfileBanner />}
