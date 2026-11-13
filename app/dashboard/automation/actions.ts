@@ -46,7 +46,7 @@ export async function setAutomationEnabled(
   if (serviceKey === "email-auto-ack" && isEnabled) {
     const { data: google } = await supabase
       .from("connections")
-      .select("id")
+      .select("id, needs_reauth")
       .eq("organization_id", organizationId)
       .eq("provider", "google")
       .maybeSingle();
@@ -54,6 +54,11 @@ export async function setAutomationEnabled(
     if (!google) {
       throw new Error(
         "Connect Google in Integrations before enabling inquiry auto-reply.",
+      );
+    }
+    if (google.needs_reauth) {
+      throw new Error(
+        "Google needs to be reconnected in Integrations before enabling auto-reply.",
       );
     }
 
@@ -85,10 +90,14 @@ export async function setAutomationEnabled(
       if (isEnabled) await startGmailWatch(organizationId);
       else await stopGmailWatch(organizationId);
     } catch (watchErr) {
-      throw new Error(
+      const detail =
         watchErr instanceof Error
           ? watchErr.message
-          : "Failed to update Gmail watch",
+          : "Failed to update Gmail watch";
+      throw new Error(
+        isEnabled
+          ? `Auto-reply was turned on, but Gmail push watch failed: ${detail}. Check Connections → Google, then toggle off/on again.`
+          : `Auto-reply was turned off, but stopping Gmail watch failed: ${detail}`,
       );
     }
   }
