@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   effectivePlan,
@@ -105,7 +106,10 @@ export async function assertCanInvite(
   }
 }
 
-export async function getPlanGateState(organizationId: string) {
+/** Request-scoped cache: layout + page share one plan read per navigation. */
+export const getPlanGateState = cache(async function getPlanGateState(
+  organizationId: string,
+) {
   const billing = await getOrgBilling(organizationId);
   const limits = planLimits(billing);
   return {
@@ -113,4 +117,4 @@ export async function getPlanGateState(organizationId: string) {
     limits,
     billing,
   };
-}
+});
