@@ -13,13 +13,24 @@ type SendAutoAckInput = {
   testMode?: boolean;
 };
 
+/** Guess a greeting name from an email local-part when no real name is known. */
+export function guessFirstNameFromEmail(email: string): string {
+  const local = (email.split("@")[0] ?? "").trim();
+  if (!local) return "there";
+  const part = local.split(/[._+\-]/)[0] ?? local;
+  const cleaned = part.replace(/[^a-zA-Z']/g, "");
+  if (!cleaned || cleaned.length < 2) return "there";
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+}
+
 function applyTemplate(
   template: string,
-  vars: { first_name: string; business_name: string },
+  vars: { first_name: string; business_name: string; email: string },
 ) {
   return template
     .replaceAll("{{first_name}}", vars.first_name)
-    .replaceAll("{{business_name}}", vars.business_name);
+    .replaceAll("{{business_name}}", vars.business_name)
+    .replaceAll("{{email}}", vars.email);
 }
 
 function toBase64Url(str: string) {
@@ -90,16 +101,19 @@ export async function sendAutoAck(input: SendAutoAckInput) {
     .eq("id", input.organizationId)
     .maybeSingle();
 
-  const businessName = org?.name ?? "Our team";
-  const firstName = input.firstName?.trim() || "there";
+  const businessName = org?.name?.trim() || "Our team";
+  const firstName =
+    input.firstName?.trim() || guessFirstNameFromEmail(input.toEmail);
 
   const subject = applyTemplate(template.subject, {
     first_name: firstName,
     business_name: businessName,
+    email: input.toEmail,
   });
   const body = applyTemplate(template.body, {
     first_name: firstName,
     business_name: businessName,
+    email: input.toEmail,
   });
 
   const { accessToken, connectedEmail } = await getValidGoogleAccessToken(
