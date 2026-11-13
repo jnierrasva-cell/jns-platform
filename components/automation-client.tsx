@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import type { Service } from "@/lib/mock-services";
 import {
@@ -10,13 +10,12 @@ import {
 import PageHeader from "@/components/ui/PageHeader";
 import {
   Mail,
-  MessageSquare,
-  CalendarCheck,
+  MessageCircle,
+  CalendarDays,
   CheckCircle2,
-  Circle,
   AlertCircle,
   ArrowRight,
-  Plug,
+  Settings2,
 } from "lucide-react";
 
 const DEFAULT_SMS_MESSAGE =
@@ -53,13 +52,13 @@ const META: Record<string, AutomationMeta> = {
     trigger: "Booking created or approaching start time",
     action: "Send confirmation / reminder email via JNS mail",
     integration: "JNS email (no Google required)",
-    icon: CalendarCheck,
+    icon: CalendarDays,
   },
   "sms-reminders": {
     trigger: "Booking approaching (hours before)",
     action: "Text the contact from your Twilio number",
     integration: "Twilio",
-    icon: MessageSquare,
+    icon: MessageCircle,
     configureHref: "/dashboard/integrations",
   },
 };
@@ -144,7 +143,7 @@ export function AutomationClient({
     });
   }
 
-  function saveSmsSettings(e: React.FormEvent) {
+  function saveSmsSettings(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSettingsSaved(null);
@@ -167,7 +166,7 @@ export function AutomationClient({
     });
   }
 
-  function saveEmailSettings(e: React.FormEvent) {
+  function saveEmailSettings(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSettingsSaved(null);
@@ -199,7 +198,16 @@ export function AutomationClient({
     return Array.from(map.entries());
   }, [services]);
 
-  const readiness = [
+  type ReadyItem = {
+    id: string;
+    label: string;
+    detail: string;
+    done: boolean;
+    href: string;
+    optional?: boolean;
+  };
+
+  const readiness: ReadyItem[] = [
     {
       id: "google",
       label: "Google",
@@ -243,7 +251,7 @@ export function AutomationClient({
       <PageHeader
         eyebrow="Systems"
         title="Automation Center"
-        description="Turn on the workflows that run without you. Only live systems are listed—no placeholders."
+        description="Turn on the workflows that run without you. Only live systems are listed."
       />
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -270,7 +278,7 @@ export function AutomationClient({
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">
-            <Plug className="h-5 w-5" aria-hidden />
+            <Settings2 className="h-5 w-5" aria-hidden />
           </span>
           <div>
             <h2 className="text-sm font-semibold text-slate-900">
@@ -295,8 +303,8 @@ export function AutomationClient({
                     aria-hidden
                   />
                 ) : p.optional ? (
-                  <Circle
-                    className="mt-0.5 h-4 w-4 shrink-0 text-slate-300"
+                  <span
+                    className="mt-0.5 inline-block h-4 w-4 shrink-0 rounded-full border-2 border-slate-300"
                     aria-hidden
                   />
                 ) : (
@@ -342,7 +350,7 @@ export function AutomationClient({
           {settingsSaved}
         </p>
       )}
-      {isPending && <p className="text-xs text-slate-500">Saving…</p>}
+      {isPending && <p className="text-xs text-slate-500">Saving...</p>}
 
       <div className="space-y-8">
         {categories.map(([category, categoryServices]) => (
@@ -404,13 +412,15 @@ export function AutomationClient({
                         aria-label={`Turn ${service.name} ${isOn ? "off" : "on"}`}
                         disabled={isPending}
                         onClick={() => toggleService(service)}
-                        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${\n                          isOn
+                        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
+                          isOn
                             ? "border-sky-600 bg-sky-600"
                             : "border-slate-300 bg-slate-200"
                         } disabled:opacity-50`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${\n                            isOn ? "left-[22px]" : "left-0.5"
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                            isOn ? "left-[22px]" : "left-0.5"
                           }`}
                         />
                       </button>
@@ -563,7 +573,7 @@ export function AutomationClient({
                     {row.subject || row.service_key || "Email event"}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {row.direction ?? "—"} · {row.status ?? "—"}
+                    {row.direction ?? "-"} · {row.status ?? "-"}
                     {row.to_email ? ` · to ${row.to_email}` : ""}
                     {row.from_email ? ` · from ${row.from_email}` : ""}
                   </p>
