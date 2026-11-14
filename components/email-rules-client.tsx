@@ -40,15 +40,43 @@ function conditionSummary(rule: Rule) {
   if (rule.from_email) parts.push(`from ${rule.from_email}`);
   if (rule.from_domain) parts.push(`domain ${rule.from_domain}`);
   if (rule.subject_contains)
-    parts.push(`subject contains “${rule.subject_contains}”`);
+    parts.push(`subject contains "${rule.subject_contains}"`);
   if (rule.only_new_contact) parts.push("new contacts only");
   return parts.length ? parts.join(" · ") : "Any inbound email";
 }
 
+const ACTION_OPTIONS: {
+  value: Rule["action"];
+  label: string;
+  short: string;
+  help: string;
+}[] = [
+  {
+    value: "auto_ack",
+    label: "Reply + save contact",
+    short: "Reply + contact",
+    help: "Saves the sender as a contact (if new), then sends your chosen template from the connected Google account. Use for inquiries you want to acknowledge.",
+  },
+  {
+    value: "tag_only",
+    label: "Save contact only (no reply)",
+    short: "Contact only",
+    help: "Saves or updates the contact and can apply a tag. Does not send email. Use when you want the lead in Clients without an automatic reply.",
+  },
+  {
+    value: "skip",
+    label: "Ignore this mail",
+    short: "Ignore",
+    help: "Does nothing: no contact, no reply, not added to Needs review for this match. Use for newsletters, receipts, or mail you never want in JNS.",
+  },
+];
+
 function actionLabel(action: Rule["action"]) {
-  if (action === "auto_ack") return "Auto-reply + contact";
-  if (action === "tag_only") return "Contact only";
-  return "Skip";
+  return ACTION_OPTIONS.find((o) => o.value === action)?.short ?? action;
+}
+
+function actionHelp(action: Rule["action"]) {
+  return ACTION_OPTIONS.find((o) => o.value === action)?.help ?? "";
 }
 
 export function EmailRulesClient({
@@ -138,8 +166,8 @@ export function EmailRulesClient({
         await setEmailRuleEnabled(rule.id, !rule.is_enabled);
         setSuccess(
           rule.is_enabled
-            ? `Disabled “${rule.name}”.`
-            : `Enabled “${rule.name}”.`,
+            ? `Disabled "${rule.name}".`
+            : `Enabled "${rule.name}".`,
         );
         router.refresh();
       } catch (err) {
@@ -156,7 +184,7 @@ export function EmailRulesClient({
     startTransition(async () => {
       try {
         await deleteEmailRule(rule.id);
-        setSuccess(`Deleted “${rule.name}”.`);
+        setSuccess(`Deleted "${rule.name}".`);
         router.refresh();
       } catch (err) {
         setError(
@@ -222,8 +250,8 @@ export function EmailRulesClient({
       >
         <h2 className="text-sm font-semibold text-slate-900">New rule</h2>
         <p className="mt-1 text-xs text-slate-500">
-          Example: subject contains “cancel” → auto-reply. You do not need every
-          field filled in.
+          Example: subject contains "cancel" → reply + contact. You do not need
+          every field filled in.
         </p>
 
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -286,7 +314,7 @@ export function EmailRulesClient({
               className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 md:col-span-2">
             <label className="text-sm font-medium text-slate-700">Action</label>
             <select
               value={action}
@@ -294,11 +322,41 @@ export function EmailRulesClient({
                 setAction(e.target.value as "auto_ack" | "skip" | "tag_only")
               }
               className={inputClass}
+              aria-describedby="action-help"
             >
-              <option value="auto_ack">Send auto-reply + contact</option>
-              <option value="tag_only">Contact only (no reply)</option>
-              <option value="skip">Skip (ignore this mail)</option>
+              {ACTION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
+            <div
+              id="action-help"
+              className="rounded-xl border border-sky-100 bg-sky-50/80 px-3.5 py-3 text-xs leading-5 text-slate-700"
+            >
+              <p className="font-medium text-slate-900">
+                {ACTION_OPTIONS.find((o) => o.value === action)?.label}
+              </p>
+              <p className="mt-1 text-slate-600">{actionHelp(action)}</p>
+              <ul className="mt-2 space-y-1 border-t border-sky-100/80 pt-2 text-slate-500">
+                <li>
+                  <span className="font-medium text-slate-700">
+                    Reply + save contact:
+                  </span>{" "}
+                  contact + template email
+                </li>
+                <li>
+                  <span className="font-medium text-slate-700">
+                    Save contact only:
+                  </span>{" "}
+                  contact/tag, silent
+                </li>
+                <li>
+                  <span className="font-medium text-slate-700">Ignore:</span>{" "}
+                  drop this match completely
+                </li>
+              </ul>
+            </div>
           </div>
           {action === "auto_ack" ? (
             <div className="flex flex-col gap-1.5">
@@ -357,7 +415,7 @@ export function EmailRulesClient({
           disabled={isPending}
           className={`mt-5 ${primaryBtn}`}
         >
-          {isPending ? "Saving…" : "Add rule"}
+          {isPending ? "Saving..." : "Add rule"}
         </button>
       </form>
 
@@ -502,10 +560,8 @@ export function EmailRulesClient({
                             aria-checked={rule.is_enabled}
                             aria-label={`${rule.is_enabled ? "Disable" : "Enable"} ${rule.name}`}
                             disabled={isPending}
-                            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                              rule.is_enabled
-                                ? "bg-emerald-600"
-                                : "bg-slate-300"
+                            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+                              rule.is_enabled ? "bg-emerald-600" : "bg-slate-300"
                             }`}
                             onClick={() => toggleEnabled(rule)}
                           >
@@ -520,7 +576,7 @@ export function EmailRulesClient({
                           <button
                             type="button"
                             disabled={isPending}
-                            className="min-h-[44px] px-2 text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
+                            className="min-h-[44px] text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-50"
                             onClick={() => removeRule(rule)}
                           >
                             Delete
