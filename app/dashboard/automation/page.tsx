@@ -44,7 +44,7 @@ export default async function AutomationPage() {
       .eq("organization_id", orgId),
     admin
       .from("connections")
-      .select("connected_email")
+      .select("connected_email, needs_reauth, watch_expiration")
       .eq("organization_id", orgId)
       .eq("provider", "google")
       .maybeSingle(),
@@ -78,6 +78,23 @@ export default async function AutomationPage() {
       (row.settings as Record<string, unknown>) ?? {};
   }
 
+  const googleConnected = Boolean(googleRes.data?.connected_email);
+  const googleNeedsReauth = Boolean(
+    googleRes.data?.needs_reauth && googleConnected,
+  );
+  const watchExpiration = googleRes.data?.watch_expiration as
+    | string
+    | null
+    | undefined;
+  const autoAckOn = enabledKeys.includes("email-auto-ack");
+  const watchStale =
+    googleConnected &&
+    !googleNeedsReauth &&
+    autoAckOn &&
+    (!watchExpiration ||
+      Number.isNaN(new Date(watchExpiration).getTime()) ||
+      new Date(watchExpiration).getTime() <= Date.now());
+
   return (
     <div>
       {!gate.limits.emailAutomation && (
@@ -92,8 +109,10 @@ export default async function AutomationPage() {
         initialEnabledKeys={enabledKeys}
         initialSettings={settingsByKey}
         recentActivity={activityRes.data ?? []}
-        googleConnected={Boolean(googleRes.data?.connected_email)}
+        googleConnected={googleConnected}
         googleEmail={googleRes.data?.connected_email ?? null}
+        googleNeedsReauth={googleNeedsReauth}
+        googleWatchStale={watchStale}
         twilioConnected={Boolean(twilioRes.data?.from_number)}
         twilioFrom={twilioRes.data?.from_number ?? null}
         enabledRulesCount={rulesRes.count ?? 0}
