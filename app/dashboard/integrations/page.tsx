@@ -67,26 +67,33 @@ export default async function ConnectionsPage({
 
   const admin = createAdminClient();
 
-  const { data: googleConnection } = await admin
-    .from("connections")
-    .select("connected_email, needs_reauth, last_auth_error")
-    .eq("organization_id", orgId)
-    .eq("provider", "google")
-    .maybeSingle();
-
-  const { data: twilio } = await admin
-    .from("twilio_connections")
-    .select("from_number")
-    .eq("organization_id", orgId)
-    .maybeSingle();
-
-  const { data: arketaRows } = await admin
-    .from("arketa_locations")
-    .select(
-      "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status, last_sync_error, consecutive_failures, timezone, instructor_email_map",
-    )
-    .eq("organization_id", orgId)
-    .order("label", { ascending: true });
+  const [{ data: googleConnection }, { data: twilio }, { data: arketaRows }, autoAckRes] =
+    await Promise.all([
+      admin
+        .from("connections")
+        .select("connected_email, needs_reauth, last_auth_error, watch_expiration")
+        .eq("organization_id", orgId)
+        .eq("provider", "google")
+        .maybeSingle(),
+      admin
+        .from("twilio_connections")
+        .select("from_number")
+        .eq("organization_id", orgId)
+        .maybeSingle(),
+      admin
+        .from("arketa_locations")
+        .select(
+          "id, label, partner_id, google_calendar_id, last_synced_at, last_sync_status, last_sync_error, consecutive_failures, timezone, instructor_email_map",
+        )
+        .eq("organization_id", orgId)
+        .order("label", { ascending: true }),
+      admin
+        .from("org_automations")
+        .select("is_enabled")
+        .eq("organization_id", orgId)
+        .eq("service_key", "email-auto-ack")
+        .maybeSingle(),
+    ]);
 
   const arketaLocations = (arketaRows ?? []).map((row) => ({
     id: row.id as string,
@@ -106,6 +113,27 @@ export default async function ConnectionsPage({
 
   const googleNeedsReauth = Boolean(googleConnection?.needs_reauth);
   const errorText = googleErrorMessage(googleError, jnsEmail);
+  const autoAckOn = Boolean(autoAckRes.data?.is_enabled);
+  const watchExpiration = googleConnection?.watch_expiration as
+    | string
+    | null
+    | undefined;
+  const watchStale =
+    Boolean(googleConnection?.connected_email) &&
+    !googleNeedsReauth &&
+    autoAckOn &&
+    (!watchExpiration ||
+      Number.isNaN(new Date(watchExpiration).getTime()) ||
+      new Date(watchExpiration).getTime() <= Date.now());
+  const watchLabel =
+    watchExpiration && !Number.isNaN(new Date(watchExpiration).getTime())
+      ? new Date(watchExpiration).toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : null;
 
   return (
     <div>
@@ -189,12 +217,29 @@ export default async function ConnectionsPage({
                   {canManage && (
                     <a
                       href="/api/google/connect"
-                      className="mt-2 inline-flex rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800"
+                      className="mt-2 inline-flex min-h-[44px] items-center rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800"
                     >
                       Reconnect Google
                     </a>
                   )}
                 </div>
+              )}
+              {!googleNeedsReauth && watchStale && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <p className="font-medium text-slate-900">
+                    Inbox watch may need a refresh
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-600">
+                    Inquiry auto-reply is on, but Gmail push watch looks expired.
+                    Cron usually renews it; if new mail is not processing, toggle
+                    auto-reply off/on under Automations or reconnect Google.
+                  </p>
+                </div>
+              )}
+              {!googleNeedsReauth && !watchStale && watchLabel && (
+                <p className="text-xs text-slate-500">
+                  Inbox watch current through {watchLabel}. Renews automatically.
+                </p>
               )}
               {canManage && !googleNeedsReauth && (
                 <GoogleDisconnectButton organizationId={orgId} />
@@ -206,7 +251,7 @@ export default async function ConnectionsPage({
           ) : canManage ? (
             <a
               href="/api/google/connect"
-              className="mt-5 inline-flex rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+              className="mt-5 inline-flex min-h-[44px] items-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
             >
               Connect Google
             </a>
