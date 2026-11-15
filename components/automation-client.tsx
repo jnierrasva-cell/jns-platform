@@ -21,6 +21,27 @@ import {
 const DEFAULT_SMS_MESSAGE =
   'Hi {{first_name}}, reminder: "{{title}}" is scheduled for {{when}}. Reply if you need to reschedule.';
 
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "unknown time";
+  const diffMs = Date.now() - then;
+  if (diffMs < 0) return "just now";
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 48) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 14) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function isSuccessStatus(status: string | null): boolean {
+  return status === "sent" || status === "received";
+}
+function isFailureStatus(status: string | null): boolean {
+  return status === "failed";
+}
+
 type ActivityRow = {
   id: string;
   service_key: string | null;
@@ -114,10 +135,22 @@ export function AutomationClient({
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const activeCount = services.filter((s) => enabledKeys.has(s.id)).length;
-  const sentOk = recentActivity.filter(
-    (r) => r.status === "sent" || r.status === "received",
-  ).length;
-  const failed = recentActivity.filter((r) => r.status === "failed").length;
+  const sentOk = recentActivity.filter((r) => isSuccessStatus(r.status)).length;
+  const failed = recentActivity.filter((r) => isFailureStatus(r.status)).length;
+  const lastSuccess = recentActivity.find((r) => isSuccessStatus(r.status));
+  const lastFailure = recentActivity.find((r) => isFailureStatus(r.status));
+  const healthSummaryParts: string[] = [];
+  if (lastSuccess) {
+    healthSummaryParts.push(`Last success ${formatRelativeTime(lastSuccess.created_at)}`);
+  }
+  if (lastFailure) {
+    const who = lastFailure.to_email || lastFailure.from_email || lastFailure.subject || "an email";
+    healthSummaryParts.push(`Last failure ${formatRelativeTime(lastFailure.created_at)} (${who})`);
+  }
+  if (!lastSuccess && !lastFailure && recentActivity.length > 0) {
+    healthSummaryParts.push(`${recentActivity.length} recent event${recentActivity.length === 1 ? "" : "s"} (no sent/failed status yet)`);
+  }
+  const healthSummary = healthSummaryParts.length > 0 ? healthSummaryParts.join(" · ") : null;
 
   function toggleService(service: Service) {
     const nextEnabled = !enabledKeys.has(service.id);
@@ -425,7 +458,8 @@ export function AutomationClient({
                     <div className="flex items-start justify-between gap-3 p-5">
                       <div className="flex min-w-0 gap-3">
                         <span
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${\n                            isOn
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            isOn
                               ? "bg-sky-50 text-sky-700 ring-1 ring-sky-100"
                               : "bg-slate-50 text-slate-500 ring-1 ring-slate-100"
                           }`}
@@ -438,7 +472,8 @@ export function AutomationClient({
                               {service.name}
                             </h3>
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${\n                                isOn
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                isOn
                                   ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100"
                                   : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
                               }`}
@@ -458,13 +493,15 @@ export function AutomationClient({
                         aria-label={`Turn ${service.name} ${isOn ? "off" : "on"}`}
                         disabled={isPending}
                         onClick={() => toggleService(service)}
-                        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${\n                          isOn
+                        className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
+                          isOn
                             ? "border-sky-600 bg-sky-600"
                             : "border-slate-300 bg-slate-200"
                         } disabled:opacity-50`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${\n                            isOn ? "left-[22px]" : "left-0.5"
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                            isOn ? "left-[22px]" : "left-0.5"
                           }`}
                         />
                       </button>
@@ -549,37 +586,68 @@ export function AutomationClient({
       </div>
 
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Recent activity</h2>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Last {recentActivity.length} email events for this workspace
-          {failed > 0 ? ` · ${failed} failed` : ""}
-          {sentOk > 0 ? ` · ${sentOk} sent/received` : ""}.
-        </p>
-        {recentActivity.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">
-            No activity yet. After Google + a rule + auto-reply, send a test
-            message to the connected inbox.
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Recent activity</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Proof that rules and auto-reply are working — newest first.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs">
+            <Link href="/dashboard/email-rules" className="font-medium text-sky-700 underline-offset-2 hover:underline">Rules</Link>
+            <Link href="/dashboard/unmatched" className="font-medium text-sky-700 underline-offset-2 hover:underline">Needs review</Link>
+            <Link href="/dashboard/integrations" className="font-medium text-sky-700 underline-offset-2 hover:underline">Connections</Link>
+          </div>
+        </div>
+
+        {healthSummary && (
+          <p
+            className={`mt-3 rounded-xl px-3.5 py-2.5 text-sm ${
+              failed > 0
+                ? "border border-amber-200 bg-amber-50 text-amber-950"
+                : "border border-slate-200 bg-slate-50 text-slate-700"
+            }`}
+            role="status"
+          >
+            {healthSummary}
+            {failed > 0 ? " · Check Connections if sends keep failing." : ""}
           </p>
+        )}
+
+        {recentActivity.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-sm text-slate-600">
+            <p className="font-medium text-slate-900">No email activity yet</p>
+            <p className="mt-1">
+              Connect Google, add one rule, turn on Inquiry auto-reply, then send a test
+              message to the connected inbox. A successful reply will show up here.
+            </p>
+          </div>
         ) : (
           <ul className="mt-3 divide-y divide-slate-100">
-            {recentActivity.map((row) => (
-              <li key={row.id} className="flex flex-wrap items-start justify-between gap-2 py-2.5 text-sm">
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-900 truncate">
-                    {row.subject || "(no subject)"}
+            {recentActivity.map((row) => {
+              const ok = isSuccessStatus(row.status);
+              const bad = isFailureStatus(row.status);
+              return (
+                <li key={row.id} className="flex flex-wrap items-start justify-between gap-2 py-2.5 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900">
+                      {row.subject || "(no subject)"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      <span className={bad ? "font-medium text-amber-800" : ok ? "font-medium text-emerald-700" : ""}>
+                        {row.status || "unknown"}
+                      </span>
+                      {row.direction ? ` · ${row.direction}` : ""}
+                      {row.service_key ? ` · ${row.service_key}` : ""}
+                      {row.to_email ? ` → ${row.to_email}` : ""}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-xs text-slate-400">
+                    {formatRelativeTime(row.created_at)}
                   </p>
-                  <p className="text-xs text-slate-500">
-                    {[row.direction, row.service_key, row.status]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    {row.to_email ? ` → ${row.to_email}` : ""}
-                  </p>
-                </div>
-                <p className="shrink-0 text-xs text-slate-400">
-                  {new Date(row.created_at).toLocaleString()}
-                </p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
