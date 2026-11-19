@@ -185,7 +185,6 @@ export async function startWorkflowRun(input: {
   }
 }
 
-/** Phase 0: mark job done and complete waiting run. Full graph resume in Phase 1. */
 export async function resumeRunFromJob(job: {
   id: string;
   run_id: string;
@@ -230,6 +229,10 @@ function evaluateCondition(
   if (op === "exists") return value !== undefined && value !== null && value !== "";
   if (op === "eq") return value === config.value;
   if (op === "neq") return value !== config.value;
+  if (op === "in") {
+    const list = Array.isArray(config.value) ? config.value : [];
+    return list.map(String).includes(String(value));
+  }
   return true;
 }
 
