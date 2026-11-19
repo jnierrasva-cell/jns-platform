@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/sms/send";
+import { listOrgIdsWithAutomationEnabled } from "@/lib/workflows/automation-enabled";
 
 const DEFAULT_MESSAGE =
   'Hi {{first_name}}, reminder: "{{title}}" is scheduled for {{when}}. Reply if you need to reschedule.';
@@ -24,14 +25,7 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-
-  const { data: enabled } = await admin
-    .from("org_automations")
-    .select("organization_id")
-    .eq("service_key", "sms-reminders")
-    .eq("is_enabled", true);
-
-  const orgIds = (enabled ?? []).map((r) => r.organization_id);
+  const orgIds = await listOrgIdsWithAutomationEnabled("sms-reminders");
   let totalSent = 0;
   let totalSkipped = 0;
 
