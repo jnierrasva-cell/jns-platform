@@ -13,6 +13,7 @@ import {
   getBookedPipelineStageId,
 } from "@/lib/pipeline/assign";
 import { sendBookingConfirmationEmail } from "@/lib/bookings/email-notifications";
+import { emitDomainEvent } from "@/lib/workflows/events";
 
 async function requireOrgMember(organizationId: string) {
   const supabase = await createClient();
@@ -143,7 +144,6 @@ export async function createBooking(input: {
       });
     }
 
-    // Zero-setup managed confirmation (Resend) — independent of Google calendar invite
     if (attendeeEmail) {
       try {
         await sendBookingConfirmationEmail({
@@ -184,12 +184,14 @@ export async function updateBookingStatus(
 
   const { data: booking } = await supabase
     .from("bookings")
-    .select("organization_id")
+    .select("organization_id, title, contact_id, starts_at, status")
     .eq("id", bookingId)
     .maybeSingle();
 
   if (!booking) throw new Error("Booking not found");
   await requireOrgMember(booking.organization_id);
+
+  const previousStatus = booking.status as string;
 
   const { error } = await supabase
     .from("bookings")
@@ -200,6 +202,28 @@ export async function updateBookingStatus(
     .eq("id", bookingId);
 
   if (error) throw new Error(error.message);
+
+  if (previousStatus !== status) {
+    try {
+      await emitDomainEvent({
+        organizationId: booking.organization_id as string,
+        type: "booking.status_changed",
+        entityType: "booking",
+        entityId: bookingId,
+        payload: {
+          booking_id: bookingId,
+          status,
+          previous_status: previousStatus,
+          title: booking.title,
+          contact_id: booking.contact_id,
+          starts_at: booking.starts_at,
+        },
+        idempotencyKey: `booking.status:${bookingId}:${status}:${Date.now()}`,
+      });
+    } catch (wfErr) {
+      console.error("[updateBookingStatus] workflow emit:", wfErr);
+    }
+  }
 
   revalidatePath("/dashboard/bookings");
   revalidatePath("/dashboard");
