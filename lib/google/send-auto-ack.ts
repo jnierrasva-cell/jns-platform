@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getValidGoogleAccessToken } from "@/lib/google/token";
+import { isAutomationEnabled } from "@/lib/workflows/automation-enabled";
 
 type SendAutoAckInput = {
   organizationId: string;
@@ -8,16 +9,14 @@ type SendAutoAckInput = {
   threadId?: string;
   inReplyToMessageId?: string;
   firstName?: string;
-  /** Defaults to gmail_auto_ack */
   templateKey?: string;
   testMode?: boolean;
 };
 
-/** Guess a greeting name from an email local-part when no real name is known. */
 export function guessFirstNameFromEmail(email: string): string {
   const local = (email.split("@")[0] ?? "").trim();
   if (!local) return "there";
-  const part = local.split(/[._+\-]/)[0] ?? local;
+  const part = local.split(/[._+-]/)[0] ?? local;
   const cleaned = part.replace(/[^a-zA-Z']/g, "");
   if (!cleaned || cleaned.length < 2) return "there";
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
@@ -45,23 +44,16 @@ function domainOf(email: string) {
   return email.toLowerCase().split("@")[1] ?? "";
 }
 
-/**
- * Sends an org email template via Gmail.
- * templateKey defaults to gmail_auto_ack.
- * Respects exclude_domains in org_automation_settings for email-auto-ack.
- */
 export async function sendAutoAck(input: SendAutoAckInput) {
   const supabase = createAdminClient();
   const templateKey = input.templateKey?.trim() || "gmail_auto_ack";
 
-  const { data: automation } = await supabase
-    .from("org_automations")
-    .select("is_enabled")
-    .eq("organization_id", input.organizationId)
-    .eq("service_key", "email-auto-ack")
-    .maybeSingle();
+  const enabled = await isAutomationEnabled(
+    input.organizationId,
+    "email-auto-ack",
+  );
 
-  if (!input.testMode && !automation?.is_enabled) {
+  if (!input.testMode && !enabled) {
     return { skipped: true, reason: "automation_disabled" as const };
   }
 
