@@ -37,17 +37,97 @@ export async function startWorkflowRun(input: {
   if (!run?.id) return false;
 
   const runId = run.id as string;
-  const stepOutputs: Record<string, unknown> = {};
+  const trigger = input.graph.nodes.find((n) => n.type === "trigger");
+  if (!trigger) {
+    await failRun(admin, runId, "Graph has no trigger node");
+    return true;
+  }
+
+  const startNode = nextNodeId(input.graph, trigger.id);
+  return executeFromNode({
+    admin,
+    runId,
+    organizationId: input.organizationId,
+    graph: input.graph,
+    triggerEvent: input.triggerEvent,
+    triggerPayload: input.triggerPayload,
+    startNodeId: startNode,
+    stepOutputs: {},
+  });
+}
+
+export async function resumeRunFromJob(job: {
+  id: string;
+  run_id: string;
+  organization_id: string;
+  node_id: string;
+  payload: Record<string, unknown>;
+}): Promise<void> {
+  const admin = createAdminClient();
+
+  const { data: run } = await admin
+    .from("workflow_runs")
+    .select("id, organization_id, version_id, trigger_event, trigger_payload, status")
+    .eq("id", job.run_id)
+    .maybeSingle();
+
+  if (!run || run.status !== "waiting") {
+    await admin.from("workflow_jobs").update({ status: "done" }).eq("id", job.id);
+    return;
+  }
+
+  const { data: version } = await admin
+    .from("workflow_versions")
+    .select("graph")
+    .eq("id", run.version_id)
+    .maybeSingle();
+
+  if (!version?.graph) {
+    await admin
+      .from("workflow_jobs")
+      .update({ status: "failed", error: "Missing graph" })
+      .eq("id", job.id);
+    await failRun(admin, job.run_id, "Missing graph on resume");
+    return;
+  }
+
+  await admin
+    .from("workflow_runs")
+    .update({ status: "running" })
+    .eq("id", job.run_id);
+
+  const stepOutputs =
+    (job.payload?.step_outputs as Record<string, unknown>) ?? {};
+
+  await executeFromNode({
+    admin,
+    runId: job.run_id,
+    organizationId: job.organization_id,
+    graph: version.graph as WorkflowGraph,
+    triggerEvent: run.trigger_event as string,
+    triggerPayload: (run.trigger_payload as Record<string, unknown>) ?? {},
+    startNodeId: job.node_id,
+    stepOutputs,
+  });
+
+  await admin.from("workflow_jobs").update({ status: "done" }).eq("id", job.id);
+}
+
+async function executeFromNode(input: {
+  admin: ReturnType<typeof createAdminClient>;
+  runId: string;
+  organizationId: string;
+  graph: WorkflowGraph;
+  triggerEvent: string;
+  triggerPayload: Record<string, unknown>;
+  startNodeId: string | null;
+  stepOutputs: Record<string, unknown>;
+}): Promise<boolean> {
+  const { admin, runId } = input;
+  let currentId = input.startNodeId;
+  const stepOutputs = { ...input.stepOutputs };
 
   try {
-    const trigger = input.graph.nodes.find((n) => n.type === "trigger");
-    if (!trigger) {
-      await failRun(admin, runId, "Graph has no trigger node");
-      return true;
-    }
-
-    let currentId: string | null = nextNodeId(input.graph, trigger.id);
-
     while (currentId) {
       const node = input.graph.nodes.find((n) => n.id === currentId);
       if (!node) break;
@@ -160,7 +240,7 @@ export async function startWorkflowRun(input: {
           actionKey: "branch",
           status: "skipped",
           input: node.config,
-          output: { message: "Branch not implemented in Phase 0" },
+          output: { message: "Branch nodes deferred" },
         });
         currentId = nextNodeId(input.graph, node.id);
         continue;
@@ -183,25 +263,6 @@ export async function startWorkflowRun(input: {
     await failRun(admin, runId, msg);
     return true;
   }
-}
-
-export async function resumeRunFromJob(job: {
-  id: string;
-  run_id: string;
-  organization_id: string;
-  node_id: string;
-  payload: Record<string, unknown>;
-}): Promise<void> {
-  const admin = createAdminClient();
-  await admin.from("workflow_jobs").update({ status: "done" }).eq("id", job.id);
-  await admin
-    .from("workflow_runs")
-    .update({
-      status: "completed",
-      finished_at: new Date().toISOString(),
-    })
-    .eq("id", job.run_id)
-    .eq("status", "waiting");
 }
 
 function nextNodeId(
