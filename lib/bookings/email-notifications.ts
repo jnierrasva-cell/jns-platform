@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendResendEmail } from "@/lib/email/resend";
+import { isAutomationEnabled } from "@/lib/workflows/automation-enabled";
 
 function formatWhen(iso: string) {
   try {
@@ -15,10 +16,6 @@ function formatWhen(iso: string) {
   }
 }
 
-/**
- * Send booking confirmation email via Resend (zero client setup).
- * Safe to call multiple times — skips if already sent or no email.
- */
 export async function sendBookingConfirmationEmail(input: {
   organizationId: string;
   bookingId: string;
@@ -30,7 +27,13 @@ export async function sendBookingConfirmationEmail(input: {
 }): Promise<{ sent: boolean; reason?: string }> {
   const admin = createAdminClient();
 
-  // Respect automation toggle when present
+  const enabled = await isAutomationEnabled(
+    input.organizationId,
+    "booking-email-reminders",
+  );
+
+  // Missing org_automations row historically meant allow; dual-read:
+  // if neither org_automations nor workflow is on, check org_automations absence
   const { data: automation } = await admin
     .from("org_automations")
     .select("is_enabled")
@@ -38,7 +41,9 @@ export async function sendBookingConfirmationEmail(input: {
     .eq("service_key", "booking-email-reminders")
     .maybeSingle();
 
-  // If row exists and is explicitly off, skip. Missing row = allow (kit enables it).
+  if (automation && automation.is_enabled === false && !enabled) {
+    return { sent: false, reason: "automation_disabled" };
+  }
   if (automation && automation.is_enabled === false) {
     return { sent: false, reason: "automation_disabled" };
   }
