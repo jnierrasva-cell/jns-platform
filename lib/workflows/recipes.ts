@@ -58,7 +58,7 @@ export const SYSTEM_RECIPES: RecipeDefinition[] = [
     key: "no_show_recovery",
     name: "No-show & cancellation recovery",
     description:
-      "When a booking is marked no-show or cancelled, create a rebooking task and log a note.",
+      "When a booking is marked no-show or cancelled, wait 30 minutes then create a rebooking task and log a note.",
     category: "Bookings",
     triggerType: "booking.status_changed",
     graph: {
@@ -76,6 +76,11 @@ export const SYSTEM_RECIPES: RecipeDefinition[] = [
             op: "in",
             value: ["no_show", "cancelled"],
           },
+        },
+        {
+          id: "d1",
+          type: "delay",
+          config: { amount: 30, unit: "minutes" },
         },
         {
           id: "a1",
@@ -105,7 +110,8 @@ export const SYSTEM_RECIPES: RecipeDefinition[] = [
       ],
       edges: [
         { from: "t1", to: "c1" },
-        { from: "c1", to: "a1", when: "pass" },
+        { from: "c1", to: "d1", when: "pass" },
+        { from: "d1", to: "a1" },
         { from: "a1", to: "a2" },
       ],
     },
