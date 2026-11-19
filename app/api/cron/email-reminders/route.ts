@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingReminderEmail } from "@/lib/bookings/email-notifications";
+import { listOrgIdsWithAutomationEnabled } from "@/lib/workflows/automation-enabled";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -11,14 +12,9 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-
-  const { data: enabled } = await admin
-    .from("org_automations")
-    .select("organization_id")
-    .eq("service_key", "booking-email-reminders")
-    .eq("is_enabled", true);
-
-  const orgIds = (enabled ?? []).map((r) => r.organization_id as string);
+  const orgIds = await listOrgIdsWithAutomationEnabled(
+    "booking-email-reminders",
+  );
   let totalSent = 0;
   let totalSkipped = 0;
 
