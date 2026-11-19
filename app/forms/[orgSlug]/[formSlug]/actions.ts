@@ -7,6 +7,7 @@ import {
   assignContactPipelineStage,
   getFirstPipelineStageId,
 } from "@/lib/pipeline/assign";
+import { emitDomainEvent } from "@/lib/workflows/events";
 
 async function sendIntakeAutoAck(input: {
   organizationId: string;
@@ -102,7 +103,6 @@ async function sendIntakeAutoAck(input: {
 export async function submitIntakeForm(input: {
   organizationId: string;
   formId: string;
-  /** Answers keyed by field id (name, email, phone, message, custom_…) */
   responses: Record<string, string>;
 }) {
   const supabase = createAdminClient();
@@ -233,6 +233,28 @@ export async function submitIntakeForm(input: {
     businessName,
     contactId,
   });
+
+  try {
+    await emitDomainEvent({
+      organizationId: input.organizationId,
+      type: "form.submitted",
+      entityType: "contact",
+      entityId: contactId,
+      payload: {
+        contact_id: contactId,
+        form_id: input.formId,
+        form_name: form.name,
+        form_slug: form.slug,
+        name,
+        email,
+        phone: phone ?? "",
+        message: message ?? "",
+      },
+      idempotencyKey: `form.submitted:${input.formId}:${contactId}:${Date.now()}`,
+    });
+  } catch (wfErr) {
+    console.error("[submitIntakeForm] workflow emit:", wfErr);
+  }
 
   return { ok: true as const, contactId };
 }
