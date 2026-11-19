@@ -5,6 +5,8 @@ import {
   installAutomationRecipe,
   setAutomationRecipeActive,
 } from "@/app/dashboard/automation/recipe-actions";
+import { WorkflowGraphView } from "@/components/workflow-graph-view";
+import type { WorkflowGraph } from "@/lib/workflows/types";
 
 export type RecipeCard = {
   key: string;
@@ -12,6 +14,7 @@ export type RecipeCard = {
   description: string;
   category: string;
   triggerType: string;
+  graph?: WorkflowGraph;
 };
 
 export function AutomationRecipes({
@@ -24,6 +27,7 @@ export function AutomationRecipes({
   activeKeys: string[];
 }) {
   const [active, setActive] = useState(() => new Set(activeKeys));
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -58,8 +62,9 @@ export function AutomationRecipes({
           Workflow recipes
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          One-click automations that create tasks from forms and booking
-          changes. Existing email/SMS toggles below are unchanged.
+          Engine-powered automations. Expand a card to view steps. Legacy
+          email/SMS systems below stay available and are mirrored into the
+          workflow inventory when toggled.
         </p>
       </div>
       {error ? (
@@ -70,6 +75,7 @@ export function AutomationRecipes({
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {recipes.map((r) => {
           const on = active.has(r.key);
+          const isOpen = expanded === r.key;
           return (
             <article
               key={r.key}
@@ -78,7 +84,7 @@ export function AutomationRecipes({
               }`}
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-[15px] font-semibold text-slate-900">
                       {r.name}
@@ -97,6 +103,15 @@ export function AutomationRecipes({
                   <p className="mt-2 text-xs text-slate-400">
                     Trigger: {r.triggerType}
                   </p>
+                  {r.graph ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(isOpen ? null : r.key)}
+                      className="mt-2 text-xs font-medium text-sky-700 hover:text-sky-900"
+                    >
+                      {isOpen ? "Hide steps" : "View steps"}
+                    </button>
+                  ) : null}
                 </div>
                 <button
                   type="button"
@@ -117,6 +132,11 @@ export function AutomationRecipes({
                   />
                 </button>
               </div>
+              {isOpen && r.graph ? (
+                <div className="mt-4">
+                  <WorkflowGraphView graph={r.graph} title="Recipe steps" />
+                </div>
+              ) : null}
             </article>
           );
         })}
