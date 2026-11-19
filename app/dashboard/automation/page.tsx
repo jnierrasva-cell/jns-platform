@@ -116,6 +116,7 @@ export default async function AutomationPage() {
     description: r.description,
     category: r.category,
     triggerType: r.triggerType,
+    graph: r.graph,
   }));
 
   return (
