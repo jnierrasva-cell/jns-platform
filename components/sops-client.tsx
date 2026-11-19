@@ -36,6 +36,25 @@ type PendingKey =
   | `visibility:${string}`
   | `version:${string}`;
 
+function isPdf(fileType: string | null | undefined, fileName?: string) {
+  const t = (fileType || "").toLowerCase();
+  const n = (fileName || "").toLowerCase();
+  return t.includes("pdf") || n.endsWith(".pdf");
+}
+
+function isImage(fileType: string | null | undefined, fileName?: string) {
+  const t = (fileType || "").toLowerCase();
+  const n = (fileName || "").toLowerCase();
+  return (
+    t.startsWith("image/") ||
+    n.endsWith(".png") ||
+    n.endsWith(".jpg") ||
+    n.endsWith(".jpeg") ||
+    n.endsWith(".webp") ||
+    n.endsWith(".gif")
+  );
+}
+
 function isOfficeDoc(fileType: string | null | undefined, fileName?: string) {
   const t = (fileType || "").toLowerCase();
   const n = (fileName || "").toLowerCase();
@@ -46,6 +65,20 @@ function isOfficeDoc(fileType: string | null | undefined, fileName?: string) {
     n.endsWith(".doc") ||
     n.endsWith(".docx")
   );
+}
+
+function mimeFromName(fileName: string): string | null {
+  const n = fileName.toLowerCase();
+  if (n.endsWith(".pdf")) return "application/pdf";
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".gif")) return "image/gif";
+  if (n.endsWith(".docx")) {
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  }
+  if (n.endsWith(".doc")) return "application/msword";
+  return null;
 }
 
 export function SopsClient({
@@ -136,26 +169,70 @@ export function SopsClient({
 
   async function handleView(sop: Sop) {
     setError(null);
+    // Open tab synchronously in the click gesture — avoids popup blockers
+    const win = window.open("about:blank", "_blank");
+    if (!win) {
+      setError(
+        "Popup blocked. Allow popups for this site, then press View again.",
+      );
+      return;
+    }
+    try {
+      win.document.write(
+        '<!doctype html><title>Opening…</title><body style="font-family:system-ui;padding:24px;color:#334155">Opening document…</body>',
+      );
+    } catch {
+      /* ignore */
+    }
+
     setPending(`view:${sop.id}`);
     try {
       const result = await getSopViewUrl(sop.id);
       if (!result.ok) {
+        try {
+          win.close();
+        } catch {
+          /* ignore */
+        }
         setError(result.error ?? "Could not open document");
         return;
       }
+
       const fileType = result.fileType ?? sop.file_type;
       const fileName = result.fileName ?? sop.file_name;
+
       if (isOfficeDoc(fileType, fileName)) {
         const viewer = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(result.url)}`;
-        const win = window.open(viewer, "_blank", "noopener,noreferrer");
-        if (!win) window.open(result.url, "_blank", "noopener,noreferrer");
+        win.location.href = viewer;
         return;
       }
-      const win = window.open(result.url, "_blank", "noopener,noreferrer");
-      if (!win) {
-        setError("Popup blocked. Allow popups for this site to view documents.");
+
+      // PDF / images: fetch, force correct MIME, blob URL → always preview, never download
+      if (isPdf(fileType, fileName) || isImage(fileType, fileName)) {
+        const res = await fetch(result.url);
+        if (!res.ok) {
+          win.location.href = result.url;
+          return;
+        }
+        const buf = await res.arrayBuffer();
+        const guessed =
+          (fileType && !fileType.includes("octet-stream") ? fileType : null) ||
+          mimeFromName(fileName) ||
+          (isPdf(fileType, fileName) ? "application/pdf" : "application/octet-stream");
+        const blob = new Blob([buf], { type: guessed });
+        const objectUrl = URL.createObjectURL(blob);
+        win.location.href = objectUrl;
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+        return;
       }
+
+      win.location.href = result.url;
     } catch (err) {
+      try {
+        win.close();
+      } catch {
+        /* ignore */
+      }
       setError(err instanceof Error ? err.message : "Could not open document");
     } finally {
       setPending(null);
@@ -336,7 +413,9 @@ export function SopsClient({
         {sops.length === 0 ? (
           <p className="text-sm text-slate-500">
             No playbooks shared with you yet.
-            {canManage ? " Upload one above and set Everyone in this workspace." : ""}
+            {canManage
+              ? " Upload one above and set Everyone in this workspace."
+              : ""}
           </p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
@@ -356,18 +435,25 @@ export function SopsClient({
                   const downloading = pending === `download:${sop.id}`;
                   const deleting = pending === `delete:${sop.id}`;
                   return (
-                    <tr key={sop.id} className="border-b border-slate-50 last:border-0">
+                    <tr
+                      key={sop.id}
+                      className="border-b border-slate-50 last:border-0"
+                    >
                       <td className="px-4 py-3">
                         <p className="font-medium text-slate-900">{sop.title}</p>
                         {sop.description ? (
-                          <p className="mt-0.5 text-xs text-slate-500">{sop.description}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {sop.description}
+                          </p>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
                         {canManage ? (
                           <input
                             defaultValue={sop.version || "1.0"}
-                            onBlur={(e) => handleVersionBlur(sop.id, e.target.value)}
+                            onBlur={(e) =>
+                              handleVersionBlur(sop.id, e.target.value)
+                            }
                             disabled={pending === `version:${sop.id}`}
                             className="w-16 rounded border border-slate-200/80 px-2 py-1 text-sm disabled:opacity-60"
                             aria-label={`Version for ${sop.title}`}
@@ -415,7 +501,9 @@ export function SopsClient({
                                 onChange={(e) =>
                                   handleVisibility(
                                     sop.id,
-                                    e.target.value as "all_members" | "managers_only",
+                                    e.target.value as
+                                      | "all_members"
+                                      | "managers_only",
                                   )
                                 }
                                 className="rounded-2xl border border-slate-200/80 px-2 py-1.5 text-xs text-slate-800 disabled:opacity-60"
