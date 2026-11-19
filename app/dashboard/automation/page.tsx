@@ -131,7 +131,10 @@ export default async function AutomationPage() {
         recipes={recipeCards}
         activeKeys={installedKeys}
       />
-      <AutomationRuns runs={(runsRes.data as never) ?? []} />
+      <AutomationRuns
+        organizationId={orgId}
+        runs={(runsRes.data as never) ?? []}
+      />
       <AutomationClient
         organizationId={orgId}
         services={mockServices}
