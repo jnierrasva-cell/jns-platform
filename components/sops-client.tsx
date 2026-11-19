@@ -249,19 +249,17 @@ export function SopsClient({
         Playbooks
       </h1>
       <p className="mt-1 max-w-2xl text-sm text-slate-500">
-        Playbooks for <span className="font-medium">{orgName}</span>. Team
-        members can view shared SOPs. Owners and admins upload and manage
-        access. Prefer <span className="font-medium">PDF</span> for the most
-        reliable in-browser viewing.
+        Playbooks for <span className="font-medium">{orgName}</span>. Prefer{" "}
+        <span className="font-medium">PDF</span> for in-browser viewing.
       </p>
 
-      {error && (
+      {error ? (
         <p className="mt-4 text-sm text-red-600" role="alert">
           {error}
         </p>
-      )}
+      ) : null}
 
-      {canManage && (
+      {canManage ? (
         <section className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-5">
           <h2 className="text-sm font-medium text-slate-900">Upload playbook</h2>
           <form onSubmit={handleUpload} className="mt-4 space-y-3">
@@ -274,9 +272,6 @@ export function SopsClient({
                 placeholder="e.g. Client cancellation process"
                 className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-xs text-slate-400">
-                This title is what the team sees (not the original file name).
-              </p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
@@ -322,10 +317,6 @@ export function SopsClient({
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="mt-1 block w-full text-sm text-slate-600"
               />
-              <p className="mt-1 text-xs text-slate-400">
-                Max 20MB. PDF and images open in the browser. Word opens via
-                Office Online when possible.
-              </p>
             </div>
             <button
               type="submit"
@@ -336,7 +327,7 @@ export function SopsClient({
             </button>
           </form>
         </section>
-      )}
+      ) : null}
 
       <section className="mt-10">
         <h2 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
@@ -345,5 +336,113 @@ export function SopsClient({
         {sops.length === 0 ? (
           <p className="text-sm text-slate-500">
             No playbooks shared with you yet.
-            {canManage
-              ? " Upload one above and set “Everyone in this workspace”.
+            {canManage ? " Upload one above and set Everyone in this workspace." : ""}
+          </p>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Playbook title</th>
+                  <th className="px-4 py-3 font-medium">Version</th>
+                  <th className="px-4 py-3 font-medium">Last edited</th>
+                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sops.map((sop) => {
+                  const edited = sop.updated_at || sop.created_at;
+                  const viewing = pending === `view:${sop.id}`;
+                  const downloading = pending === `download:${sop.id}`;
+                  const deleting = pending === `delete:${sop.id}`;
+                  return (
+                    <tr key={sop.id} className="border-b border-slate-50 last:border-0">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-900">{sop.title}</p>
+                        {sop.description ? (
+                          <p className="mt-0.5 text-xs text-slate-500">{sop.description}</p>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {canManage ? (
+                          <input
+                            defaultValue={sop.version || "1.0"}
+                            onBlur={(e) => handleVersionBlur(sop.id, e.target.value)}
+                            disabled={pending === `version:${sop.id}`}
+                            className="w-16 rounded border border-slate-200/80 px-2 py-1 text-sm disabled:opacity-60"
+                            aria-label={`Version for ${sop.title}`}
+                          />
+                        ) : (
+                          sop.version || "1.0"
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {edited
+                          ? new Date(edited).toLocaleDateString(undefined, {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={viewing}
+                            onClick={() => handleView(sop)}
+                            className="rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                          >
+                            {viewing ? "Opening…" : "View"}
+                          </button>
+                          {canManage ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled={downloading}
+                                onClick={() => handleDownload(sop.id)}
+                                className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                {downloading ? "Downloading…" : "Download"}
+                              </button>
+                              <select
+                                disabled={pending === `visibility:${sop.id}`}
+                                value={
+                                  sop.visibility === "managers_only"
+                                    ? "managers_only"
+                                    : "all_members"
+                                }
+                                onChange={(e) =>
+                                  handleVisibility(
+                                    sop.id,
+                                    e.target.value as "all_members" | "managers_only",
+                                  )
+                                }
+                                className="rounded-2xl border border-slate-200/80 px-2 py-1.5 text-xs text-slate-800 disabled:opacity-60"
+                              >
+                                <option value="all_members">Team can view</option>
+                                <option value="managers_only">Managers only</option>
+                              </select>
+                              <button
+                                type="button"
+                                disabled={deleting}
+                                onClick={() => handleDelete(sop.id, sop.title)}
+                                className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+                              >
+                                {deleting ? "Deleting…" : "Delete"}
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
