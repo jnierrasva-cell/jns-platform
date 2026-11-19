@@ -27,7 +27,6 @@ type Sop = {
   version?: string | null;
 };
 
-/** Only the action currently in flight — not a global busy flag. */
 type PendingKey =
   | null
   | "upload"
@@ -36,25 +35,6 @@ type PendingKey =
   | `delete:${string}`
   | `visibility:${string}`
   | `version:${string}`;
-
-function isPdf(fileType: string | null | undefined, fileName?: string) {
-  const t = (fileType || "").toLowerCase();
-  const n = (fileName || "").toLowerCase();
-  return t.includes("pdf") || n.endsWith(".pdf");
-}
-
-function isImage(fileType: string | null | undefined, fileName?: string) {
-  const t = (fileType || "").toLowerCase();
-  const n = (fileName || "").toLowerCase();
-  return (
-    t.startsWith("image/") ||
-    n.endsWith(".png") ||
-    n.endsWith(".jpg") ||
-    n.endsWith(".jpeg") ||
-    n.endsWith(".webp") ||
-    n.endsWith(".gif")
-  );
-}
 
 function isOfficeDoc(fileType: string | null | undefined, fileName?: string) {
   const t = (fileType || "").toLowerCase();
@@ -93,7 +73,6 @@ export function SopsClient({
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-
     if (!title.trim()) {
       setError("Title is required");
       return;
@@ -106,13 +85,11 @@ export function SopsClient({
       setError("File must be under 20MB");
       return;
     }
-
     const uploadFile = file;
     const uploadTitle = title.trim();
     const uploadDescription = description.trim();
     const uploadVisibility = visibility;
     const uploadVersion = version.trim() || "1.0";
-
     setPending("upload");
     try {
       const prepared = await prepareSopUpload(uploadFile.name);
@@ -120,19 +97,16 @@ export function SopsClient({
         setError(prepared.error ?? "Could not prepare upload");
         return;
       }
-
       const supabase = createClient();
       const { error: uploadError } = await supabase.storage
         .from("org-sops")
         .uploadToSignedUrl(prepared.path, prepared.token, uploadFile, {
           contentType: uploadFile.type || "application/octet-stream",
         });
-
       if (uploadError) {
         setError(uploadError.message ?? "Upload to storage failed");
         return;
       }
-
       const result = await saveSopRecord({
         title: uploadTitle,
         description: uploadDescription,
@@ -143,12 +117,10 @@ export function SopsClient({
         visibility: uploadVisibility,
         version: uploadVersion,
       });
-
       if (!result.ok) {
         setError(result.error ?? "Could not save SOP");
         return;
       }
-
       setTitle("");
       setDescription("");
       setVersion("1.0");
@@ -162,12 +134,6 @@ export function SopsClient({
     }
   }
 
-  /**
-   * View: open in a new tab when the browser can render it.
-   * PDF/images → signed URL (inline).
-   * Word → Microsoft Office Online viewer (still "view", not forced download).
-   * Other → open signed URL; browser may still download if it cannot render.
-   */
   async function handleView(sop: Sop) {
     setError(null);
     setPending(`view:${sop.id}`);
@@ -177,20 +143,14 @@ export function SopsClient({
         setError(result.error ?? "Could not open document");
         return;
       }
-
       const fileType = result.fileType ?? sop.file_type;
       const fileName = result.fileName ?? sop.file_name;
-
       if (isOfficeDoc(fileType, fileName)) {
         const viewer = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(result.url)}`;
         const win = window.open(viewer, "_blank", "noopener,noreferrer");
-        if (!win) {
-          window.open(result.url, "_blank", "noopener,noreferrer");
-        }
+        if (!win) window.open(result.url, "_blank", "noopener,noreferrer");
         return;
       }
-
-      // PDF / images / other: open signed URL without download flag
       const win = window.open(result.url, "_blank", "noopener,noreferrer");
       if (!win) {
         setError("Popup blocked. Allow popups for this site to view documents.");
@@ -339,9 +299,7 @@ export function SopsClient({
                   }
                   className="mt-1 w-full rounded-2xl border border-slate-200/80 px-3 py-2 text-sm"
                 >
-                  <option value="all_members">
-                    Everyone in this workspace
-                  </option>
+                  <option value="all_members">Everyone in this workspace</option>
                   <option value="managers_only">Owners & admins only</option>
                 </select>
               </div>
