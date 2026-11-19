@@ -160,6 +160,28 @@ export async function createBooking(input: {
       }
     }
 
+    try {
+      await emitDomainEvent({
+        organizationId: input.organizationId,
+        type: "booking.created",
+        entityType: "booking",
+        entityId: booking.id,
+        payload: {
+          booking_id: booking.id,
+          title: input.title.trim(),
+          starts_at: startsAt.toISOString(),
+          ends_at: endsAt,
+          contact_id: input.contactId ?? null,
+          contact_email: attendeeEmail,
+          contact_first_name: contactFirstName,
+          status: "scheduled",
+        },
+        idempotencyKey: `booking.created:${booking.id}`,
+      });
+    } catch (wfErr) {
+      console.error("[createBooking] workflow emit:", wfErr);
+    }
+
     revalidatePath("/dashboard/bookings");
     revalidatePath("/dashboard/contacts");
     revalidatePath("/dashboard");
