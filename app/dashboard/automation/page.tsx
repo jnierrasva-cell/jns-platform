@@ -6,6 +6,7 @@ import { getPlanGateState } from "@/lib/billing/org-plan";
 import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { AutomationClient } from "@/components/automation-client";
 import { AutomationRecipes } from "@/components/automation-recipes";
+import { AutomationRuns } from "@/components/automation-runs";
 import { mockServices } from "@/lib/mock-services";
 import { SYSTEM_RECIPES } from "@/lib/workflows/recipes";
 import { listInstalledRecipeKeys } from "@/lib/workflows/install-recipe";
@@ -37,6 +38,7 @@ export default async function AutomationPage() {
     rulesRes,
     activityRes,
     installedKeys,
+    runsRes,
   ] = await Promise.all([
     admin
       .from("org_automations")
@@ -71,6 +73,14 @@ export default async function AutomationPage() {
       .order("created_at", { ascending: false })
       .limit(25),
     listInstalledRecipeKeys(orgId),
+    admin
+      .from("workflow_runs")
+      .select(
+        "id, trigger_event, status, error, started_at, finished_at, workflows(name, key)",
+      )
+      .eq("organization_id", orgId)
+      .order("started_at", { ascending: false })
+      .limit(20),
   ]);
 
   const enabledKeys = (automationsRes.data ?? [])
@@ -121,6 +131,7 @@ export default async function AutomationPage() {
         recipes={recipeCards}
         activeKeys={installedKeys}
       />
+      <AutomationRuns runs={(runsRes.data as never) ?? []} />
       <AutomationClient
         organizationId={orgId}
         services={mockServices}
