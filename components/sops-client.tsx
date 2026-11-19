@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -27,6 +27,47 @@ type Sop = {
   version?: string | null;
 };
 
+/** Only the action currently in flight — not a global busy flag. */
+type PendingKey =
+  | null
+  | "upload"
+  | `view:${string}`
+  | `download:${string}`
+  | `delete:${string}`
+  | `visibility:${string}`
+  | `version:${string}`;
+
+function isPdf(fileType: string | null | undefined, fileName?: string) {
+  const t = (fileType || "").toLowerCase();
+  const n = (fileName || "").toLowerCase();
+  return t.includes("pdf") || n.endsWith(".pdf");
+}
+
+function isImage(fileType: string | null | undefined, fileName?: string) {
+  const t = (fileType || "").toLowerCase();
+  const n = (fileName || "").toLowerCase();
+  return (
+    t.startsWith("image/") ||
+    n.endsWith(".png") ||
+    n.endsWith(".jpg") ||
+    n.endsWith(".jpeg") ||
+    n.endsWith(".webp") ||
+    n.endsWith(".gif")
+  );
+}
+
+function isOfficeDoc(fileType: string | null | undefined, fileName?: string) {
+  const t = (fileType || "").toLowerCase();
+  const n = (fileName || "").toLowerCase();
+  return (
+    t.includes("word") ||
+    t.includes("officedocument") ||
+    t.includes("msword") ||
+    n.endsWith(".doc") ||
+    n.endsWith(".docx")
+  );
+}
+
 export function SopsClient({
   organizationId: _organizationId,
   orgName,
@@ -40,7 +81,7 @@ export function SopsClient({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [pending, setPending] = useState<PendingKey>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [version, setVersion] = useState("1.0");
@@ -49,7 +90,7 @@ export function SopsClient({
     "all_members",
   );
 
-  function handleUpload(e: React.FormEvent<HTMLFormElement>) {
+  async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
@@ -72,70 +113,99 @@ export function SopsClient({
     const uploadVisibility = visibility;
     const uploadVersion = version.trim() || "1.0";
 
-    startTransition(async () => {
-      try {
-        const prepared = await prepareSopUpload(uploadFile.name);
-        if (!prepared.ok) {
-          setError(prepared.error ?? "Could not prepare upload");
-          return;
-        }
+    setPending("upload");
+    try {
+      const prepared = await prepareSopUpload(uploadFile.name);
+      if (!prepared.ok) {
+        setError(prepared.error ?? "Could not prepare upload");
+        return;
+      }
 
-        const supabase = createClient();
-        const { error: uploadError } = await supabase.storage
-          .from("org-sops")
-          .uploadToSignedUrl(prepared.path, prepared.token, uploadFile, {
-            contentType: uploadFile.type || "application/octet-stream",
-          });
-
-        if (uploadError) {
-          setError(uploadError.message ?? "Upload to storage failed");
-          return;
-        }
-
-        const result = await saveSopRecord({
-          title: uploadTitle,
-          description: uploadDescription,
-          filePath: prepared.path,
-          fileName: uploadFile.name,
-          fileType: uploadFile.type || "application/octet-stream",
-          fileSize: uploadFile.size,
-          visibility: uploadVisibility,
-          version: uploadVersion,
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from("org-sops")
+        .uploadToSignedUrl(prepared.path, prepared.token, uploadFile, {
+          contentType: uploadFile.type || "application/octet-stream",
         });
 
-        if (!result.ok) {
-          setError(result.error ?? "Could not save SOP");
-          return;
-        }
-
-        setTitle("");
-        setDescription("");
-        setVersion("1.0");
-        setFile(null);
-        setVisibility("all_members");
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed");
+      if (uploadError) {
+        setError(uploadError.message ?? "Upload to storage failed");
+        return;
       }
-    });
+
+      const result = await saveSopRecord({
+        title: uploadTitle,
+        description: uploadDescription,
+        filePath: prepared.path,
+        fileName: uploadFile.name,
+        fileType: uploadFile.type || "application/octet-stream",
+        fileSize: uploadFile.size,
+        visibility: uploadVisibility,
+        version: uploadVersion,
+      });
+
+      if (!result.ok) {
+        setError(result.error ?? "Could not save SOP");
+        return;
+      }
+
+      setTitle("");
+      setDescription("");
+      setVersion("1.0");
+      setFile(null);
+      setVisibility("all_members");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setPending(null);
+    }
   }
 
-  function handleView(sopId: string) {
+  /**
+   * View: open in a new tab when the browser can render it.
+   * PDF/images → signed URL (inline).
+   * Word → Microsoft Office Online viewer (still "view", not forced download).
+   * Other → open signed URL; browser may still download if it cannot render.
+   */
+  async function handleView(sop: Sop) {
     setError(null);
-    startTransition(async () => {
-      const result = await getSopViewUrl(sopId);
+    setPending(`view:${sop.id}`);
+    try {
+      const result = await getSopViewUrl(sop.id);
       if (!result.ok) {
         setError(result.error ?? "Could not open document");
         return;
       }
-      // PDF / images open in browser; Word will download (browser limitation)
-      window.open(result.url, "_blank", "noopener,noreferrer");
-    });
+
+      const fileType = result.fileType ?? sop.file_type;
+      const fileName = result.fileName ?? sop.file_name;
+
+      if (isOfficeDoc(fileType, fileName)) {
+        const viewer = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(result.url)}`;
+        const win = window.open(viewer, "_blank", "noopener,noreferrer");
+        if (!win) {
+          window.open(result.url, "_blank", "noopener,noreferrer");
+        }
+        return;
+      }
+
+      // PDF / images / other: open signed URL without download flag
+      const win = window.open(result.url, "_blank", "noopener,noreferrer");
+      if (!win) {
+        setError("Popup blocked. Allow popups for this site to view documents.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open document");
+    } finally {
+      setPending(null);
+    }
   }
 
-  function handleDownload(sopId: string) {
+  async function handleDownload(sopId: string) {
     setError(null);
-    startTransition(async () => {
+    setPending(`download:${sopId}`);
+    try {
       const result = await getSopDownloadUrl(sopId);
       if (!result.ok) {
         setError(result.error ?? "Download failed");
@@ -143,52 +213,71 @@ export function SopsClient({
       }
       const a = document.createElement("a");
       a.href = result.url;
-      a.download = result.fileName; // Title-based name
+      a.download = result.fileName;
       a.rel = "noreferrer";
       document.body.appendChild(a);
       a.click();
       a.remove();
-    });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setPending(null);
+    }
   }
 
-  function handleDelete(sopId: string, sopTitle: string) {
+  async function handleDelete(sopId: string, sopTitle: string) {
     if (!window.confirm(`Delete playbook “${sopTitle}”?`)) return;
     setError(null);
-    startTransition(async () => {
+    setPending(`delete:${sopId}`);
+    try {
       const result = await deleteSop(sopId);
       if (!result.ok) {
         setError(result.error ?? "Delete failed");
         return;
       }
       router.refresh();
-    });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setPending(null);
+    }
   }
 
-  function handleVisibility(
+  async function handleVisibility(
     sopId: string,
     next: "all_members" | "managers_only",
   ) {
     setError(null);
-    startTransition(async () => {
+    setPending(`visibility:${sopId}`);
+    try {
       const result = await updateSopVisibility(sopId, next);
       if (!result.ok) {
         setError(result.error ?? "Could not update access");
         return;
       }
       router.refresh();
-    });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update access");
+    } finally {
+      setPending(null);
+    }
   }
 
-  function handleVersionBlur(sopId: string, value: string) {
+  async function handleVersionBlur(sopId: string, value: string) {
     const v = value.trim() || "1.0";
-    startTransition(async () => {
+    setPending(`version:${sopId}`);
+    try {
       const result = await updateSopVersion(sopId, v);
       if (!result.ok) {
         setError(result.error ?? "Could not update version");
         return;
       }
       router.refresh();
-    });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update version");
+    } finally {
+      setPending(null);
+    }
   }
 
   return (
@@ -202,8 +291,8 @@ export function SopsClient({
       <p className="mt-1 max-w-2xl text-sm text-slate-500">
         Playbooks for <span className="font-medium">{orgName}</span>. Team
         members can view shared SOPs. Owners and admins upload and manage
-        access. Prefer <span className="font-medium">PDF</span> for in-browser
-        viewing.
+        access. Prefer <span className="font-medium">PDF</span> for the most
+        reliable in-browser viewing.
       </p>
 
       {error && (
@@ -276,15 +365,16 @@ export function SopsClient({
                 className="mt-1 block w-full text-sm text-slate-600"
               />
               <p className="mt-1 text-xs text-slate-400">
-                Max 20MB. PDF opens in the browser; Word usually downloads.
+                Max 20MB. PDF and images open in the browser. Word opens via
+                Office Online when possible.
               </p>
             </div>
             <button
               type="submit"
-              disabled={isPending}
+              disabled={pending === "upload"}
               className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
             >
-              {isPending ? "Uploading…" : "Upload"}
+              {pending === "upload" ? "Uploading…" : "Upload"}
             </button>
           </form>
         </section>
@@ -297,120 +387,5 @@ export function SopsClient({
         {sops.length === 0 ? (
           <p className="text-sm text-slate-500">
             No playbooks shared with you yet.
-            {canManage ? " Upload one above and set “Everyone in this workspace”." : ""}
-          </p>
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-            <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Playbook title</th>
-                  <th className="px-4 py-3 font-medium">Version</th>
-                  <th className="px-4 py-3 font-medium">Last edited</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sops.map((sop) => {
-                  const edited = sop.updated_at || sop.created_at;
-                  return (
-                    <tr
-                      key={sop.id}
-                      className="border-b border-slate-50 last:border-0"
-                    >
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-slate-900">{sop.title}</p>
-                        {sop.description ? (
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {sop.description}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {canManage ? (
-                          <input
-                            defaultValue={sop.version || "1.0"}
-                            onBlur={(e) =>
-                              handleVersionBlur(sop.id, e.target.value)
-                            }
-                            className="w-16 rounded border border-slate-200/80 px-2 py-1 text-sm"
-                            aria-label={`Version for ${sop.title}`}
-                          />
-                        ) : (
-                          sop.version || "1.0"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {edited
-                          ? new Date(edited).toLocaleDateString(undefined, {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            disabled={isPending}
-                            onClick={() => handleView(sop.id)}
-                            className="rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                          >
-                            View
-                          </button>
-                          {canManage && (
-                            <>
-                              <button
-                                type="button"
-                                disabled={isPending}
-                                onClick={() => handleDownload(sop.id)}
-                                className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50"
-                              >
-                                Download
-                              </button>
-                              <select
-                                disabled={isPending}
-                                value={
-                                  sop.visibility === "managers_only"
-                                    ? "managers_only"
-                                    : "all_members"
-                                }
-                                onChange={(e) =>
-                                  handleVisibility(
-                                    sop.id,
-                                    e.target.value as
-                                      | "all_members"
-                                      | "managers_only",
-                                  )
-                                }
-                                className="rounded-2xl border border-slate-200/80 px-2 py-1.5 text-xs text-slate-800"
-                              >
-                                <option value="all_members">Team can view</option>
-                                <option value="managers_only">
-                                  Managers only
-                                </option>
-                              </select>
-                              <button
-                                type="button"
-                                disabled={isPending}
-                                onClick={() => handleDelete(sop.id, sop.title)}
-                                className="rounded-2xl border border-slate-200/80 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
+            {canManage
+              ? " Upload one above and set “Everyone in this workspace”.
