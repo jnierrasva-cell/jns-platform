@@ -5,7 +5,10 @@ import { getActiveOrg } from "@/lib/org/active";
 import { getPlanGateState } from "@/lib/billing/org-plan";
 import { PlanGateBanner } from "@/components/plan-gate-banner";
 import { AutomationClient } from "@/components/automation-client";
+import { AutomationRecipes } from "@/components/automation-recipes";
 import { mockServices } from "@/lib/mock-services";
+import { SYSTEM_RECIPES } from "@/lib/workflows/recipes";
+import { listInstalledRecipeKeys } from "@/lib/workflows/install-recipe";
 
 export default async function AutomationPage() {
   const supabase = await createClient();
@@ -33,6 +36,7 @@ export default async function AutomationPage() {
     twilioRes,
     rulesRes,
     activityRes,
+    installedKeys,
   ] = await Promise.all([
     admin
       .from("org_automations")
@@ -66,6 +70,7 @@ export default async function AutomationPage() {
       .eq("organization_id", orgId)
       .order("created_at", { ascending: false })
       .limit(25),
+    listInstalledRecipeKeys(orgId),
   ]);
 
   const enabledKeys = (automationsRes.data ?? [])
@@ -95,14 +100,27 @@ export default async function AutomationPage() {
       Number.isNaN(new Date(watchExpiration).getTime()) ||
       new Date(watchExpiration).getTime() <= Date.now());
 
+  const recipeCards = SYSTEM_RECIPES.map((r) => ({
+    key: r.key,
+    name: r.name,
+    description: r.description,
+    category: r.category,
+    triggerType: r.triggerType,
+  }));
+
   return (
-    <div>
+    <div className="space-y-8">
       {!gate.limits.emailAutomation && (
         <PlanGateBanner
           title="Inbox automation needs Pro or Business"
           body="Turning on auto-reply or SMS reminders requires an active Pro or Business subscription."
         />
       )}
+      <AutomationRecipes
+        organizationId={orgId}
+        recipes={recipeCards}
+        activeKeys={installedKeys}
+      />
       <AutomationClient
         organizationId={orgId}
         services={mockServices}
