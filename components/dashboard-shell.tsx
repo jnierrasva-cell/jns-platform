@@ -26,6 +26,7 @@ import {
   CreditCard,
   ImageIcon,
   Settings,
+  CheckSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
@@ -80,13 +81,14 @@ type NavItem = {
   badge?: string;
 };
 
-/** Day-to-day work — every org member. Routes unchanged. */
+/** Day-to-day work — every org member. */
 function buildWorkNav(peopleLabel: string): NavItem[] {
   return [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     { label: peopleLabel, href: "/dashboard/contacts", icon: Contact },
     { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban },
     { label: "Bookings", href: "/dashboard/bookings", icon: CalendarDays },
+    { label: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
     { label: "Forms", href: "/dashboard/forms", icon: FileInput },
     { label: "Docs", href: "/dashboard/sops", icon: BookOpen },
   ];
@@ -112,10 +114,6 @@ const SYSTEMS_NAV: NavItem[] = [
   { label: "Workspace", href: "/dashboard/workspace", icon: ImageIcon },
 ];
 
-/**
- * Niche kits set Member/Members or Client/Clients.
- * Default product language is People (clearer than Contacts for multi-niche).
- */
 function peopleNavLabel(contactLabelPlural?: string | null) {
   const raw = contactLabelPlural?.trim();
   if (!raw || raw.toLowerCase() === "contacts") return "People";
