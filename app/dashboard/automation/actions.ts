@@ -8,6 +8,7 @@ import {
   assertSmsReminders,
 } from "@/lib/billing/org-plan";
 import { ensureDefaultAutoAckTemplate } from "@/lib/email/ensure-default-template";
+import { syncLegacyWorkflowMirror } from "@/lib/workflows/automation-enabled";
 
 export async function setAutomationEnabled(
   organizationId: string,
@@ -84,6 +85,16 @@ export async function setAutomationEnabled(
   );
 
   if (error) throw new Error(error.message);
+
+  try {
+    await syncLegacyWorkflowMirror({
+      organizationId,
+      serviceKey,
+      enabled: isEnabled,
+    });
+  } catch (mirrorErr) {
+    console.error("[setAutomationEnabled] workflow mirror:", mirrorErr);
+  }
 
   if (serviceKey === "email-auto-ack") {
     try {
