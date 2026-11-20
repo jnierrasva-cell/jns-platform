@@ -55,6 +55,82 @@ export const SYSTEM_RECIPES: RecipeDefinition[] = [
     },
   },
   {
+    key: "manual_lead_followup",
+    name: "Manual lead follow-up",
+    description:
+      "When a contact is created manually in People, create a follow-up task so hand-entered leads get the same urgency as form leads.",
+    category: "Leads",
+    triggerType: "contact.created",
+    graph: {
+      nodes: [
+        { id: "t1", type: "trigger", config: { event: "contact.created" } },
+        {
+          id: "c1",
+          type: "condition",
+          config: { field: "source", op: "eq", value: "manual" },
+        },
+        {
+          id: "a1",
+          type: "action",
+          config: {
+            action: "task.create",
+            params: {
+              title: "Follow up: {{contact_name}}",
+              description:
+                "Manually added contact. Email: {{email}}. Phone: {{phone}}.",
+              priority: "high",
+              contact_id: "{{contact_id}}",
+            },
+          },
+        },
+        {
+          id: "a2",
+          type: "action",
+          config: {
+            action: "contact.add_note",
+            params: {
+              contact_id: "{{contact_id}}",
+              body: "Manual lead automation: contact created. Follow-up task opened.",
+            },
+          },
+        },
+      ],
+      edges: [
+        { from: "t1", to: "c1" },
+        { from: "c1", to: "a1", when: "pass" },
+        { from: "a1", to: "a2" },
+      ],
+    },
+  },
+  {
+    key: "new_booking_prep",
+    name: "New booking prep",
+    description:
+      "When a booking is created, open a prep task so the team confirms details before the appointment.",
+    category: "Bookings",
+    triggerType: "booking.created",
+    graph: {
+      nodes: [
+        { id: "t1", type: "trigger", config: { event: "booking.created" } },
+        {
+          id: "a1",
+          type: "action",
+          config: {
+            action: "task.create",
+            params: {
+              title: "Prep booking: {{title}}",
+              description:
+                "New booking scheduled for {{starts_at}}. Confirm readiness and materials.",
+              priority: "medium",
+              contact_id: "{{contact_id}}",
+            },
+          },
+        },
+      ],
+      edges: [{ from: "t1", to: "a1" }],
+    },
+  },
+  {
     key: "no_show_recovery",
     name: "No-show & cancellation recovery",
     description:
