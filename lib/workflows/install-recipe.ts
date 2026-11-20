@@ -1,16 +1,34 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRecipe, SYSTEM_RECIPES } from "@/lib/workflows/recipes";
+import { preflightRecipe } from "@/lib/workflows/preflight";
 
 export async function installRecipeForOrg(input: {
   organizationId: string;
   recipeKey: string;
   activate?: boolean;
+  /** Skip connection/preflight checks (admin/repair only) */
+  skipPreflight?: boolean;
 }): Promise<{ ok: true; workflowId: string } | { ok: false; error: string }> {
   const recipe = getRecipe(input.recipeKey);
   if (!recipe) return { ok: false, error: "Unknown recipe" };
 
-  const admin = createAdminClient();
   const activate = input.activate !== false;
+
+  if (activate && !input.skipPreflight) {
+    const pf = await preflightRecipe({
+      organizationId: input.organizationId,
+      recipeKey: input.recipeKey,
+    });
+    if (!pf.ok) {
+      const msg = pf.issues
+        .filter((i) => i.severity === "error")
+        .map((i) => i.message)
+        .join(" ");
+      return { ok: false, error: msg || "Preflight failed" };
+    }
+  }
+
+  const admin = createAdminClient();
 
   const { data: existing } = await admin
     .from("workflows")
@@ -100,6 +118,20 @@ export async function setRecipeActive(input: {
   recipeKey: string;
   active: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (input.active) {
+    const pf = await preflightRecipe({
+      organizationId: input.organizationId,
+      recipeKey: input.recipeKey,
+    });
+    if (!pf.ok) {
+      const msg = pf.issues
+        .filter((i) => i.severity === "error")
+        .map((i) => i.message)
+        .join(" ");
+      return { ok: false, error: msg || "Preflight failed" };
+    }
+  }
+
   const admin = createAdminClient();
   const { data: wf } = await admin
     .from("workflows")
