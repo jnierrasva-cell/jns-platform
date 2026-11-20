@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgMember } from "@/lib/org/auth";
 import { sendSms } from "@/lib/sms/send";
 import { sendGmailMessage } from "@/lib/google/send-email";
+import { emitDomainEvent } from "@/lib/workflows/events";
 
 export async function createContact(input: {
   organizationId: string;
@@ -87,6 +88,30 @@ export async function createContact(input: {
     if (noteError) {
       console.error("[createContact] note insert failed:", noteError);
     }
+  }
+
+  try {
+    const contactName =
+      [firstName, lastName].filter(Boolean).join(" ") || "Contact";
+    await emitDomainEvent({
+      organizationId: input.organizationId,
+      type: "contact.created",
+      entityType: "contact",
+      entityId: contact.id as string,
+      payload: {
+        contact_id: contact.id,
+        email,
+        phone,
+        first_name: firstName,
+        last_name: lastName,
+        status,
+        source: "manual",
+        contact_name: contactName,
+        name: contactName,
+      },
+    });
+  } catch (err) {
+    console.error("[createContact] emit failed", err);
   }
 
   revalidatePath("/dashboard/contacts");
@@ -366,6 +391,20 @@ export async function setContactPipelineStage(input: {
   await requireOrgMember(input.organizationId);
   const admin = createAdminClient();
 
+  const { data: before } = await admin
+    .from("contacts")
+    .select("id, first_name, last_name, pipeline_stage_id")
+    .eq("id", input.contactId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  if (!before) throw new Error("Contact not found in this organization");
+
+  const fromStageId = (before.pipeline_stage_id as string | null) ?? null;
+  if (fromStageId === input.stageId) {
+    return;
+  }
+
   const { data: contact, error } = await admin
     .from("contacts")
     .update({
@@ -380,7 +419,51 @@ export async function setContactPipelineStage(input: {
   if (error) throw new Error(error.message);
   if (!contact) throw new Error("Contact not found in this organization");
 
+  let stageName = input.stageId ? "Unknown stage" : "Unassigned";
+  let fromStageName = "Unassigned";
+
+  if (input.stageId) {
+    const { data: stage } = await admin
+      .from("pipeline_stages")
+      .select("name")
+      .eq("id", input.stageId)
+      .maybeSingle();
+    if (stage?.name) stageName = stage.name as string;
+  }
+  if (fromStageId) {
+    const { data: fromStage } = await admin
+      .from("pipeline_stages")
+      .select("name")
+      .eq("id", fromStageId)
+      .maybeSingle();
+    if (fromStage?.name) fromStageName = fromStage.name as string;
+  }
+
+  const contactName =
+    [before.first_name, before.last_name].filter(Boolean).join(" ") || "Contact";
+
+  try {
+    await emitDomainEvent({
+      organizationId: input.organizationId,
+      type: "pipeline.stage_changed",
+      entityType: "contact",
+      entityId: input.contactId,
+      payload: {
+        contact_id: input.contactId,
+        contact_name: contactName,
+        stage_id: input.stageId,
+        stage_name: stageName,
+        from_stage_id: fromStageId,
+        from_stage_name: fromStageName,
+      },
+      idempotencyKey: `pipeline.stage:${input.contactId}:${input.stageId ?? "none"}:${Date.now()}`,
+    });
+  } catch (err) {
+    console.error("[setContactPipelineStage] emit failed", err);
+  }
+
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/pipeline");
 }
