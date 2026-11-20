@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   getWorkflowRunSteps,
   retryWorkflowRun,
@@ -56,9 +57,11 @@ export function AutomationRuns({
   organizationId: string;
   runs: RunRow[];
 }) {
+  const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   const [stepsByRun, setStepsByRun] = useState<Record<string, StepRow[]>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryMsg, setRetryMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function toggle(runId: string) {
@@ -83,9 +86,12 @@ export function AutomationRuns({
 
   function onRetry(runId: string) {
     setLoadError(null);
+    setRetryMsg(null);
     startTransition(async () => {
       try {
         await retryWorkflowRun(organizationId, runId);
+        setRetryMsg("Retry started — a new run appears below shortly.");
+        router.refresh();
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : "Retry failed");
       }
@@ -107,10 +113,15 @@ export function AutomationRuns({
           {loadError}
         </p>
       ) : null}
+      {retryMsg ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {retryMsg}
+        </p>
+      ) : null}
       {runs.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center text-sm text-slate-500">
           No workflow runs yet. Turn on a recipe and trigger an event (form
-          submit or booking status change).
+          submit, booking status change, or pipeline stage move).
         </p>
       ) : (
         <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
