@@ -6,6 +6,7 @@ import {
 } from "@/lib/google/send-auto-ack";
 import { upsertContactByEmail } from "@/lib/contacts/upsert";
 import { applyTagToContact, findMatchingRule } from "@/lib/email/rules";
+import { isAutomationEnabled } from "@/lib/workflows/automation-enabled";
 
 type PubSubEmailNotification = {
   emailAddress: string;
@@ -63,14 +64,7 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
   const organizationId = connection.organization_id as string;
 
-  const { data: automation } = await supabase
-    .from("org_automations")
-    .select("is_enabled")
-    .eq("organization_id", organizationId)
-    .eq("service_key", "email-auto-ack")
-    .maybeSingle();
-
-  if (!automation?.is_enabled) {
+  if (!(await isAutomationEnabled(organizationId, "email-auto-ack"))) {
     console.log("[gmail-webhook] automation_off", organizationId);
     return { ok: true, skipped: true, reason: "automation_off" as const };
   }
@@ -189,7 +183,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
     const isNewContact = !existingContact;
 
-    // Prefer: saved contact name → From display name → email local-part
     const firstName =
       existingContact?.first_name?.trim() ||
       headerFirstName(fromName, fromHeader) ||
@@ -212,7 +205,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       templateKey: matchedRule?.template_key ?? null,
     });
 
-    // --- Unknown sender, no rule → unmatched inbox (NOT a contact) ---
     if (isNewContact && !matchedRule) {
       await supabase.from("unmatched_emails").upsert(
         {
@@ -230,12 +222,10 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       continue;
     }
 
-    // --- Unknown sender + skip rule → ignore ---
     if (isNewContact && matchedRule?.action === "skip") {
       continue;
     }
 
-    // --- Known contact, or rule says create (auto_ack / tag_only) ---
     let contactId = existingContact?.id as string | undefined;
 
     if (!contactId) {
@@ -277,7 +267,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
 
     const action = matchedRule?.action ?? "skip";
 
-    // Known contact with no rule: log only, do not auto-ack
     if (!matchedRule) {
       continue;
     }
@@ -286,7 +275,6 @@ export async function processGmailNotification(pubsubDataBase64: string) {
       continue;
     }
 
-    // action === auto_ack — use the rule's template when set
     const sendResult = await sendAutoAck({
       organizationId,
       toEmail: fromEmail,
