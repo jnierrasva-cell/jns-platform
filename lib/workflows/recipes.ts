@@ -117,6 +117,58 @@ export const SYSTEM_RECIPES: RecipeDefinition[] = [
     },
   },
   {
+    key: "pipeline_stage_followup",
+    name: "Pipeline stage follow-up",
+    description:
+      "When a contact moves to a new pipeline stage, create a follow-up task and log a note so the move is never silent.",
+    category: "Pipeline",
+    triggerType: "pipeline.stage_changed",
+    graph: {
+      nodes: [
+        {
+          id: "t1",
+          type: "trigger",
+          config: { event: "pipeline.stage_changed" },
+        },
+        {
+          id: "c1",
+          type: "condition",
+          config: { field: "stage_id", op: "exists" },
+        },
+        {
+          id: "a1",
+          type: "action",
+          config: {
+            action: "task.create",
+            params: {
+              title: "Stage move: {{contact_name}} → {{stage_name}}",
+              description:
+                "Contact moved from \"{{from_stage_name}}\" to \"{{stage_name}}\". Confirm next step.",
+              priority: "medium",
+              contact_id: "{{contact_id}}",
+            },
+          },
+        },
+        {
+          id: "a2",
+          type: "action",
+          config: {
+            action: "contact.add_note",
+            params: {
+              contact_id: "{{contact_id}}",
+              body: "Pipeline automation: moved to stage \"{{stage_name}}\" (from \"{{from_stage_name}}\").",
+            },
+          },
+        },
+      ],
+      edges: [
+        { from: "t1", to: "c1" },
+        { from: "c1", to: "a1", when: "pass" },
+        { from: "a1", to: "a2" },
+      ],
+    },
+  },
+  {
     key: "pipeline_sla_nudge",
     name: "Pipeline SLA nudge",
     description:
