@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAction } from "@/lib/workflows/actions/registry";
+import { preflightActionConnections } from "@/lib/workflows/preflight";
 import type {
   ActionContext,
   WorkflowGraph,
@@ -166,6 +167,24 @@ async function executeFromNode(input: {
             error: `Unknown action: ${actionKey}`,
           });
           await failRun(admin, runId, `Unknown action: ${actionKey}`);
+          return true;
+        }
+
+        const connIssue = await preflightActionConnections(
+          input.organizationId,
+          actionKey,
+        );
+        if (connIssue) {
+          await logStep(admin, {
+            runId,
+            organizationId: input.organizationId,
+            nodeId: node.id,
+            actionKey,
+            status: "failed",
+            input: resolved,
+            error: connIssue.message,
+          });
+          await failRun(admin, runId, connIssue.message);
           return true;
         }
 
