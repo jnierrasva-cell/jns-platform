@@ -5,6 +5,7 @@ import { emailSendTemplateAction } from "./email-send-template";
 import { smsSendAction } from "./sms-send";
 import { contactAddNoteAction } from "./contact-add-note";
 import { pipelineSetStageAction } from "./pipeline-set-stage";
+import { legacyExecuteAction } from "./legacy-execute";
 
 const handlers: ActionHandler[] = [
   taskCreateAction,
@@ -13,6 +14,7 @@ const handlers: ActionHandler[] = [
   smsSendAction,
   contactAddNoteAction,
   pipelineSetStageAction,
+  legacyExecuteAction,
 ];
 
 const byKey = new Map(handlers.map((h) => [h.key, h]));
