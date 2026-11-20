@@ -21,7 +21,10 @@ function slugify(input: string) {
 export async function createIntakeForm(input: {
   organizationId: string;
   name: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; formId: string; slug: string }
+  | { ok: false; error: string }
+> {
   try {
     await requireOrgMember(input.organizationId);
 
@@ -32,22 +35,26 @@ export async function createIntakeForm(input: {
     slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
     const admin = createAdminClient();
-    const { error } = await admin.from("intake_forms").insert({
-      organization_id: input.organizationId,
-      name,
-      slug,
-      is_published: true,
-      success_message:
-        "Thanks — we received your submission and will be in touch.",
-      headline: null,
-      description: null,
-      fields: DEFAULT_FORM_FIELDS,
-    });
+    const { data, error } = await admin
+      .from("intake_forms")
+      .insert({
+        organization_id: input.organizationId,
+        name,
+        slug,
+        is_published: true,
+        success_message:
+          "Thanks — we received your submission and will be in touch.",
+        headline: null,
+        description: null,
+        fields: DEFAULT_FORM_FIELDS,
+      })
+      .select("id, slug")
+      .single();
 
-    if (error) return { ok: false, error: error.message };
+    if (error || !data) return { ok: false, error: error?.message ?? "Create failed" };
 
     revalidatePath("/dashboard/forms");
-    return { ok: true };
+    return { ok: true, formId: data.id as string, slug: data.slug as string };
   } catch (err) {
     return {
       ok: false,
@@ -104,6 +111,7 @@ export async function updateIntakeForm(input: {
     if (error) return { ok: false, error: error.message };
 
     revalidatePath("/dashboard/forms");
+    revalidatePath("/forms", "layout");
     return { ok: true };
   } catch (err) {
     return {
@@ -116,7 +124,10 @@ export async function updateIntakeForm(input: {
 export async function duplicateIntakeForm(input: {
   organizationId: string;
   formId: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; formId: string }
+  | { ok: false; error: string }
+> {
   try {
     await requireOrgMember(input.organizationId);
     const admin = createAdminClient();
@@ -138,23 +149,29 @@ export async function duplicateIntakeForm(input: {
     let slug = slugify(name) || "form";
     slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
-    const { error: insertError } = await admin.from("intake_forms").insert({
-      organization_id: input.organizationId,
-      name,
-      slug,
-      is_published: false,
-      success_message:
-        source.success_message ||
-        "Thanks — we received your submission and will be in touch.",
-      headline: source.headline,
-      description: source.description,
-      fields: normalizeFields(source.fields),
-    });
+    const { data: created, error: insertError } = await admin
+      .from("intake_forms")
+      .insert({
+        organization_id: input.organizationId,
+        name,
+        slug,
+        is_published: false,
+        success_message:
+          source.success_message ||
+          "Thanks — we received your submission and will be in touch.",
+        headline: source.headline,
+        description: source.description,
+        fields: normalizeFields(source.fields),
+      })
+      .select("id")
+      .single();
 
-    if (insertError) return { ok: false, error: insertError.message };
+    if (insertError || !created) {
+      return { ok: false, error: insertError?.message ?? "Duplicate failed" };
+    }
 
     revalidatePath("/dashboard/forms");
-    return { ok: true };
+    return { ok: true, formId: created.id as string };
   } catch (err) {
     return {
       ok: false,
@@ -240,68 +257,6 @@ export async function exportFormSubmissionsCsv(input: {
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Export failed",
-    };
-  }
-}
-
-export async function getSubmissionContactPreview(input: {
-  organizationId: string;
-  contactId: string;
-}): Promise<
-  | {
-      ok: true;
-      contact: {
-        id: string;
-        email: string | null;
-        first_name: string | null;
-        last_name: string | null;
-        phone: string | null;
-        status: string | null;
-        source: string | null;
-        tags: string[] | null;
-        created_at: string;
-      };
-      notes: { id: string; body: string; created_at: string }[];
-    }
-  | { ok: false; error: string }
-> {
-  try {
-    await requireOrgMember(input.organizationId);
-    const admin = createAdminClient();
-
-    const { data: contact, error } = await admin
-      .from("contacts")
-      .select(
-        "id, email, first_name, last_name, phone, status, source, tags, created_at",
-      )
-      .eq("id", input.contactId)
-      .eq("organization_id", input.organizationId)
-      .maybeSingle();
-
-    if (error || !contact) {
-      return { ok: false, error: "Contact not found" };
-    }
-
-    const { data: notes } = await admin
-      .from("contact_notes")
-      .select("id, body, created_at")
-      .eq("contact_id", input.contactId)
-      .eq("organization_id", input.organizationId)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    return {
-      ok: true,
-      contact: {
-        ...contact,
-        tags: Array.isArray(contact.tags) ? contact.tags : null,
-      },
-      notes: notes ?? [],
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Could not load contact",
     };
   }
 }
