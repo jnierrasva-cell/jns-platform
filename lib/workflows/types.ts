@@ -1,5 +1,5 @@
 /**
- * Workflow engine — shared types (Phase 0)
+ * Workflow engine — shared types
  */
 
 export type WorkflowStatus = "draft" | "active" | "paused" | "archived";
@@ -16,6 +16,7 @@ export type DomainEventType =
   | "booking.created"
   | "booking.status_changed"
   | "task.created"
+  | "task.updated"
   | "task.completed"
   | "email.inbound_matched"
   | "doc.uploaded"
