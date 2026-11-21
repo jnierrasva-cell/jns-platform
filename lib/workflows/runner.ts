@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAction } from "@/lib/workflows/actions/registry";
 import { preflightActionConnections } from "@/lib/workflows/preflight";
+import { notifyWorkflowFailure } from "@/lib/workflows/notify-failure";
 import type {
   ActionContext,
   WorkflowGraph,
@@ -40,7 +41,7 @@ export async function startWorkflowRun(input: {
   const runId = run.id as string;
   const trigger = input.graph.nodes.find((n) => n.type === "trigger");
   if (!trigger) {
-    await failRun(admin, runId, "Graph has no trigger node");
+    await failRun(admin, runId, input.organizationId, "Graph has no trigger node");
     return true;
   }
 
@@ -88,7 +89,7 @@ export async function resumeRunFromJob(job: {
       .from("workflow_jobs")
       .update({ status: "failed", error: "Missing graph" })
       .eq("id", job.id);
-    await failRun(admin, job.run_id, "Missing graph on resume");
+    await failRun(admin, job.run_id, job.organization_id, "Missing graph on resume");
     return;
   }
 
@@ -166,7 +167,12 @@ async function executeFromNode(input: {
             input: resolved,
             error: `Unknown action: ${actionKey}`,
           });
-          await failRun(admin, runId, `Unknown action: ${actionKey}`);
+          await failRun(
+            admin,
+            runId,
+            input.organizationId,
+            `Unknown action: ${actionKey}`,
+          );
           return true;
         }
 
@@ -184,7 +190,7 @@ async function executeFromNode(input: {
             input: resolved,
             error: connIssue.message,
           });
-          await failRun(admin, runId, connIssue.message);
+          await failRun(admin, runId, input.organizationId, connIssue.message);
           return true;
         }
 
@@ -211,7 +217,12 @@ async function executeFromNode(input: {
         });
 
         if (!result.ok) {
-          await failRun(admin, runId, result.error ?? "Action failed");
+          await failRun(
+            admin,
+            runId,
+            input.organizationId,
+            result.error ?? "Action failed",
+          );
           return true;
         }
 
@@ -252,16 +263,27 @@ async function executeFromNode(input: {
       }
 
       if (node.type === "branch") {
+        const field = node.config.field ? String(node.config.field) : "";
+        const raw = field
+          ? getPath(input.triggerPayload, field)
+          : node.config.value;
+        const branchKey = raw == null ? "default" : String(raw);
+        const edges = input.graph.edges.filter((e) => e.from === node.id);
+        const match =
+          edges.find((e) => e.when === branchKey) ??
+          edges.find((e) => e.when === "default") ??
+          edges.find((e) => !e.when);
+
         await logStep(admin, {
           runId,
           organizationId: input.organizationId,
           nodeId: node.id,
           actionKey: "branch",
-          status: "skipped",
+          status: "completed",
           input: node.config,
-          output: { message: "Branch nodes deferred" },
+          output: { branch: branchKey, next: match?.to ?? null },
         });
-        currentId = nextNodeId(input.graph, node.id);
+        currentId = match?.to ?? null;
         continue;
       }
 
@@ -279,7 +301,7 @@ async function executeFromNode(input: {
     return true;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Runner error";
-    await failRun(admin, runId, msg);
+    await failRun(admin, runId, input.organizationId, msg);
     return true;
   }
 }
@@ -292,7 +314,8 @@ function nextNodeId(
   const edges = graph.edges.filter((e) => e.from === fromId);
   if (edges.length === 0) return null;
   if (when) {
-    const match = edges.find((e) => e.when === when) ?? edges.find((e) => !e.when);
+    const match =
+      edges.find((e) => e.when === when) ?? edges.find((e) => !e.when);
     return match?.to ?? null;
   }
   return edges[0]?.to ?? null;
@@ -396,6 +419,7 @@ async function logStep(
 async function failRun(
   admin: ReturnType<typeof createAdminClient>,
   runId: string,
+  organizationId: string,
   error: string,
 ) {
   await admin
@@ -406,4 +430,10 @@ async function failRun(
       finished_at: new Date().toISOString(),
     })
     .eq("id", runId);
+
+  void notifyWorkflowFailure({
+    organizationId,
+    runId,
+    error,
+  });
 }
