@@ -316,6 +316,39 @@ export const SYSTEM_RECIPES: RecipeDefinition[] = [
       ],
     },
   },
+  {
+    key: "task_completed_note",
+    name: "Task completed → contact note",
+    description:
+      "When a task is marked completed, log a note on the related contact so activity history stays complete.",
+    category: "Tasks",
+    triggerType: "task.completed",
+    graph: {
+      nodes: [
+        { id: "t1", type: "trigger", config: { event: "task.completed" } },
+        {
+          id: "c1",
+          type: "condition",
+          config: { field: "contact_id", op: "exists" },
+        },
+        {
+          id: "a1",
+          type: "action",
+          config: {
+            action: "contact.add_note",
+            params: {
+              contact_id: "{{contact_id}}",
+              body: 'Task completed: "{{title}}".',
+            },
+          },
+        },
+      ],
+      edges: [
+        { from: "t1", to: "c1" },
+        { from: "c1", to: "a1", when: "pass" },
+      ],
+    },
+  },
 ];
 
 export function getRecipe(key: string): RecipeDefinition | undefined {
