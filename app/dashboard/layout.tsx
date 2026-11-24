@@ -39,7 +39,7 @@ export default async function DashboardLayout({
       .maybeSingle(),
     supabase
       .from("org_members")
-      .select("organization_id, role, organizations(id, name)")
+      .select("organization_id, role")
       .eq("user_id", user.id),
   ]);
 
@@ -114,19 +114,6 @@ export default async function DashboardLayout({
   const organizationId = activeOrg.organizationId;
   const isOrgManager =
     activeOrg.role === "ceo" || activeOrg.role === "admin";
-
-  const workspaces = (memberships ?? []).map((m) => {
-    const org = Array.isArray(m.organizations)
-      ? m.organizations[0]
-      : m.organizations;
-    const name =
-      (org as { name?: string } | null)?.name ?? "Workspace";
-    return {
-      id: m.organization_id as string,
-      name,
-      isActive: m.organization_id === organizationId,
-    };
-  });
 
   let platformRole = profile?.role ?? null;
   let firstName = profile?.first_name;
@@ -246,7 +233,6 @@ export default async function DashboardLayout({
       planLabel={planLabel}
       planId={planId}
       contactLabelPlural={activeOrg.contactLabelPlural}
-      workspaces={workspaces}
     >
       <>
         {showNamePrompt && <CompleteProfileBanner />}
