@@ -32,6 +32,10 @@ import { createClient } from "@/lib/supabase/client";
 import { BrandMark } from "@/components/brand-mark";
 import Image from "next/image";
 import { SupportBubble } from "@/components/support-bubble";
+import {
+  WorkspaceSwitcher,
+  type WorkspaceOption,
+} from "@/components/workspace-switcher";
 
 const STORAGE_KEY = "jns_sidebar_collapsed";
 const SIDEBAR_CHANGE_EVENT = "jns-sidebar-preference-change";
@@ -130,6 +134,7 @@ export function DashboardShell({
   planLabel = "No plan",
   planId = "none",
   contactLabelPlural = "People",
+  workspaces = [],
   children,
 }: {
   userEmail: string;
@@ -141,6 +146,7 @@ export function DashboardShell({
   planLabel?: string;
   planId?: string;
   contactLabelPlural?: string | null;
+  workspaces?: WorkspaceOption[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -267,9 +273,12 @@ export function DashboardShell({
               </div>
             )}
             <div className="mt-3 flex items-center gap-2 px-0.5">
-              <p className="truncate text-sm font-semibold text-slate-900">
-                {orgName}
-              </p>
+              <div className="min-w-0 flex-1">
+                <WorkspaceSwitcher
+                  workspaces={workspaces}
+                  currentName={orgName}
+                />
+              </div>
               {orgKind === "business" && (
                 <span className="shrink-0 text-[10px] font-medium text-slate-400">
                   Business
@@ -435,9 +444,7 @@ export function DashboardShell({
             <Menu size={20} />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">
-              {orgName}
-            </p>
+            <WorkspaceSwitcher workspaces={workspaces} currentName={orgName} />
             {isOrgManager ? (
               <Link
                 href="/dashboard/billing"
