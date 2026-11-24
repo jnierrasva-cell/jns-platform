@@ -43,7 +43,7 @@ const plans = [
     cta: "Start free",
     highlighted: false,
     features: [
-      "1 workspace · team invites up to 2 users",
+      "Team invites up to 2 users",
       "Contacts, pipeline, and notes",
       "Bookings and public booking page",
       "Forms (core fields) and CSV export",
@@ -374,7 +374,7 @@ export default function LandingPage() {
             <p className="mt-10 text-xs leading-5 text-zinc-500">
               Prices in USD, billed monthly. Card checkout via Lemon Squeezy.
               Philippines bank or e-wallet: pay manually, then we activate your
-              plan.
+              plan. Each workspace has its own plan and trial.
             </p>
           </div>
         </section>
