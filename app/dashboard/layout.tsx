@@ -29,7 +29,6 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/login");
 
-  // Parallel first wave: profile + memberships (was sequential)
   const [profileRes, membershipsRes] = await Promise.all([
     supabase
       .from("profiles")
@@ -40,7 +39,7 @@ export default async function DashboardLayout({
       .maybeSingle(),
     supabase
       .from("org_members")
-      .select("organization_id, role")
+      .select("organization_id, role, organizations(id, name)")
       .eq("user_id", user.id),
   ]);
 
@@ -53,7 +52,6 @@ export default async function DashboardLayout({
 
   const hasMembership = (memberships?.length ?? 0) > 0;
 
-  // Only write when something actually needs fixing (was unconditional update)
   if (profile) {
     const nextStatus = "approved";
     const nextAccountType = profile.account_type ?? "individual";
@@ -117,7 +115,19 @@ export default async function DashboardLayout({
   const isOrgManager =
     activeOrg.role === "ceo" || activeOrg.role === "admin";
 
-  // Parallel second wave: admin profile + plan gate + arketa issues
+  const workspaces = (memberships ?? []).map((m) => {
+    const org = Array.isArray(m.organizations)
+      ? m.organizations[0]
+      : m.organizations;
+    const name =
+      (org as { name?: string } | null)?.name ?? "Workspace";
+    return {
+      id: m.organization_id as string,
+      name,
+      isActive: m.organization_id === organizationId,
+    };
+  });
+
   let platformRole = profile?.role ?? null;
   let firstName = profile?.first_name;
   let lastName = profile?.last_name;
@@ -236,6 +246,7 @@ export default async function DashboardLayout({
       planLabel={planLabel}
       planId={planId}
       contactLabelPlural={activeOrg.contactLabelPlural}
+      workspaces={workspaces}
     >
       <>
         {showNamePrompt && <CompleteProfileBanner />}
