@@ -6,6 +6,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/",
     "/client-management-software",
     "/crm-software",
+    "/enquiry-management-system",
     "/business-workflow-automation",
     "/support",
     "/privacy",
