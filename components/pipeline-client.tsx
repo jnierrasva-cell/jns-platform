@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Kanban, Plus, Settings2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -82,18 +82,22 @@ export function PipelineClient({
   const [editName, setEditName] = useState("");
   const [manageOpen, setManageOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [list, setList] = useState<Contact[]>(contacts);
+  useEffect(() => {
+    setList(contacts);
+  }, [contacts]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return contacts;
-    return contacts.filter((c) => {
+    if (!q) return list;
+    return list.filter((c) => {
       const hay = [c.first_name, c.last_name, c.email, c.source]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [contacts, query]);
+  }, [list, query]);
 
   const byStage = useMemo(() => {
     const map: Record<string, Contact[]> = {};
@@ -129,15 +133,29 @@ export function PipelineClient({
 
   function moveContact(contactId: string, stageId: string) {
     setError(null);
+    const nextId = stageId || null;
+    const prev = list.find((c) => c.id === contactId);
+    const prevStage = prev?.pipeline_stage_id ?? null;
+    // Optimistic board update — cards move instantly.
+    setList((rows) =>
+      rows.map((c) =>
+        c.id === contactId ? { ...c, pipeline_stage_id: nextId } : c,
+      ),
+    );
     startTransition(async () => {
       try {
         await setContactPipelineStage({
           organizationId,
           contactId,
-          stageId: stageId || null,
+          stageId: nextId,
         });
-        router.refresh();
+        // No router.refresh — local state is source of truth for this view.
       } catch (err) {
+        setList((rows) =>
+          rows.map((c) =>
+            c.id === contactId ? { ...c, pipeline_stage_id: prevStage } : c,
+          ),
+        );
         setError(err instanceof Error ? err.message : "Could not move contact");
       }
     });
