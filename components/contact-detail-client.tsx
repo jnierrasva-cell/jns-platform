@@ -9,9 +9,8 @@ import {
   UserRound,
 } from "lucide-react";
 import {
-  updateContact,
+  saveContactDetails,
   addContactNote,
-  setContactPipelineStage,
 } from "@/app/dashboard/contacts/actions";
 import { CountryPhoneInput } from "@/components/country-phone-input";
 import { EmptyState } from "@/components/empty-state";
@@ -101,7 +100,7 @@ export function ContactDetailClient({
   stages,
   activity,
   bookings,
-  notes,
+  notes: initialNotes,
 }: {
   organizationId: string;
   contact: Contact;
@@ -119,11 +118,13 @@ export function ContactDetailClient({
     contact.pipeline_stage_id ?? "",
   );
   const [noteBody, setNoteBody] = useState("");
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
   const [noteSaved, setNoteSaved] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, startSaveTransition] = useTransition();
+  const [isAddingNote, startNoteTransition] = useTransition();
 
   const displayName =
     [firstName, lastName].filter(Boolean).join(" ") ||
@@ -138,9 +139,9 @@ export function ContactDetailClient({
     e.preventDefault();
     setError(null);
     setSaved(false);
-    startTransition(async () => {
+    startSaveTransition(async () => {
       try {
-        await updateContact({
+        await saveContactDetails({
           contactId: contact.id,
           organizationId,
           firstName,
@@ -148,11 +149,7 @@ export function ContactDetailClient({
           email,
           phone,
           status: status as "lead" | "booked" | "customer" | "inactive",
-        });
-        await setContactPipelineStage({
-          organizationId,
-          contactId: contact.id,
-          stageId: pipelineStageId || null,
+          pipelineStageId: pipelineStageId || null,
         });
         setSaved(true);
       } catch (err) {
@@ -165,20 +162,46 @@ export function ContactDetailClient({
     e.preventDefault();
     setNoteError(null);
     setNoteSaved(false);
-    if (!noteBody.trim()) {
+    const body = noteBody.trim();
+    if (!body) {
       setNoteError("Write a short note first.");
       return;
     }
-    startTransition(async () => {
+
+    // Optimistic append so the list updates immediately.
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Note = {
+      id: tempId,
+      body,
+      created_at: new Date().toISOString(),
+      created_by: null,
+    };
+    setNotes((prev) => [optimistic, ...prev]);
+    setNoteBody("");
+
+    startNoteTransition(async () => {
       try {
-        await addContactNote({
+        const created = await addContactNote({
           organizationId,
           contactId: contact.id,
-          body: noteBody,
+          body,
         });
-        setNoteBody("");
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === tempId
+              ? {
+                  id: created.id,
+                  body: created.body,
+                  created_at: created.created_at,
+                  created_by: null,
+                }
+              : n,
+          ),
+        );
         setNoteSaved(true);
       } catch (err) {
+        setNotes((prev) => prev.filter((n) => n.id !== tempId));
+        setNoteBody(body);
         setNoteError(err instanceof Error ? err.message : "Could not add note");
       }
     });
@@ -334,10 +357,10 @@ export function ContactDetailClient({
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isSaving}
             className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-60"
           >
-            {isPending ? "Saving…" : "Save changes"}
+            {isSaving ? "Saving…" : "Save changes"}
           </button>
           <Link
             href="/dashboard/pipeline"
@@ -382,10 +405,10 @@ export function ContactDetailClient({
           ) : null}
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isAddingNote}
             className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
           >
-            {isPending ? "Adding…" : "Add note"}
+            {isAddingNote ? "Adding…" : "Add note"}
           </button>
         </form>
 
