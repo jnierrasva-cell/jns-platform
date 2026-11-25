@@ -15,6 +15,8 @@ export async function createContact(input: {
   phone?: string;
   status?: "lead" | "booked" | "customer" | "inactive";
   note?: string;
+  /** Optional first journey stage — applied in the same request */
+  pipelineStageId?: string | null;
 }): Promise<{ ok: true; contactId: string } | { ok: false; error: string }> {
   const { user } = await requireOrgMember(input.organizationId);
   const admin = createAdminClient();
@@ -56,6 +58,8 @@ export async function createContact(input: {
     }
   }
 
+  const stageId = input.pipelineStageId ?? null;
+
   const { data: contact, error } = await admin
     .from("contacts")
     .insert({
@@ -68,6 +72,7 @@ export async function createContact(input: {
       source: "manual",
       tags: ["manual"],
       last_contacted_at: new Date().toISOString(),
+      ...(stageId ? { pipeline_stage_id: stageId } : {}),
     })
     .select("id")
     .single();
@@ -108,6 +113,7 @@ export async function createContact(input: {
         source: "manual",
         contact_name: contactName,
         name: contactName,
+        pipeline_stage_id: stageId,
       },
     });
   } catch (err) {
@@ -172,27 +178,167 @@ export async function updateContact(input: {
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
 }
 
+/**
+ * Single round-trip save for contact detail page: fields + optional stage.
+ * Avoids sequential updateContact + setContactPipelineStage from the client.
+ */
+export async function saveContactDetails(input: {
+  contactId: string;
+  organizationId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  status?: "lead" | "booked" | "customer" | "inactive";
+  pipelineStageId?: string | null;
+}) {
+  await requireOrgMember(input.organizationId);
+  const admin = createAdminClient();
+
+  const { data: before } = await admin
+    .from("contacts")
+    .select("id, first_name, last_name, pipeline_stage_id")
+    .eq("id", input.contactId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  if (!before) throw new Error("Contact not found in this organization");
+
+  const updates: Record<string, string | null> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.firstName !== undefined) {
+    updates.first_name = input.firstName.trim() || null;
+  }
+  if (input.lastName !== undefined) {
+    updates.last_name = input.lastName.trim() || null;
+  }
+  if (input.email !== undefined) {
+    const email = input.email.trim().toLowerCase();
+    if (email && !email.includes("@")) throw new Error("Invalid email");
+    updates.email = email || null;
+  }
+  if (input.phone !== undefined) {
+    const phone = input.phone.trim();
+    if (phone && phone.replace(/[\s\-()]/g, "").length < 8) {
+      throw new Error("Enter a valid phone including country code");
+    }
+    updates.phone = phone || null;
+  }
+  if (input.status !== undefined) {
+    updates.status = input.status;
+  }
+
+  const nextStageId =
+    input.pipelineStageId !== undefined ? input.pipelineStageId : undefined;
+  const fromStageId = (before.pipeline_stage_id as string | null) ?? null;
+  const stageChanged =
+    nextStageId !== undefined && nextStageId !== fromStageId;
+
+  if (stageChanged) {
+    updates.pipeline_stage_id = nextStageId as string | null;
+  }
+
+  const { data: contact, error } = await admin
+    .from("contacts")
+    .update(updates)
+    .eq("id", input.contactId)
+    .eq("organization_id", input.organizationId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!contact) throw new Error("Contact not found in this organization");
+
+  if (stageChanged) {
+    const stageIds = [nextStageId, fromStageId].filter(
+      (id): id is string => Boolean(id),
+    );
+    const nameById = new Map<string, string>();
+    if (stageIds.length) {
+      const { data: stages } = await admin
+        .from("pipeline_stages")
+        .select("id, name")
+        .in("id", stageIds);
+      for (const s of stages ?? []) {
+        nameById.set(s.id as string, s.name as string);
+      }
+    }
+
+    const stageName = nextStageId
+      ? nameById.get(nextStageId) ?? "Unknown stage"
+      : "Unassigned";
+    const fromStageName = fromStageId
+      ? nameById.get(fromStageId) ?? "Unassigned"
+      : "Unassigned";
+
+    const contactName =
+      [
+        input.firstName ?? before.first_name,
+        input.lastName ?? before.last_name,
+      ]
+        .filter(Boolean)
+        .join(" ") || "Contact";
+
+    try {
+      await emitDomainEvent({
+        organizationId: input.organizationId,
+        type: "pipeline.stage_changed",
+        entityType: "contact",
+        entityId: input.contactId,
+        payload: {
+          contact_id: input.contactId,
+          contact_name: contactName,
+          stage_id: nextStageId,
+          stage_name: stageName,
+          from_stage_id: fromStageId,
+          from_stage_name: fromStageName,
+        },
+        idempotencyKey: `pipeline.stage:${input.contactId}:${nextStageId ?? "none"}:${Date.now()}`,
+      });
+    } catch (err) {
+      console.error("[saveContactDetails] emit failed", err);
+    }
+  }
+
+  revalidatePath("/dashboard/contacts");
+  revalidatePath(`/dashboard/contacts/${input.contactId}`);
+  if (stageChanged) {
+    revalidatePath("/dashboard/pipeline");
+  }
+}
+
 export async function addContactNote(input: {
   organizationId: string;
   contactId: string;
   body: string;
-}) {
+}): Promise<{ id: string; body: string; created_at: string }> {
   const { user } = await requireOrgMember(input.organizationId);
   const admin = createAdminClient();
 
   const body = input.body.trim();
   if (!body) throw new Error("Note cannot be empty");
 
-  const { error } = await admin.from("contact_notes").insert({
-    organization_id: input.organizationId,
-    contact_id: input.contactId,
-    body,
-    created_by: user.id,
-  });
+  const { data, error } = await admin
+    .from("contact_notes")
+    .insert({
+      organization_id: input.organizationId,
+      contact_id: input.contactId,
+      body,
+      created_by: user.id,
+    })
+    .select("id, body, created_at")
+    .single();
 
-  if (error) throw new Error(error.message);
+  if (error || !data) throw new Error(error?.message ?? "Could not add note");
 
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
+  return {
+    id: data.id as string,
+    body: data.body as string,
+    created_at: data.created_at as string,
+  };
 }
 
 export async function sendContactEmail(input: {
@@ -419,25 +565,26 @@ export async function setContactPipelineStage(input: {
   if (error) throw new Error(error.message);
   if (!contact) throw new Error("Contact not found in this organization");
 
-  let stageName = input.stageId ? "Unknown stage" : "Unassigned";
-  let fromStageName = "Unassigned";
+  const stageIds = [input.stageId, fromStageId].filter(
+    (id): id is string => Boolean(id),
+  );
+  const nameById = new Map<string, string>();
+  if (stageIds.length) {
+    const { data: stages } = await admin
+      .from("pipeline_stages")
+      .select("id, name")
+      .in("id", stageIds);
+    for (const s of stages ?? []) {
+      nameById.set(s.id as string, s.name as string);
+    }
+  }
 
-  if (input.stageId) {
-    const { data: stage } = await admin
-      .from("pipeline_stages")
-      .select("name")
-      .eq("id", input.stageId)
-      .maybeSingle();
-    if (stage?.name) stageName = stage.name as string;
-  }
-  if (fromStageId) {
-    const { data: fromStage } = await admin
-      .from("pipeline_stages")
-      .select("name")
-      .eq("id", fromStageId)
-      .maybeSingle();
-    if (fromStage?.name) fromStageName = fromStage.name as string;
-  }
+  const stageName = input.stageId
+    ? nameById.get(input.stageId) ?? "Unknown stage"
+    : "Unassigned";
+  const fromStageName = fromStageId
+    ? nameById.get(fromStageId) ?? "Unassigned"
+    : "Unassigned";
 
   const contactName =
     [before.first_name, before.last_name].filter(Boolean).join(" ") || "Contact";
@@ -464,6 +611,5 @@ export async function setContactPipelineStage(input: {
 
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
-  revalidatePath("/dashboard");
   revalidatePath("/dashboard/pipeline");
 }
