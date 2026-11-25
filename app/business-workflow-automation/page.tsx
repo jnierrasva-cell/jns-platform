@@ -21,17 +21,17 @@ const workflowSteps = [
   {
     title: "Capture an inquiry",
     description:
-      "A team member can add a contact, or an inquiry can arrive through a published intake form, booking page, or configured Gmail rule.",
+      "A team member can add a client, or an inquiry can arrive through a published intake form, booking page, or configured Gmail rule.",
   },
   {
     title: "Keep the work connected",
     description:
-      "Contact details, notes, tags, and pipeline stage provide context for the next customer interaction. Forms and bookings can create or update contact records.",
+      "Client details, notes, tags, and Journey stage provide context for the next interaction. Forms and bookings can create or update the same client record.",
   },
   {
     title: "Handle the next step",
     description:
-      "Review the contact and follow your team's process. Send a message directly, or enable supported email rules and booking reminders when they fit.",
+      "Review the client and follow your team's process. Send a message directly, or enable supported email rules and booking reminders when they fit.",
   },
 ];
 
@@ -39,12 +39,12 @@ const faqs = [
   {
     question: "What workflow automation does JNS provide?",
     answer:
-      "JNS provides configurable Gmail email rules for matching incoming messages, optional template-based auto-replies, and SMS reminders for scheduled bookings. It also brings contacts, pipeline stages, forms, bookings, and team procedures into one workspace.",
+      "JNS provides configurable Gmail email rules for matching incoming messages, optional template-based auto-replies, and SMS reminders for scheduled bookings. It also brings Clients, Journey stages, forms, bookings, and team procedures into one workspace.",
   },
   {
     question: "Does JNS have a visual automation builder?",
     answer:
-      "No. JNS does not currently provide a visual workflow canvas, AI agents, or advanced branching builder. Email rules have specific supported matching fields and actions, and booking reminders use configurable timing and message text.",
+      "No. JNS does not currently provide a visual workflow canvas, AI agents, or advanced branching builder on the public product surface described here. Email rules have specific supported matching fields and actions, and booking reminders use configurable timing and message text. (A workflow engine exists in-product for internal automation; this page describes the day-to-day tools teams configure.)",
   },
   {
     question: "What can an email rule do?",
@@ -59,7 +59,7 @@ const faqs = [
   {
     question: "How do forms and bookings fit into a workflow?",
     answer:
-      "Published intake forms collect customer information and associate submissions with contact records. Public bookings create or update contacts, assign booking progress in the pipeline, and can sync to a connected Google Calendar.",
+      "Published intake forms collect information and associate submissions with client records. Public bookings create or update clients, can move Journey progress, and can sync to a connected Google Calendar.",
   },
   {
     question: "Who may benefit from JNS workflow tools?",
@@ -105,10 +105,10 @@ export default function BusinessWorkflowAutomationPage() {
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-600">
               JNS Systems helps small service businesses organize the work
-              around customer inquiries: collecting details, tracking progress,
-              coordinating bookings, and handling follow-ups. Configure the
-              available rules and reminders where they suit your process, while
-              keeping your team in control of the next step.
+              around client inquiries: collecting details, tracking Journey
+              progress, coordinating bookings, and handling follow-ups.
+              Configure the available rules and reminders where they suit your
+              process, while keeping your team in control of the next step.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -135,21 +135,21 @@ export default function BusinessWorkflowAutomationPage() {
             </h2>
             <p className="mt-4 text-[15px] leading-7 text-zinc-600">
               A new inquiry may arrive by email, a booking request, or an intake
-              form. When contact details, appointment notes, and follow-up
+              form. When client details, appointment notes, and follow-up
               reminders live in different places, routine work can depend on
               someone remembering each handoff. JNS connects several of those
-              steps through a shared contact record and workspace tools.
+              steps through a shared client record and workspace tools.
             </p>
           </div>
           <div className="mt-9 grid gap-4 sm:grid-cols-3">
             {[
               {
                 title: "Re-entering the same information",
-                body: "Use form submissions and booking details to create or update a contact record.",
+                body: "Use form submissions and booking details to create or update a client record.",
               },
               {
                 title: "Unclear inquiry progress",
-                body: "Keep the contact with a pipeline stage so your team can review where it stands.",
+                body: "Keep the client with a Journey stage so your team can review where it stands.",
               },
               {
                 title: "Routine follow-up steps",
@@ -173,36 +173,36 @@ export default function BusinessWorkflowAutomationPage() {
           <div className="mx-auto max-w-5xl px-5 py-16 sm:py-20">
             <div className="max-w-3xl">
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Connect inquiry, customer, and appointment work
+                Connect inquiry, client, and appointment work
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-zinc-600">
-                JNS is built around the operational information service teams
-                handle every day. Each feature supports a concrete part of that
-                process; teams decide which ones to use and how to manage work
-                that still needs a person.
+                These map to the same dashboard areas after login: Clients,
+                Journey, Forms, Bookings, Email rules, Needs review, and
+                Connections. Teams decide which tools to use and what still
+                needs a person.
               </p>
             </div>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               {[
                 {
                   icon: Users,
-                  title: "Client inquiries and pipeline",
-                  body: "Organize contacts with details, status, source, tags, notes, and organization-managed pipeline stages.",
+                  title: "Clients and Journey",
+                  body: "Organize clients with details, status, source, tags, notes, and Journey stages your workspace defines.",
                 },
                 {
                   icon: ClipboardList,
                   title: "Intake forms",
-                  body: "Publish forms to collect customer information. Submissions are associated with a contact and can add context for follow-up.",
+                  body: "Publish forms to collect information. Submissions are associated with a client and can add context for follow-up.",
                 },
                 {
                   icon: CalendarDays,
                   title: "Bookings and reminders",
-                  body: "Public bookings create or update contact records and can sync with Google Calendar. Optional SMS reminders can be scheduled before a booking through connected Twilio.",
+                  body: "Public bookings create or update client records and can sync with Google Calendar. Optional SMS reminders can be scheduled before a booking through connected Twilio.",
                 },
                 {
                   icon: Mail,
                   title: "Gmail rules and replies",
-                  body: "Match incoming email using supported sender and subject conditions, then choose a supported rule action. Template-based auto-replies require connected Google and an enabled rule.",
+                  body: "Match incoming email using supported sender and subject conditions, then choose a supported rule action. Template-based auto-replies require connected Google and an enabled rule. Needs review holds unmatched mail so not every message becomes a client.",
                 },
               ].map((item) => {
                 const Icon = item.icon;
@@ -233,17 +233,15 @@ export default function BusinessWorkflowAutomationPage() {
                 Keep follow-ups and team processes consistent
               </h2>
               <p className="mt-4 text-[15px] leading-7 text-zinc-600">
-                A customer record gives teammates context; notes, contact
-                activity, and pipeline stages help them decide what comes next.
-                For defined cases, managers can configure Gmail rules to tag or
-                handle matching messages, and teams can enable SMS reminders
-                for upcoming bookings.
+                A client record gives teammates context; notes, activity, and
+                Journey stages help them decide what comes next. For defined
+                cases, managers can configure Gmail rules, and teams can enable
+                SMS reminders for upcoming bookings.
               </p>
               <p className="mt-4 text-[15px] leading-7 text-zinc-600">
                 Shared team procedures (SOPs), workspace roles, and invitations
-                can help a team document and coordinate how work is handled.
-                They support a process; they do not automatically execute every
-                step.
+                help a team document and coordinate how work is handled. They
+                support a process; they do not automatically execute every step.
               </p>
             </div>
             <div className="rounded-xl border border-zinc-200 bg-white p-6 sm:p-8">
@@ -283,7 +281,7 @@ export default function BusinessWorkflowAutomationPage() {
                 Solo operators and small teams that manage appointments,
                 inquiries, and ongoing client relationships may benefit from
                 bringing these tasks into one workspace. JNS can support a
-                process where staff review incoming work, maintain contact
+                process where staff review incoming work, maintain client
                 records, coordinate bookings, and apply the follow-up practices
                 that fit their business.
               </p>
@@ -324,13 +322,20 @@ export default function BusinessWorkflowAutomationPage() {
               className="font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
             >
               client management
-            </Link>{" "}
-            and{" "}
+            </Link>
+            ,{" "}
             <Link
               href="/crm-software"
               className="font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
             >
-              JNS CRM features
+              CRM and Journey
+            </Link>
+            , and{" "}
+            <Link
+              href="/enquiry-management-system"
+              className="font-medium text-sky-800 underline underline-offset-4 hover:text-sky-950"
+            >
+              enquiry management
             </Link>
             .
           </p>
@@ -340,7 +345,7 @@ export default function BusinessWorkflowAutomationPage() {
           <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-6 px-5 py-14 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-white">
-                Organize the work around your customer relationships
+                Organize the work around your client relationships
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
                 Start setting up your JNS workspace or compare plans for your
