@@ -1,29 +1,10 @@
 import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveOrg } from "@/lib/org/active";
 import { getFinancialAccess } from "@/lib/financials/access";
+import { FinancialsClient } from "@/components/financials-client";
 import { ensurePeriodEntries } from "./actions";
-
-const FinancialsClient = dynamic(
-  () =>
-    import("@/components/financials-client").then((m) => m.FinancialsClient),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="animate-pulse space-y-4">
-        <div className="h-10 w-48 rounded-xl bg-slate-200" />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 rounded-2xl bg-slate-200" />
-          ))}
-        </div>
-        <div className="h-64 rounded-2xl bg-slate-200" />
-      </div>
-    ),
-  },
-);
 
 function currentPeriod(): string {
   const d = new Date();
