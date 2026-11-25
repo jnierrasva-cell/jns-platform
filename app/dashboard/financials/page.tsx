@@ -119,6 +119,9 @@ export default async function FinancialsPage({
     notes: (r.notes as string | null) ?? null,
     loggedBy: (r.logged_by as string | null) ?? null,
     createdAt: r.created_at as string,
+    // Base schema has no income status/method columns yet — UI defaults.
+    status: "paid" as const,
+    paymentMethod: null as string | null,
   }));
 
   const months: string[] = [];
