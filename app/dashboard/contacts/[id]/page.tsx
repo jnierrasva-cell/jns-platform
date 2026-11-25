@@ -25,54 +25,56 @@ export default async function ContactDetailPage({
   // Admin read after membership check — avoids RLS hiding intake-created contacts
   const admin = createAdminClient();
 
-  const { data: contact } = await admin
-    .from("contacts")
-    .select(
-      "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at, pipeline_stage_id",
-    )
-    .eq("id", id)
-    .eq("organization_id", orgId)
-    .maybeSingle();
+  // Parallel reads: contact + related lists in one round-trip group.
+  // Sequential was 4× latency on cold connections.
+  const [contactRes, stagesRes, activityRes, bookingsRes, notesRes] =
+    await Promise.all([
+      admin
+        .from("contacts")
+        .select(
+          "id, email, first_name, last_name, phone, status, source, tags, last_contacted_at, created_at, pipeline_stage_id",
+        )
+        .eq("id", id)
+        .eq("organization_id", orgId)
+        .maybeSingle(),
+      admin
+        .from("pipeline_stages")
+        .select("id, name, slug, position, is_won, is_lost")
+        .eq("organization_id", orgId)
+        .order("position", { ascending: true }),
+      admin
+        .from("email_activity")
+        .select(
+          "id, direction, subject, from_email, to_email, status, created_at",
+        )
+        .eq("contact_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      admin
+        .from("bookings")
+        .select("id, title, starts_at, status")
+        .eq("contact_id", id)
+        .order("starts_at", { ascending: false })
+        .limit(20),
+      admin
+        .from("contact_notes")
+        .select("id, body, created_at, created_by")
+        .eq("contact_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
 
+  const contact = contactRes.data;
   if (!contact) notFound();
-
-  const { data: stages } = await admin
-    .from("pipeline_stages")
-    .select("id, name, slug, position, is_won, is_lost")
-    .eq("organization_id", orgId)
-    .order("position", { ascending: true });
-
-  const { data: activity } = await admin
-    .from("email_activity")
-    .select(
-      "id, direction, subject, from_email, to_email, status, created_at",
-    )
-    .eq("contact_id", contact.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  const { data: bookings } = await admin
-    .from("bookings")
-    .select("id, title, starts_at, status")
-    .eq("contact_id", contact.id)
-    .order("starts_at", { ascending: false })
-    .limit(20);
-
-  const { data: notes } = await admin
-    .from("contact_notes")
-    .select("id, body, created_at, created_by")
-    .eq("contact_id", contact.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
 
   return (
     <ContactDetailClient
       organizationId={orgId}
       contact={contact}
-      stages={stages ?? []}
-      activity={activity ?? []}
-      bookings={bookings ?? []}
-      notes={notes ?? []}
+      stages={stagesRes.data ?? []}
+      activity={activityRes.data ?? []}
+      bookings={bookingsRes.data ?? []}
+      notes={notesRes.data ?? []}
     />
   );
 }

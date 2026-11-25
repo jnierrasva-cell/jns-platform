@@ -19,28 +19,31 @@ export default async function PipelinePage() {
   const orgId = active.organizationId;
   const admin = createAdminClient();
 
-  // Backfill defaults for orgs created before seeding existed
+  // Seed defaults first (no-op when stages already exist), then parallel reads.
   await ensureDefaultPipelineStages(orgId);
 
-  const { data: stages } = await admin
-    .from("pipeline_stages")
-    .select("id, name, slug, position, is_won, is_lost")
-    .eq("organization_id", orgId)
-    .order("position", { ascending: true });
-
-  const { data: contacts } = await admin
-    .from("contacts")
-    .select(
-      "id, email, first_name, last_name, source, pipeline_stage_id, updated_at, created_at",
-    )
-    .eq("organization_id", orgId)
-    .order("updated_at", { ascending: false });
+  const [stagesRes, contactsRes] = await Promise.all([
+    admin
+      .from("pipeline_stages")
+      .select("id, name, slug, position, is_won, is_lost")
+      .eq("organization_id", orgId)
+      .order("position", { ascending: true }),
+    admin
+      .from("contacts")
+      .select(
+        "id, email, first_name, last_name, source, pipeline_stage_id, updated_at, created_at",
+      )
+      .eq("organization_id", orgId)
+      .order("updated_at", { ascending: false })
+      // Cap payload — board stays usable; search/filter is client-side on this set.
+      .limit(500),
+  ]);
 
   return (
     <PipelineClient
       organizationId={orgId}
-      stages={stages ?? []}
-      contacts={contacts ?? []}
+      stages={stagesRes.data ?? []}
+      contacts={contactsRes.data ?? []}
     />
   );
 }
