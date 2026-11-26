@@ -9,6 +9,54 @@ import {
 } from "@/lib/pipeline/assign";
 import { emitDomainEvent } from "@/lib/workflows/events";
 
+const MAX_FIELD_LEN = 2000;
+const MAX_FIELDS = 40;
+const MAX_NAME_LEN = 120;
+const ABUSE_WINDOW_MS = 10 * 60 * 1000;
+const ABUSE_MAX_PER_EMAIL = 8;
+
+async function resolvePublishedForm(orgSlug: string, formSlug: string) {
+  const orgKey = orgSlug.trim();
+  const formKey = formSlug.trim();
+  if (!orgKey || !formKey || orgKey.length > 120 || formKey.length > 80) {
+    throw new Error("This form is not available");
+  }
+
+  const supabase = createAdminClient();
+
+  let org: { id: string; name: string } | null = null;
+  const bySlug = await supabase
+    .from("organizations")
+    .select("id, name")
+    .eq("slug", orgKey)
+    .maybeSingle();
+  if (bySlug.data) {
+    org = bySlug.data as { id: string; name: string };
+  } else {
+    const byId = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("id", orgKey)
+      .maybeSingle();
+    org = (byId.data as { id: string; name: string } | null) ?? null;
+  }
+
+  if (!org) throw new Error("This form is not available");
+
+  const { data: form } = await supabase
+    .from("intake_forms")
+    .select("id, name, slug, is_published, organization_id")
+    .eq("organization_id", org.id)
+    .eq("slug", formKey)
+    .maybeSingle();
+
+  if (!form || !form.is_published) {
+    throw new Error("This form is not available");
+  }
+
+  return { org, form };
+}
+
 async function sendIntakeAutoAck(input: {
   organizationId: string;
   toEmail: string;
@@ -101,12 +149,33 @@ async function sendIntakeAutoAck(input: {
 }
 
 export async function submitIntakeForm(input: {
-  organizationId: string;
-  formId: string;
+  /** Canonical keys from the public URL — never trust free-form org/form ids. */
+  orgSlug: string;
+  formSlug: string;
   responses: Record<string, string>;
 }) {
+  const { org, form } = await resolvePublishedForm(
+    input.orgSlug,
+    input.formSlug,
+  );
+  const organizationId = org.id;
   const supabase = createAdminClient();
-  const responses = input.responses || {};
+
+  const rawResponses = input.responses || {};
+  const keys = Object.keys(rawResponses);
+  if (keys.length > MAX_FIELDS) {
+    throw new Error("Too many fields submitted");
+  }
+
+  const responses: Record<string, string> = {};
+  for (const [k, v] of Object.entries(rawResponses)) {
+    if (typeof k !== "string" || k.length > 80) continue;
+    const s = String(v ?? "").trim();
+    if (s.length > MAX_FIELD_LEN) {
+      throw new Error("One or more answers are too long");
+    }
+    responses[k] = s;
+  }
 
   const name = (
     responses.name ||
@@ -132,43 +201,44 @@ export async function submitIntakeForm(input: {
     [messageBody, ...customLines].filter(Boolean).join("\n\n") || null;
 
   if (!name) throw new Error("Name is required");
-  if (!email || !email.includes("@")) {
+  if (name.length > MAX_NAME_LEN) throw new Error("Name is too long");
+  if (!email || !email.includes("@") || email.length > 254) {
     throw new Error("Valid email is required");
   }
 
-  const { data: form } = await supabase
-    .from("intake_forms")
-    .select("id, name, slug, is_published, organization_id")
-    .eq("id", input.formId)
-    .eq("organization_id", input.organizationId)
-    .maybeSingle();
-
-  if (!form || !form.is_published) {
-    throw new Error("This form is not available");
-  }
-
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("name")
-    .eq("id", input.organizationId)
-    .maybeSingle();
-
-  const businessName = org?.name ?? "our team";
+  const businessName = org.name ?? "our team";
 
   const firstName = name.split(" ")[0] ?? name;
   const lastName = name.split(" ").slice(1).join(" ") || undefined;
 
   const contactId = await upsertContactByEmail({
-    organizationId: input.organizationId,
+    organizationId,
     email,
     firstName,
     source: "intake_form",
   });
 
+  // Rate limit: same email → same form within window
+  const windowStart = new Date(Date.now() - ABUSE_WINDOW_MS).toISOString();
+  const { count: recent } = await supabase
+    .from("intake_submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("form_id", form.id)
+    .eq("email", email)
+    .gte("created_at", windowStart);
+
+  if ((recent ?? 0) >= ABUSE_MAX_PER_EMAIL) {
+    throw new Error(
+      "Too many submissions. Please wait a few minutes and try again.",
+    );
+  }
+
   const { data: existing } = await supabase
     .from("contacts")
     .select("tags")
     .eq("id", contactId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
   const existingTags: string[] = Array.isArray(existing?.tags)
@@ -189,19 +259,20 @@ export async function submitIntakeForm(input: {
       last_contacted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", contactId);
+    .eq("id", contactId)
+    .eq("organization_id", organizationId);
 
-  const firstStageId = await getFirstPipelineStageId(input.organizationId);
+  const firstStageId = await getFirstPipelineStageId(organizationId);
   await assignContactPipelineStage({
     contactId,
-    organizationId: input.organizationId,
+    organizationId,
     stageId: firstStageId,
     onlyIfEmpty: true,
   });
 
   if (message) {
     await supabase.from("contact_notes").insert({
-      organization_id: input.organizationId,
+      organization_id: organizationId,
       contact_id: contactId,
       body: `Intake form “${form.name}”:\n\n${message}`,
       created_by: null,
@@ -209,8 +280,8 @@ export async function submitIntakeForm(input: {
   }
 
   const { error } = await supabase.from("intake_submissions").insert({
-    form_id: input.formId,
-    organization_id: input.organizationId,
+    form_id: form.id,
+    organization_id: organizationId,
     contact_id: contactId,
     name,
     email,
@@ -227,7 +298,7 @@ export async function submitIntakeForm(input: {
   if (error) throw new Error(error.message);
 
   await sendIntakeAutoAck({
-    organizationId: input.organizationId,
+    organizationId,
     toEmail: email,
     toName: name,
     businessName,
@@ -236,13 +307,13 @@ export async function submitIntakeForm(input: {
 
   try {
     await emitDomainEvent({
-      organizationId: input.organizationId,
+      organizationId,
       type: "form.submitted",
       entityType: "contact",
       entityId: contactId,
       payload: {
         contact_id: contactId,
-        form_id: input.formId,
+        form_id: form.id,
         form_name: form.name,
         form_slug: form.slug,
         name,
@@ -250,7 +321,7 @@ export async function submitIntakeForm(input: {
         phone: phone ?? "",
         message: message ?? "",
       },
-      idempotencyKey: `form.submitted:${input.formId}:${contactId}:${Date.now()}`,
+      idempotencyKey: `form.submitted:${form.id}:${contactId}:${Date.now()}`,
     });
   } catch (wfErr) {
     console.error("[submitIntakeForm] workflow emit:", wfErr);
