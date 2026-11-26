@@ -22,11 +22,9 @@ async function requirePlatformAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const allowed =
-    profile?.role === "super_admin" ||
-    user.email?.toLowerCase() === "j.nierras.va@gmail.com";
-
-  if (!allowed) throw new Error("Not authorized");
+  if (profile?.role !== "super_admin") {
+    throw new Error("Not authorized");
+  }
 
   return { supabase, user };
 }
