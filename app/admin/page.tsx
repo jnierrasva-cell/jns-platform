@@ -7,12 +7,7 @@ import { createNoIndexMetadata } from "@/lib/seo";
 
 export const metadata = createNoIndexMetadata("Platform administration");
 
-async function assertPlatformAdmin(
-  userId: string,
-  email: string | null | undefined,
-) {
-  if (email?.toLowerCase() === "j.nierras.va@gmail.com") return true;
-
+async function assertPlatformAdmin(userId: string) {
   try {
     const admin = createAdminClient();
     const { data: profile } = await admin
@@ -52,7 +47,7 @@ export default async function AdminPage() {
 
   if (!user) redirect("/login");
 
-  const allowed = await assertPlatformAdmin(user.id, user.email);
+  const allowed = await assertPlatformAdmin(user.id);
   if (!allowed) redirect("/dashboard");
 
   let profiles: {
