@@ -66,6 +66,19 @@ export async function assertSmsReminders(organizationId: string) {
   }
 }
 
+/** Custom intake forms — Starter+ (and Pro trial) */
+export async function assertCustomForms(organizationId: string) {
+  const billing = await getOrgBilling(organizationId);
+  const limits = planLimits(billing);
+  if (!limits.customForms) {
+    throw new Error(
+      upgradeMessage(
+        "Custom forms require Starter or higher (included in the Pro trial).",
+      ),
+    );
+  }
+}
+
 /**
  * Team invites: plan must allow invites, and members + pending invites
  * must stay under maxUsers.
