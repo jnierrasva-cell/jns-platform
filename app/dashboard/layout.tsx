@@ -202,9 +202,7 @@ export default async function DashboardLayout({
     lastName = adminProfileResult.last_name;
   }
 
-  const isPlatformAdmin =
-    platformRole === "super_admin" ||
-    user.email?.toLowerCase() === "j.nierras.va@gmail.com";
+  const isPlatformAdmin = platformRole === "super_admin";
 
   const planLabel = isTrialing(gate.billing)
     ? "Pro trial"
