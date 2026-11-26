@@ -3,16 +3,24 @@
 import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgManager } from "@/lib/org/auth";
+import { isInviteRole, type InviteRole } from "@/lib/org/roles";
 import { revalidatePath } from "next/cache";
 import { assertCanInvite } from "@/lib/billing/org-plan";
 
 export async function createInvite(
   organizationId: string,
   email: string,
-  role: "admin" | "assistant" | "member",
+  role: string,
 ) {
   const { user } = await requireOrgManager(organizationId);
   await assertCanInvite(organizationId);
+
+  if (!isInviteRole(role)) {
+    throw new Error(
+      "Invalid role. Invites may only use admin, assistant, or member.",
+    );
+  }
+  const safeRole: InviteRole = role;
 
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail.includes("@")) {
@@ -25,7 +33,7 @@ export async function createInvite(
   const { error } = await admin.from("invites").insert({
     organization_id: organizationId,
     email: normalizedEmail,
-    role,
+    role: safeRole,
     invited_by: user.id,
     token,
     status: "pending",
