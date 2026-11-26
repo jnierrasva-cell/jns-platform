@@ -12,10 +12,10 @@ function toIsoFromLocal(date: string, time: string) {
 }
 
 export function PublicBookingClient({
-  organizationId,
+  orgSlug,
   businessName,
 }: {
-  organizationId: string;
+  orgSlug: string;
   businessName: string;
 }) {
   const [name, setName] = useState("");
@@ -36,7 +36,7 @@ export function PublicBookingClient({
     startTransition(async () => {
       try {
         await submitPublicBooking({
-          organizationId,
+          orgSlug,
           name,
           email,
           phone,
@@ -138,6 +138,7 @@ export function PublicBookingClient({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
+              maxLength={2000}
               className="rounded-xl border border-white/15 bg-sky-600/60 px-3.5 py-2.5 text-sm text-white outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
             />
           </div>
