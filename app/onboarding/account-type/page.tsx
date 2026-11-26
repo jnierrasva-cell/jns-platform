@@ -2,6 +2,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AccountTypeClient } from "@/components/account-type-client";
 
+/**
+ * Soft public open policy:
+ * - Cold signup is self-service: non-rejected profiles are treated as approved.
+ * - Admin "reject" remains the only hard block (pending-approval page).
+ * - Invitees with membership skip this page entirely.
+ */
 export default async function AccountTypePage() {
   const supabase = await createClient();
   const {
@@ -18,6 +24,7 @@ export default async function AccountTypePage() {
 
   if (profile?.status === "rejected") redirect("/pending-approval");
 
+  // Self-service onboarding: promote any non-rejected status to approved.
   if (profile && profile.status !== "approved") {
     await supabase
       .from("profiles")
