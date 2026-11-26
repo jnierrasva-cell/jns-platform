@@ -17,6 +17,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { matchesInviteEmail } from "@/lib/invites/email.mjs";
+import { isInviteRole } from "@/lib/org/roles";
 
 export type InviteInfo = {
   id: string;
@@ -142,6 +143,12 @@ export async function joinWithInvite(token: string) {
 
   if (invite.status !== "pending") {
     throw new Error("This invite is no longer valid.");
+  }
+
+  if (!isInviteRole(invite.role)) {
+    throw new Error(
+      "This invite has an invalid role and cannot be accepted. Ask the workspace owner for a new invite.",
+    );
   }
 
   const { data: existing } = await admin
