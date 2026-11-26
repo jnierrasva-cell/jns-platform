@@ -60,10 +60,8 @@ export async function requirePlatformAdmin(): Promise<Authed> {
     .eq("id", user.id)
     .maybeSingle();
 
-  const email = user.email?.toLowerCase() ?? "";
-  const ok =
-    profile?.role === "super_admin" || email === "j.nierras.va@gmail.com";
-
-  if (!ok) throw new Error("Not authorized");
+  if (profile?.role !== "super_admin") {
+    throw new Error("Not authorized");
+  }
   return { supabase, user };
 }
