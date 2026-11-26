@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export type FirstRunStep = {
@@ -11,36 +14,77 @@ export type FirstRunStep = {
   critical: boolean;
 };
 
+const STORAGE_PREFIX = "jns:first-run-skipped:";
+
+function skipKey(organizationId: string) {
+  return `${STORAGE_PREFIX}${organizationId}`;
+}
+
 export function FirstRunPanel({
+  organizationId,
   orgName,
   steps,
   planIsNone,
 }: {
+  organizationId: string;
   orgName: string;
   steps: FirstRunStep[];
   planIsNone: boolean;
 }) {
+  const [skipped, setSkipped] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      setSkipped(localStorage.getItem(skipKey(organizationId)) === "1");
+    } catch {
+      // ignore storage errors (private mode, etc.)
+    }
+    setReady(true);
+  }, [organizationId]);
+
+  function handleSkip() {
+    try {
+      localStorage.setItem(skipKey(organizationId), "1");
+    } catch {
+      // ignore
+    }
+    setSkipped(true);
+  }
+
   const critical = steps.filter((s) => s.critical);
   const doneCount = critical.filter((s) => s.done).length;
   const total = critical.length || 1;
   const next = critical.find((s) => !s.done);
   const allDone = critical.every((s) => s.done);
 
-  if (allDone) return null;
+  // Avoid flash: hide until we know skip state; then honor skip / allDone
+  if (!ready || skipped || allDone) return null;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
       <div className="border-b border-slate-100 bg-gradient-to-br from-sky-50 via-white to-slate-50 px-5 py-5 sm:px-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-          First 10 minutes · {orgName}
-        </p>
-        <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
-          Get your first inquiry handled automatically
-        </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-          Connect your inbox, add one rule, then switch on auto-reply. That loop
-          is the core of JNS.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              First 10 minutes · {orgName}
+            </p>
+            <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+              Get your first inquiry handled automatically
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+              Connect your inbox, add one rule, then switch on auto-reply. That
+              loop is the core of JNS.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            Skip for now
+          </button>
+        </div>
         <div className="mt-4 flex items-center gap-3">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
             <div
@@ -117,19 +161,33 @@ export function FirstRunPanel({
         })}
       </ol>
 
-      {planIsNone && (
-        <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-3 text-xs text-slate-500 sm:px-6">
-          Contacts, bookings, email rules, and auto-reply work on the free
-          tier. Upgrade under{" "}
-          <Link
-            href="/dashboard/billing"
-            className="font-medium text-slate-800 underline underline-offset-2"
-          >
-            Billing
-          </Link>{" "}
-          when you need team seats, SMS reminders, or higher limits.
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 sm:px-6">
+        {planIsNone ? (
+          <p className="text-xs text-slate-500">
+            Contacts, bookings, email rules, and auto-reply work on the free
+            tier. Upgrade under{" "}
+            <Link
+              href="/dashboard/billing"
+              className="font-medium text-slate-800 underline underline-offset-2"
+            >
+              Billing
+            </Link>{" "}
+            when you need team seats, SMS reminders, or higher limits.
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500">
+            You can finish this later — explore the rest of the workspace
+            anytime.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="shrink-0 text-xs font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900"
+        >
+          Skip setup and explore
+        </button>
+      </div>
     </section>
   );
 }
