@@ -242,7 +242,7 @@ export function FormsClient({
         is_published: false,
         submission_count: 0,
         created_at: new Date().toISOString(),
-        slug: `${form.slug}-copy`,
+        slug: result.slug,
       };
       setForms((prev) => [copy, ...prev]);
     });
@@ -449,7 +449,7 @@ export function FormsClient({
             ))}
           </div>
 
-          <div className="mt-6 hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
+          <div className="mt-6 hidden overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
             <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
               <thead className="bg-slate-50/80 text-[11px] font-medium uppercase tracking-wide text-slate-400">
                 <tr>
