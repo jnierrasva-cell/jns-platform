@@ -4,12 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AdminClient } from "@/components/admin-client";
 
-async function assertPlatformAdmin(
-  userId: string,
-  email: string | null | undefined,
-) {
-  if (email?.toLowerCase() === "j.nierras.va@gmail.com") return true;
-
+async function assertPlatformAdmin(userId: string) {
   try {
     const admin = createAdminClient();
     const { data: profile } = await admin
@@ -49,7 +44,7 @@ export default async function DashboardAdminPage() {
 
   if (!user) redirect("/login");
 
-  const allowed = await assertPlatformAdmin(user.id, user.email);
+  const allowed = await assertPlatformAdmin(user.id);
   if (!allowed) redirect("/dashboard");
 
   let profiles: {
