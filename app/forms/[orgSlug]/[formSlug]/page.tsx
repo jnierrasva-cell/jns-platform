@@ -38,7 +38,7 @@ export default async function PublicIntakeFormPage({
   const { data: form } = await supabase
     .from("intake_forms")
     .select(
-      "id, name, success_message, is_published, headline, description, fields",
+      "id, name, success_message, is_published, headline, description, fields, slug",
     )
     .eq("organization_id", org.id)
     .eq("slug", formSlug)
@@ -53,8 +53,8 @@ export default async function PublicIntakeFormPage({
 
   return (
     <IntakeFormClient
-      organizationId={org.id}
-      formId={form.id}
+      orgSlug={orgSlug}
+      formSlug={form.slug || formSlug}
       businessName={org.name}
       logoUrl={org.logo_url}
       formName={form.name}
