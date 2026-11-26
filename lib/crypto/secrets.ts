@@ -4,9 +4,9 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypt
  * App-level encryption for API keys and OAuth tokens at rest.
  * Format: enc:v1:<iv_hex>:<ciphertext_hex>
  *
- * If ENCRYPTION_KEY is not set, values are stored/returned as plaintext
- * (backward compatible). Set ENCRYPTION_KEY (32+ chars) in Vercel and
- * re-save connections to encrypt existing rows over time.
+ * New secrets MUST be encrypted. If ENCRYPTION_KEY is missing or too short,
+ * encryptSecret throws so credentials are never stored in plaintext.
+ * Legacy plaintext rows can still be read via decryptSecret until re-saved.
  */
 
 const PREFIX = "enc:v1:";
@@ -18,6 +18,10 @@ function getKey(): Buffer | null {
   return scryptSync(secret, "jns-secrets-v1", 32);
 }
 
+export function isEncryptionConfigured(): boolean {
+  return getKey() != null;
+}
+
 export function isEncrypted(value: string | null | undefined): boolean {
   return typeof value === "string" && value.startsWith(PREFIX);
 }
@@ -27,7 +31,11 @@ export function encryptSecret(plain: string | null | undefined): string | null {
   if (isEncrypted(plain)) return plain;
 
   const key = getKey();
-  if (!key) return plain; // no key configured — store plaintext
+  if (!key) {
+    throw new Error(
+      "ENCRYPTION_KEY is not configured (min 16 chars). Refusing to store secrets in plaintext.",
+    );
+  }
 
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -71,7 +79,10 @@ export function decryptSecret(stored: string | null | undefined): string | null 
   return dec.toString("utf8");
 }
 
-/** Encrypt only when a key is configured; otherwise pass-through. */
+/**
+ * Prefer encryptSecret for new writes. This alias remains for call sites
+ * that historically meant "encrypt if possible"; it now fails closed too.
+ */
 export function maybeEncryptSecret(
   plain: string | null | undefined,
 ): string | null {
