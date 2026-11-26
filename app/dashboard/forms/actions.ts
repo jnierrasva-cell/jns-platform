@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOrgMember } from "@/lib/org/auth";
+import { assertCustomForms } from "@/lib/billing/org-plan";
 import {
   DEFAULT_FORM_FIELDS,
   normalizeFields,
@@ -18,6 +19,16 @@ function slugify(input: string) {
     .slice(0, 48);
 }
 
+/** Neutralize spreadsheet formula injection in CSV cells. */
+function escapeCsvCell(v: unknown): string {
+  let s = v == null ? "" : String(v);
+  if (/^[=+\-@]/.test(s)) {
+    s = `'${s}`;
+  }
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
 export async function createIntakeForm(input: {
   organizationId: string;
   name: string;
@@ -27,6 +38,7 @@ export async function createIntakeForm(input: {
 > {
   try {
     await requireOrgMember(input.organizationId);
+    await assertCustomForms(input.organizationId);
 
     const name = input.name.trim();
     if (!name) return { ok: false, error: "Form name is required" };
@@ -75,6 +87,7 @@ export async function updateIntakeForm(input: {
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await requireOrgMember(input.organizationId);
+    await assertCustomForms(input.organizationId);
 
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -125,11 +138,12 @@ export async function duplicateIntakeForm(input: {
   organizationId: string;
   formId: string;
 }): Promise<
-  | { ok: true; formId: string }
+  | { ok: true; formId: string; slug: string }
   | { ok: false; error: string }
 > {
   try {
     await requireOrgMember(input.organizationId);
+    await assertCustomForms(input.organizationId);
     const admin = createAdminClient();
 
     const { data: source, error } = await admin
@@ -163,7 +177,7 @@ export async function duplicateIntakeForm(input: {
         description: source.description,
         fields: normalizeFields(source.fields),
       })
-      .select("id")
+      .select("id, slug")
       .single();
 
     if (insertError || !created) {
@@ -171,7 +185,11 @@ export async function duplicateIntakeForm(input: {
     }
 
     revalidatePath("/dashboard/forms");
-    return { ok: true, formId: created.id as string };
+    return {
+      ok: true,
+      formId: created.id as string,
+      slug: created.slug as string,
+    };
   } catch (err) {
     return {
       ok: false,
@@ -188,6 +206,7 @@ export async function exportFormSubmissionsCsv(input: {
 > {
   try {
     await requireOrgMember(input.organizationId);
+    await assertCustomForms(input.organizationId);
     const admin = createAdminClient();
 
     const { data: form } = await admin
@@ -211,19 +230,13 @@ export async function exportFormSubmissionsCsv(input: {
 
     if (error) return { ok: false, error: error.message };
 
-    const escape = (v: unknown) => {
-      const s = v == null ? "" : String(v);
-      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-      return s;
-    };
-
     const headers = [
       "Submitted at",
       ...questionFields.map((f) => f.label || f.id),
     ];
 
     const lines = [
-      headers.map(escape).join(","),
+      headers.map(escapeCsvCell).join(","),
       ...(rows ?? []).map((r) => {
         const responses =
           (r.responses as Record<string, unknown> | null) ||
@@ -247,7 +260,7 @@ export async function exportFormSubmissionsCsv(input: {
           }),
         ];
 
-        return cells.map(escape).join(",");
+        return cells.map(escapeCsvCell).join(",");
       }),
     ];
 
