@@ -37,6 +37,6 @@ export default async function PublicBookingPage({
   if (!org) notFound();
 
   return (
-    <PublicBookingClient organizationId={org.id} businessName={org.name} />
+    <PublicBookingClient orgSlug={orgSlug} businessName={org.name} />
   );
 }
