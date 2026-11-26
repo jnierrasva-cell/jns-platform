@@ -74,11 +74,7 @@ export async function proxy(request: NextRequest) {
       .eq("id", user.id)
       .maybeSingle();
 
-    const allowed =
-      profile?.role === "super_admin" ||
-      user.email?.toLowerCase() === "j.nierras.va@gmail.com";
-
-    if (!allowed) {
+    if (profile?.role !== "super_admin") {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);
