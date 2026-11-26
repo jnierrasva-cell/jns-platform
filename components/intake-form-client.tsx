@@ -6,8 +6,8 @@ import { submitIntakeForm } from "@/app/forms/[orgSlug]/[formSlug]/actions";
 import type { FormField } from "@/lib/forms/fields";
 
 export function IntakeFormClient({
-  organizationId,
-  formId,
+  orgSlug,
+  formSlug,
   businessName,
   logoUrl,
   formName,
@@ -16,8 +16,8 @@ export function IntakeFormClient({
   successMessage,
   fields,
 }: {
-  organizationId: string;
-  formId: string;
+  orgSlug: string;
+  formSlug: string;
   businessName: string;
   logoUrl?: string | null;
   formName: string;
@@ -59,8 +59,8 @@ export function IntakeFormClient({
     startTransition(async () => {
       try {
         await submitIntakeForm({
-          organizationId,
-          formId,
+          orgSlug,
+          formSlug,
           responses: values,
         });
         setDone(true);
@@ -142,6 +142,7 @@ export function IntakeFormClient({
                 onChange={(e) => setField(field.id, e.target.value)}
                 rows={4}
                 required={field.required}
+                maxLength={2000}
                 className="rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               />
             ) : field.type === "phone" ? (
@@ -157,6 +158,7 @@ export function IntakeFormClient({
                 value={values[field.id] || ""}
                 onChange={(e) => setField(field.id, e.target.value)}
                 required={field.required}
+                maxLength={field.type === "email" ? 254 : 500}
                 className="rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
               />
             )}
