@@ -269,21 +269,18 @@ export async function logIncome(input: {
 
   const { user, organizationId, admin } = await requireFinancialContext(true);
 
-  const notesParts: string[] = [];
-  if (input.notes?.trim()) notesParts.push(input.notes.trim());
-  if (input.status && input.status !== "paid") {
-    notesParts.push(`[status:${input.status}]`);
-  }
-  if (input.paymentMethod?.trim()) {
-    notesParts.push(`[method:${input.paymentMethod.trim()}]`);
-  }
+  const status = input.status === "pending" ? "pending" : "paid";
+  const paymentMethod = input.paymentMethod?.trim() || null;
+  const notes = input.notes?.trim() || null;
 
   const { error } = await admin.from("financial_income_logs").insert({
     organization_id: organizationId,
     period_month: input.periodMonth,
     source_label: input.sourceLabel.trim(),
     amount: input.amount,
-    notes: notesParts.length ? notesParts.join(" ") : null,
+    notes,
+    status,
+    payment_method: paymentMethod,
     logged_by: user.id,
   });
 
@@ -304,21 +301,24 @@ export async function updateIncomeLog(input: {
 
   if (!input.sourceLabel.trim()) throw new Error("Source label required");
 
-  const notesParts: string[] = [];
-  if (input.notes?.trim()) notesParts.push(input.notes.trim());
-  if (input.status && input.status !== "paid") {
-    notesParts.push(`[status:${input.status}]`);
-  }
-  if (input.paymentMethod?.trim()) {
-    notesParts.push(`[method:${input.paymentMethod.trim()}]`);
-  }
+  const status = input.status === "pending" ? "pending" : "paid";
+  const paymentMethod =
+    input.paymentMethod === undefined || input.paymentMethod === null
+      ? null
+      : input.paymentMethod.trim() || null;
+  const notes =
+    input.notes === undefined || input.notes === null
+      ? null
+      : input.notes.trim() || null;
 
   const { error } = await admin
     .from("financial_income_logs")
     .update({
       source_label: input.sourceLabel.trim(),
       amount: input.amount,
-      notes: notesParts.length ? notesParts.join(" ") : null,
+      notes,
+      status,
+      payment_method: paymentMethod,
     })
     .eq("id", input.id)
     .eq("organization_id", organizationId);
