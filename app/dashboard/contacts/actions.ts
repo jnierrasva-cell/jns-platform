@@ -302,10 +302,11 @@ export async function saveContactDetails(input: {
     }
   }
 
-  revalidatePath("/dashboard/contacts");
-  revalidatePath(`/dashboard/contacts/${input.contactId}`);
+  // Soft revalidation: detail page only. Skip full list/dashboard on every save
+  // to cut layout thrash; list refreshes on navigate. Pipeline only if stage moved.
+  revalidatePath(`/dashboard/contacts/${input.contactId}`, "page");
   if (stageChanged) {
-    revalidatePath("/dashboard/pipeline");
+    revalidatePath("/dashboard/pipeline", "page");
   }
 }
 
@@ -453,7 +454,6 @@ export async function importContactsCsv(input: {
     throw new Error("Import limit is 500 rows at a time");
   }
 
-  // Normalize once; one lookup for existing emails instead of N sequential queries.
   type Norm = {
     email: string | null;
     phone: string | null;
@@ -487,7 +487,6 @@ export async function importContactsCsv(input: {
     ...new Set(normalized.map((r) => r.email).filter((e): e is string => Boolean(e))),
   ];
   const existingByEmail = new Map<string, { id: string; tags: string[] | null }>();
-  // Chunk .in() to stay under PostgREST limits.
   const chunkSize = 100;
   for (let i = 0; i < emails.length; i += chunkSize) {
     const chunk = emails.slice(i, i + chunkSize);
@@ -549,7 +548,6 @@ export async function importContactsCsv(input: {
     });
   }
 
-  // Batch inserts in chunks.
   for (let i = 0; i < toInsert.length; i += chunkSize) {
     const chunk = toInsert.slice(i, i + chunkSize);
     const { data, error } = await admin
@@ -557,7 +555,6 @@ export async function importContactsCsv(input: {
       .insert(chunk)
       .select("id");
     if (error) {
-      // Fall back to per-row so one bad row does not fail the batch.
       for (const row of chunk) {
         const { error: oneErr } = await admin.from("contacts").insert(row);
         if (oneErr) skipped += 1;
@@ -653,7 +650,6 @@ export async function setContactPipelineStage(input: {
     console.error("[setContactPipelineStage] emit failed", err);
   }
 
-  // Contacts list uses optimistic local state; skip full list revalidation.
   revalidatePath(`/dashboard/contacts/${input.contactId}`);
   revalidatePath("/dashboard/pipeline");
 }
