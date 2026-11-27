@@ -110,9 +110,11 @@ export default async function OverviewPage() {
       .from("contacts")
       .select(
         "id, status, first_name, last_name, email, created_at, pipeline_stage_id",
+        { count: "exact" },
       )
       .eq("organization_id", orgId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(500),
     admin
       .from("pipeline_stages")
       .select("id, name, slug, position, is_won, is_lost")
@@ -157,12 +159,24 @@ export default async function OverviewPage() {
       .limit(200),
   ]);
 
+  const queryErrors = [
+    googleRes.error?.message,
+    contactsRes.error?.message,
+    stagesRes.error?.message,
+    bookingsRes.error?.message,
+    unmatchedRes.error?.message,
+    activityRes.error?.message,
+  ].filter(Boolean) as string[];
+  const dataLoadError = queryErrors[0] ?? null;
+
   const googleConnection = googleRes.data;
   const twilioConnection = twilioRes.data;
   const arketaCount = arketaRes.count ?? 0;
   const teamCount = teamRes.count ?? 0;
   const activeAutomations = automationRes.count ?? 0;
   const contacts = contactsRes.data ?? [];
+  const contactsTotal =
+    typeof contactsRes.count === "number" ? contactsRes.count : contacts.length;
   const stages = stagesRes.data ?? [];
   const upcomingBookings = bookingsRes.data ?? [];
   const unmatchedCount = unmatchedRes.count ?? 0;
@@ -320,17 +334,18 @@ export default async function OverviewPage() {
     {
       href: "/dashboard/contacts",
       label: peopleLabel,
-      value: contacts.length,
-      detail:
-        newThisWeek > 0
-          ? `${newThisWeek} new this week`
+      value: dataLoadError ? "—" : contactsTotal,
+      detail: dataLoadError
+        ? "Could not load count"
+        : newThisWeek > 0
+          ? `${newThisWeek} new this week (sample)`
           : "In this workspace",
       icon: Contact,
     },
     {
       href: "/dashboard/bookings",
       label: "Bookings (30 days)",
-      value: bookingsRes.count ?? 0,
+      value: dataLoadError && bookingsRes.error ? "—" : bookingsRes.count ?? 0,
       detail: "Scheduled ahead",
       icon: CalendarDays,
     },
@@ -360,18 +375,18 @@ export default async function OverviewPage() {
       label: "Needs review",
       value: unmatchedCount,
       detail:
-        unmatchedCount > 0 ? "Attach to a contact or add a rule" : "Inbox clear",
+        dataLoadError && unmatchedRes.error
+          ? "Could not load"
+          : unmatchedCount > 0
+            ? "Attach to a contact or add a rule"
+            : "Inbox clear",
       icon: Inbox,
       attention: unmatchedCount > 0,
     },
   ];
 
-  const primaryMetricLabels = [
-    peopleLabel,
-    "Bookings (30 days)",
-    "Automations on",
-    "Needs review",
-  ];
+  void statusPipeline;
+  void successfulActivityCount;
 
   const nextStep =
     googleNeedsReauth
@@ -410,7 +425,7 @@ export default async function OverviewPage() {
               action: "Open Automations",
               urgent: false,
             }
-          : contacts.length === 0
+          : contactsTotal === 0
             ? {
                 href: "/dashboard/contacts",
                 title: "Add your first person",
@@ -454,7 +469,6 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6 pb-4">
-      {/* Header */}
       <div className="border-b border-slate-200/80 pb-6">
         <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
           Home
@@ -492,7 +506,20 @@ export default async function OverviewPage() {
         </p>
       </div>
 
-      {/* First-run setup */}
+      {dataLoadError && (
+        <div
+          className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800"
+          role="alert"
+        >
+          <p className="font-semibold">Some overview data failed to load</p>
+          <p className="mt-1 text-red-700/90">{dataLoadError}</p>
+          <p className="mt-1 text-red-700/80">
+            Metrics below may be incomplete. Refresh the page or check service
+            status.
+          </p>
+        </div>
+      )}
+
       {showSetupCard && !allCriticalDone && (
         <FirstRunPanel
           organizationId={orgId}
@@ -514,7 +541,6 @@ export default async function OverviewPage() {
         </section>
       )}
 
-      {/* Attention: unmatched inbox */}
       {isManager && unmatchedCount > 0 && (
         <Link
           href="/dashboard/unmatched"
@@ -537,7 +563,6 @@ export default async function OverviewPage() {
         </Link>
       )}
 
-      {/* Attention: Google reconnect */}
       {isManager && googleNeedsReauth && (
         <Link
           href="/dashboard/integrations"
@@ -548,7 +573,10 @@ export default async function OverviewPage() {
               Google needs to be reconnected
             </p>
             <p className="mt-0.5 text-sm text-amber-900/80">
-              {(googleConnection?.last_auth_error as string | null)?.slice(0, 160) ||
+              {(googleConnection?.last_auth_error as string | null)?.slice(
+                0,
+                160,
+              ) ||
                 "Access expired or was revoked. Reconnect so inbox auto-reply and calendar can run."}
             </p>
           </div>
@@ -559,7 +587,6 @@ export default async function OverviewPage() {
         </Link>
       )}
 
-      {/* Soft note: watch may be stale while auto-reply is on */}
       {isManager && !googleNeedsReauth && watchExpired && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-600">
           Gmail push watch looks stale while auto-reply is on. Open Connections
@@ -567,38 +594,130 @@ export default async function OverviewPage() {
         </div>
       )}
 
-      {/* Metrics grid and remaining sections restored from production */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics
-          .filter((m) => primaryMetricLabels.includes(m.label))
-          .map((m) => {
-            const Icon = m.icon;
-            return (
-              <Link
-                key={m.label}
-                href={m.href}
-                className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:border-sky-200 ${
-                  m.attention
-                    ? "border-amber-200 ring-1 ring-amber-100"
-                    : "border-slate-200/80"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {metrics.map((m) => {
+          const Icon = m.icon;
+          return (
+            <Link
+              key={m.label}
+              href={m.href}
+              className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:border-sky-200 ${
+                m.attention
+                  ? "border-amber-200 ring-1 ring-amber-100"
+                  : "border-slate-200/80"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                     {m.label}
                   </p>
-                  <Icon className="h-4 w-4 text-slate-400" aria-hidden />
+                  <p className="mt-2 text-2xl font-semibold text-slate-900">
+                    {m.value}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">{m.detail}</p>
                 </div>
-                <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {m.value}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">{m.detail}</p>
-              </Link>
-            );
-          })}
+                <span className="rounded-xl bg-slate-50 p-2 text-slate-500">
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {failedActivityCount > 0 && (
+        <p className="text-sm text-amber-800">
+          {failedActivityCount} email event{failedActivityCount === 1 ? "" : "s"}{" "}
+          failed in the last 7 days. Check Automations activity.
+        </p>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              Upcoming bookings
+            </p>
+            <Link
+              href="/dashboard/bookings"
+              className="text-xs font-medium text-sky-700 hover:text-sky-800"
+            >
+              View all
+            </Link>
+          </div>
+          {upcomingBookings.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">
+              No scheduled bookings in the next 30 days.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-3">
+              {upcomingBookings.map((b) => {
+                const contact = Array.isArray(b.contacts)
+                  ? b.contacts[0]
+                  : b.contacts;
+                const when = bookingWhen(b.starts_at as string);
+                return (
+                  <li
+                    key={b.id as string}
+                    className="flex items-start justify-between gap-3 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900">
+                        {(b.title as string) || "Appointment"}
+                      </p>
+                      <p className="text-slate-500">{contactName(contact)}</p>
+                    </div>
+                    <div className="shrink-0 text-right text-xs text-slate-500">
+                      <p>{when.dateLabel}</p>
+                      <p>{when.timeLabel}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+              Recent people
+            </p>
+            <Link
+              href="/dashboard/contacts"
+              className="text-xs font-medium text-sky-700 hover:text-sky-800"
+            >
+              View all
+            </Link>
+          </div>
+          {recentContacts.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">
+              No people yet in this workspace.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {recentContacts.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    href={`/dashboard/contacts/${c.id}`}
+                    className="flex items-center justify-between gap-2 rounded-lg px-1 py-1.5 text-sm hover:bg-slate-50"
+                  >
+                    <span className="font-medium text-slate-900">
+                      {contactName(c)}
+                    </span>
+                    <span className="text-xs capitalize text-slate-400">
+                      {c.status}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
             Suggested next
