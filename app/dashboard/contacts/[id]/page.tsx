@@ -26,7 +26,7 @@ export default async function ContactDetailPage({
   const admin = createAdminClient();
 
   // Parallel reads: contact + related lists in one round-trip group.
-  // Sequential was 4× latency on cold connections.
+  // Related tables always scoped by organization_id (defense in depth).
   const [contactRes, stagesRes, activityRes, bookingsRes, notesRes] =
     await Promise.all([
       admin
@@ -47,18 +47,21 @@ export default async function ContactDetailPage({
         .select(
           "id, direction, subject, from_email, to_email, status, created_at",
         )
+        .eq("organization_id", orgId)
         .eq("contact_id", id)
         .order("created_at", { ascending: false })
         .limit(50),
       admin
         .from("bookings")
         .select("id, title, starts_at, status")
+        .eq("organization_id", orgId)
         .eq("contact_id", id)
         .order("starts_at", { ascending: false })
         .limit(20),
       admin
         .from("contact_notes")
         .select("id, body, created_at, created_by")
+        .eq("organization_id", orgId)
         .eq("contact_id", id)
         .order("created_at", { ascending: false })
         .limit(50),
