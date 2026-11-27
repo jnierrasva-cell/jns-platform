@@ -66,7 +66,9 @@ export default async function FinancialsPage({
         .order("name"),
       admin
         .from("financial_income_logs")
-        .select("id, period_month, source_label, amount, notes, logged_by, created_at")
+        .select(
+          "id, period_month, source_label, amount, notes, logged_by, created_at, status, payment_method",
+        )
         .eq("organization_id", orgId)
         .eq("period_month", period)
         .order("created_at", { ascending: false }),
@@ -78,7 +80,7 @@ export default async function FinancialsPage({
         .lte("period_month", period),
       admin
         .from("financial_income_logs")
-        .select("period_month, amount")
+        .select("period_month, amount, status")
         .eq("organization_id", orgId)
         .gte("period_month", trendStart)
         .lte("period_month", period),
@@ -111,18 +113,31 @@ export default async function FinancialsPage({
     paidByUserId: (e.paid_by_user_id as string | null) ?? null,
   }));
 
-  const income = (incomeRes.data ?? []).map((r) => ({
-    id: r.id as string,
-    periodMonth: r.period_month as string,
-    sourceLabel: r.source_label as string,
-    amount: Number(r.amount ?? 0),
-    notes: (r.notes as string | null) ?? null,
-    loggedBy: (r.logged_by as string | null) ?? null,
-    createdAt: r.created_at as string,
-    // Base schema has no income status/method columns yet — UI defaults.
-    status: "paid" as const,
-    paymentMethod: null as string | null,
-  }));
+  const income = (incomeRes.data ?? []).map((r) => {
+    const notes = (r.notes as string | null) ?? null;
+    const colStatus = (r.status as string | null) ?? null;
+    const legacyPending =
+      !colStatus && notes != null && /\[status:pending\]/i.test(notes);
+    const status =
+      colStatus === "pending" || legacyPending
+        ? ("pending" as const)
+        : ("paid" as const);
+    const colMethod = (r.payment_method as string | null) ?? null;
+    const methodMatch = notes?.match(/\[method:([^\]]+)\]/i);
+    const paymentMethod =
+      colMethod || (methodMatch ? methodMatch[1].trim() : null);
+    return {
+      id: r.id as string,
+      periodMonth: r.period_month as string,
+      sourceLabel: r.source_label as string,
+      amount: Number(r.amount ?? 0),
+      notes,
+      loggedBy: (r.logged_by as string | null) ?? null,
+      createdAt: r.created_at as string,
+      status,
+      paymentMethod,
+    };
+  });
 
   const months: string[] = [];
   for (let i = 11; i >= 0; i--) {
@@ -143,7 +158,11 @@ export default async function FinancialsPage({
   for (const row of trendIncomeRes.data ?? []) {
     const m = row.period_month as string;
     const agg = byMonth.get(m);
-    if (agg) agg.income += Number(row.amount ?? 0);
+    if (!agg) continue;
+    // Only collected (paid) income counts toward coverage KPIs
+    const st = (row as { status?: string }).status;
+    if (st === "pending") continue;
+    agg.income += Number(row.amount ?? 0);
   }
   for (const row of trendEntriesRes.data ?? []) {
     const m = row.period_month as string;
